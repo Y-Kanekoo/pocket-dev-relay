@@ -1,5 +1,7 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
+const fsSync = require('fs');
 const WebSocket = require('ws');
 const pty = require('node-pty');
 const path = require('path');
@@ -20,6 +22,11 @@ const ENABLE_SESSION_LOGS = process.env.ENABLE_SESSION_LOGS === 'true';
 const LOG_DIR = path.resolve(process.env.LOG_DIR || path.join(ROOT_DIR, 'logs'));
 
 const SHELL_CMD = process.env.SHELL_CMD || process.env.SHELL || 'zsh';
+
+// HTTPS設定
+const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+const SSL_KEY_PATH = process.env.SSL_KEY_PATH || '';
+const SSL_CERT_PATH = process.env.SSL_CERT_PATH || '';
 
 // セッションログ用のメタデータを保存
 const sessionLogs = new Map();
@@ -174,13 +181,15 @@ function buildAccessUrls() {
   const urls = [];
   const hostname = os.hostname();
   const mdnsHost = normalizeMdns(hostname);
+  // HTTPSが有効な場合はhttps://を使用
+  const protocol = ENABLE_HTTPS ? 'https' : 'http';
 
   if (mdnsHost) {
     urls.push({
       type: 'mdns',
       name: hostname,
       host: mdnsHost,
-      url: `http://${mdnsHost}:${PORT}`
+      url: `${protocol}://${mdnsHost}:${PORT}`
     });
   }
 
@@ -189,7 +198,7 @@ function buildAccessUrls() {
       type: 'lan',
       name: entry.name,
       host: entry.address,
-      url: `http://${entry.address}:${PORT}`
+      url: `${protocol}://${entry.address}:${PORT}`
     });
   });
 
@@ -197,7 +206,7 @@ function buildAccessUrls() {
     type: 'local',
     name: 'localhost',
     host: 'localhost',
-    url: `http://localhost:${PORT}`
+    url: `${protocol}://localhost:${PORT}`
   });
 
   const seen = new Set();
@@ -209,7 +218,44 @@ function buildAccessUrls() {
 }
 
 const app = express();
-const server = http.createServer(app);
+
+// HTTPSまたはHTTPサーバーを作成
+let server;
+if (ENABLE_HTTPS) {
+  // SSL証明書ファイルの存在確認
+  if (!SSL_KEY_PATH || !SSL_CERT_PATH) {
+    console.error('エラー: HTTPS が有効ですが、SSL_KEY_PATH または SSL_CERT_PATH が設定されていません。');
+    console.error('環境変数を設定してください:');
+    console.error('  SSL_KEY_PATH: 秘密鍵ファイルのパス');
+    console.error('  SSL_CERT_PATH: 証明書ファイルのパス');
+    process.exit(1);
+  }
+
+  if (!fsSync.existsSync(SSL_KEY_PATH)) {
+    console.error(`エラー: 秘密鍵ファイルが見つかりません: ${SSL_KEY_PATH}`);
+    process.exit(1);
+  }
+
+  if (!fsSync.existsSync(SSL_CERT_PATH)) {
+    console.error(`エラー: 証明書ファイルが見つかりません: ${SSL_CERT_PATH}`);
+    process.exit(1);
+  }
+
+  try {
+    const httpsOptions = {
+      key: fsSync.readFileSync(SSL_KEY_PATH),
+      cert: fsSync.readFileSync(SSL_CERT_PATH)
+    };
+    server = https.createServer(httpsOptions, app);
+    console.log('HTTPS モードで起動します');
+  } catch (error) {
+    console.error(`エラー: SSL証明書の読み込みに失敗しました: ${error.message}`);
+    process.exit(1);
+  }
+} else {
+  server = http.createServer(app);
+}
+
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
 app.use(express.json({ limit: '2mb' }));
@@ -628,8 +674,11 @@ server.listen(PORT, '0.0.0.0', async () => {
     console.log(`セッションログ: 有効 (${LOG_DIR})`);
   }
 
+  // HTTPSが有効な場合はプロトコルを変更
+  const protocol = ENABLE_HTTPS ? 'https' : 'http';
+
   console.log('Pocket Dev Relay is running.');
-  console.log(`Local: http://localhost:${PORT}`);
+  console.log(`Local: ${protocol}://localhost:${PORT}`);
   buildAccessUrls()
     .filter((entry) => entry.type === 'lan')
     .forEach((entry) => {
