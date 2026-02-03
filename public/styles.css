@@ -521,15 +521,148 @@ button:disabled {
   gap: 24px;
 }
 
-.terminal-shell {
+/* セッションタブUI */
+.session-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 16px;
-  border-radius: 16px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.session-tab-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.session-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px 12px 0 0;
+  background: rgba(20, 17, 13, 0.6);
+  border: 1px solid rgba(15, 10, 5, 0.16);
+  border-bottom: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 80px;
+  max-width: 160px;
+}
+
+.session-tab:hover {
+  background: rgba(20, 17, 13, 0.8);
+  color: var(--ink);
+}
+
+.session-tab.active {
+  background: #14110d;
+  color: #f5efe6;
+  border-color: rgba(11, 143, 122, 0.4);
+}
+
+.session-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.session-tab-close {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.session-tab-close:hover {
+  background: rgba(217, 90, 43, 0.3);
+  color: #ff7a4d;
+  opacity: 1;
+}
+
+.session-add-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(11, 143, 122, 0.15);
+  border: 1px dashed rgba(11, 143, 122, 0.4);
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.session-add-btn:hover:not(:disabled) {
+  background: rgba(11, 143, 122, 0.25);
+  border-style: solid;
+}
+
+.session-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ダークモード時のセッションタブ */
+[data-theme="dark"] .session-tab {
+  background: rgba(30, 30, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .session-tab:hover {
+  background: rgba(40, 40, 40, 0.9);
+}
+
+[data-theme="dark"] .session-tab.active {
+  background: #14110d;
+}
+
+/* ターミナルコンテナ */
+.terminal-container {
+  position: relative;
+  border-radius: 0 16px 16px 16px;
   overflow: hidden;
   border: 1px solid rgba(15, 10, 5, 0.16);
   height: clamp(320px, 45vh, 560px);
   background: #14110d;
 }
 
+.terminal-shell {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  background: #14110d;
+}
+
+.terminal-shell.active {
+  display: block;
+}
+
+/* 後方互換性のため、旧スタイルも保持 */
 #terminal {
   height: 100%;
   width: 100%;

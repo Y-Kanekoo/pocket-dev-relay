@@ -1,12 +1,33 @@
 (() => {
+  // ==================================================
+  // 定数定義
+  // ==================================================
+
+  // 最大セッション数
+  const MAX_SESSIONS = 5;
+
+  // フォントサイズ設定
+  const FONT_SIZE_MIN = 10;
+  const FONT_SIZE_MAX = 24;
+  const FONT_SIZE_DEFAULT = 13;
+  const FONT_SIZE_KEY = 'pdr_terminal_font_size';
+
+  // テーマ設定
+  const THEME_STORAGE_KEY = 'pdr_theme';
+
+  // ==================================================
+  // 状態管理
+  // ==================================================
+
   const state = {
     mode: 'codex',
     ws: null,
-    sessionActive: false,
-    sessionLabel: '',
-    sessionCwd: '',
     config: null,
     token: localStorage.getItem('pdr_token') || '',
+    // 複数セッション管理
+    sessions: new Map(), // sessionId -> セッション情報
+    activeSessionId: null, // 現在アクティブなセッションID
+    nextSessionNum: 1, // 次のセッション番号
     // 自動再接続用の状態
     reconnect: {
       enabled: true,
@@ -18,6 +39,23 @@
       manualDisconnect: false
     }
   };
+
+  // セッション情報の構造
+  // {
+  //   id: string,           // ユニークID
+  //   num: number,          // セッション番号（表示用）
+  //   term: Terminal,       // xtermインスタンス
+  //   fitAddon: FitAddon,   // FitAddonインスタンス
+  //   element: HTMLElement, // ターミナル用のDOM要素
+  //   tabElement: HTMLElement, // タブ用のDOM要素
+  //   active: boolean,      // セッションがサーバー側でアクティブか
+  //   label: string,        // セッションラベル
+  //   cwd: string           // 作業ディレクトリ
+  // }
+
+  // ==================================================
+  // DOM要素の参照
+  // ==================================================
 
   const elements = {
     modeGrid: document.getElementById('mode-grid'),
@@ -47,15 +85,17 @@
     authInput: document.getElementById('auth-input'),
     authSave: document.getElementById('auth-save'),
     toastContainer: document.getElementById('toast-container'),
-    themeToggle: document.getElementById('theme-toggle')
+    themeToggle: document.getElementById('theme-toggle'),
+    // セッションタブ関連
+    sessionTabs: document.getElementById('session-tabs'),
+    sessionTabList: document.getElementById('session-tab-list'),
+    sessionAddBtn: document.getElementById('session-add-btn'),
+    terminalContainer: document.getElementById('terminal-container')
   };
 
   // ==================================================
   // テーマ管理
   // ==================================================
-
-  // LocalStorageキー
-  const THEME_STORAGE_KEY = 'pdr_theme';
 
   // 現在のテーマを取得（light / dark）
   function getCurrentTheme() {
@@ -118,6 +158,10 @@
   // 即座にテーマを適用（FOUC防止）
   initTheme();
 
+  // ==================================================
+  // トースト通知
+  // ==================================================
+
   // トースト通知を表示
   function showToast(message, type = 'info', duration = 3000) {
     const toast = document.createElement('div');
@@ -147,15 +191,10 @@
   }
 
   // ==================================================
-  // フォントサイズ管理（10px〜24px、デフォルト13px）
+  // フォントサイズ管理
   // ==================================================
 
-  const FONT_SIZE_MIN = 10;
-  const FONT_SIZE_MAX = 24;
-  const FONT_SIZE_DEFAULT = 13;
-  const FONT_SIZE_KEY = 'pdr_terminal_font_size';
-
-  // LocalStorageからフォントサイズを取得（無効な値の場合はデフォルト）
+  // LocalStorageからフォントサイズを取得
   function getStoredFontSize() {
     const stored = localStorage.getItem(FONT_SIZE_KEY);
     if (stored) {
@@ -174,23 +213,6 @@
 
   // 現在のフォントサイズ
   let currentFontSize = getStoredFontSize();
-
-  const term = new Terminal({
-    cursorBlink: true,
-    fontSize: currentFontSize,
-    fontFamily: '"JetBrains Mono", "Menlo", monospace',
-    theme: {
-      background: '#14110d',
-      foreground: '#f5efe6',
-      cursor: '#f0b94b',
-      selection: 'rgba(240, 185, 75, 0.3)'
-    }
-  });
-
-  const fitAddon = new FitAddon.FitAddon();
-  term.loadAddon(fitAddon);
-  term.open(document.getElementById('terminal'));
-  fitAddon.fit();
 
   // フォントサイズコントロールの要素取得
   const fontDecreaseBtn = document.getElementById('font-decrease');
@@ -211,7 +233,7 @@
     }
   }
 
-  // フォントサイズ変更
+  // フォントサイズ変更（全セッションに適用）
   function changeFontSize(delta) {
     const newSize = currentFontSize + delta;
     if (newSize < FONT_SIZE_MIN || newSize > FONT_SIZE_MAX) {
@@ -219,10 +241,14 @@
     }
     currentFontSize = newSize;
     saveFontSize(currentFontSize);
-    // ターミナルのフォントサイズを更新
-    term.options.fontSize = currentFontSize;
-    // ターミナルをrefitして行数・列数を再計算
-    fitAddon.fit();
+
+    // 全セッションのターミナルにフォントサイズを適用
+    state.sessions.forEach((session) => {
+      session.term.options.fontSize = currentFontSize;
+      session.fitAddon.fit();
+    });
+
+    // アクティブなセッションのリサイズを送信
     sendResize();
     updateFontSizeUI();
   }
@@ -238,15 +264,192 @@
   // 初期状態のUI更新
   updateFontSizeUI();
 
-  window.addEventListener('resize', () => {
-    fitAddon.fit();
-    sendResize();
-  });
+  // ==================================================
+  // 複数セッション管理
+  // ==================================================
 
-  term.onData((data) => {
-    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
-    state.ws.send(JSON.stringify({ type: 'input', data }));
-  });
+  // ユニークなセッションIDを生成
+  function generateSessionId() {
+    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // 新しいセッションを作成
+  function createSession() {
+    if (state.sessions.size >= MAX_SESSIONS) {
+      showToast(`最大${MAX_SESSIONS}セッションまでです`, 'warning');
+      return null;
+    }
+
+    const sessionId = generateSessionId();
+    const sessionNum = state.nextSessionNum++;
+
+    // ターミナル用のDOM要素を作成
+    const terminalElement = document.createElement('div');
+    terminalElement.className = 'terminal-shell';
+    terminalElement.id = `terminal-${sessionId}`;
+    elements.terminalContainer.appendChild(terminalElement);
+
+    // xtermインスタンスを作成
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: currentFontSize,
+      fontFamily: '"JetBrains Mono", "Menlo", monospace',
+      theme: {
+        background: '#14110d',
+        foreground: '#f5efe6',
+        cursor: '#f0b94b',
+        selection: 'rgba(240, 185, 75, 0.3)'
+      }
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalElement);
+    fitAddon.fit();
+
+    // 入力をWebSocketに送信（セッションIDを含める）
+    term.onData((data) => {
+      if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+      state.ws.send(JSON.stringify({
+        type: 'input',
+        sessionId: sessionId,
+        data
+      }));
+    });
+
+    // タブ要素を作成
+    const tabElement = document.createElement('div');
+    tabElement.className = 'session-tab';
+    tabElement.dataset.sessionId = sessionId;
+    tabElement.innerHTML = `
+      <span class="session-tab-label">セッション ${sessionNum}</span>
+      <button class="session-tab-close" title="セッションを閉じる">×</button>
+    `;
+
+    // タブクリックでセッション切り替え
+    tabElement.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('session-tab-close')) {
+        switchSession(sessionId);
+      }
+    });
+
+    // 閉じるボタン
+    const closeBtn = tabElement.querySelector('.session-tab-close');
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSession(sessionId);
+    });
+
+    elements.sessionTabList.appendChild(tabElement);
+
+    // セッション情報を保存
+    const session = {
+      id: sessionId,
+      num: sessionNum,
+      term,
+      fitAddon,
+      element: terminalElement,
+      tabElement,
+      active: false,
+      label: `セッション ${sessionNum}`,
+      cwd: '.'
+    };
+
+    state.sessions.set(sessionId, session);
+
+    // セッション追加ボタンの有効/無効を更新
+    updateAddButtonState();
+
+    return session;
+  }
+
+  // セッションを切り替え
+  function switchSession(sessionId) {
+    const session = state.sessions.get(sessionId);
+    if (!session) return;
+
+    // 以前のアクティブセッションを非アクティブに
+    if (state.activeSessionId) {
+      const prevSession = state.sessions.get(state.activeSessionId);
+      if (prevSession) {
+        prevSession.element.classList.remove('active');
+        prevSession.tabElement.classList.remove('active');
+      }
+    }
+
+    // 新しいセッションをアクティブに
+    session.element.classList.add('active');
+    session.tabElement.classList.add('active');
+    state.activeSessionId = sessionId;
+
+    // フィットとリサイズ
+    session.fitAddon.fit();
+    sendResize();
+
+    // セッションメタ情報を更新
+    updateSessionMeta();
+
+    // ボタン状態を更新
+    updateButtons();
+  }
+
+  // セッションを閉じる
+  function closeSession(sessionId) {
+    const session = state.sessions.get(sessionId);
+    if (!session) return;
+
+    // サーバー側のセッションを停止
+    if (session.active && state.ws && state.ws.readyState === WebSocket.OPEN) {
+      state.ws.send(JSON.stringify({
+        type: 'stop',
+        sessionId: sessionId
+      }));
+    }
+
+    // DOM要素を削除
+    session.element.remove();
+    session.tabElement.remove();
+
+    // ターミナルを破棄
+    session.term.dispose();
+
+    // セッションを削除
+    state.sessions.delete(sessionId);
+
+    // アクティブセッションが閉じられた場合、別のセッションに切り替え
+    if (state.activeSessionId === sessionId) {
+      state.activeSessionId = null;
+      const remainingSessions = Array.from(state.sessions.keys());
+      if (remainingSessions.length > 0) {
+        switchSession(remainingSessions[remainingSessions.length - 1]);
+      } else {
+        updateSessionMeta();
+        updateButtons();
+      }
+    }
+
+    // セッション追加ボタンの有効/無効を更新
+    updateAddButtonState();
+  }
+
+  // セッション追加ボタンの状態を更新
+  function updateAddButtonState() {
+    if (elements.sessionAddBtn) {
+      elements.sessionAddBtn.disabled = state.sessions.size >= MAX_SESSIONS;
+    }
+  }
+
+  // 初期セッションを作成
+  function initSessions() {
+    const session = createSession();
+    if (session) {
+      switchSession(session.id);
+    }
+  }
+
+  // ==================================================
+  // UI更新関数
+  // ==================================================
 
   function setStatus(text, color) {
     elements.statusText.textContent = text;
@@ -254,17 +457,31 @@
     elements.wsDot.style.boxShadow = `0 0 12px ${color}`;
   }
 
-  function setSessionMeta() {
-    if (!state.sessionActive) {
+  function updateSessionMeta() {
+    if (!state.activeSessionId) {
       elements.sessionMeta.textContent = 'セッション未開始';
       return;
     }
-    elements.sessionMeta.textContent = `${state.sessionLabel} - ${state.sessionCwd}`;
+
+    const session = state.sessions.get(state.activeSessionId);
+    if (!session) {
+      elements.sessionMeta.textContent = 'セッション未開始';
+      return;
+    }
+
+    if (session.active) {
+      elements.sessionMeta.textContent = `${session.label} - ${session.cwd}`;
+    } else {
+      elements.sessionMeta.textContent = `${session.label} - 未開始`;
+    }
   }
 
   function updateButtons() {
-    elements.startBtn.disabled = state.sessionActive;
-    elements.stopBtn.disabled = !state.sessionActive;
+    const session = state.activeSessionId ? state.sessions.get(state.activeSessionId) : null;
+    const sessionActive = session ? session.active : false;
+
+    elements.startBtn.disabled = sessionActive;
+    elements.stopBtn.disabled = !sessionActive;
   }
 
   function updateModeUI() {
@@ -287,6 +504,23 @@
       elements.fileStatus.textContent = '';
     }
   }
+
+  // タブのラベルを更新
+  function updateTabLabel(sessionId, label) {
+    const session = state.sessions.get(sessionId);
+    if (!session) return;
+
+    session.label = label;
+    const labelElement = session.tabElement.querySelector('.session-tab-label');
+    if (labelElement) {
+      labelElement.textContent = label;
+      labelElement.title = label;
+    }
+  }
+
+  // ==================================================
+  // URL・QR関連
+  // ==================================================
 
   function labelForUrl(entry) {
     if (entry.type === 'mdns') return `mDNS (${entry.host})`;
@@ -401,6 +635,10 @@
     }
   }
 
+  // ==================================================
+  // 認証関連
+  // ==================================================
+
   function authHeaders() {
     if (!state.token) return {};
     return { Authorization: `Bearer ${state.token}` };
@@ -450,6 +688,10 @@
     init();
   });
 
+  // ==================================================
+  // WebSocket管理
+  // ==================================================
+
   function getWsUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const token = state.token ? `?token=${encodeURIComponent(state.token)}` : '';
@@ -464,30 +706,65 @@
       return;
     }
 
+    // sessionIdが含まれている場合は該当セッションに振り分け
+    const sessionId = payload.sessionId;
+
     if (payload.type === 'data') {
-      term.write(payload.data);
+      // セッションIDがある場合は該当セッションに出力
+      if (sessionId) {
+        const session = state.sessions.get(sessionId);
+        if (session) {
+          session.term.write(payload.data);
+        }
+      } else {
+        // 後方互換性: sessionIdがない場合はアクティブセッションに出力
+        const activeSession = state.sessions.get(state.activeSessionId);
+        if (activeSession) {
+          activeSession.term.write(payload.data);
+        }
+      }
       return;
     }
 
     if (payload.type === 'started') {
-      state.sessionActive = true;
-      state.sessionLabel = payload.label || payload.mode;
-      state.sessionCwd = payload.cwd || '.';
-      setSessionMeta();
-      updateButtons();
-      sendResize();
+      // セッション開始通知
+      const targetSessionId = sessionId || state.activeSessionId;
+      const session = state.sessions.get(targetSessionId);
+      if (session) {
+        session.active = true;
+        session.label = payload.label || payload.mode || `セッション ${session.num}`;
+        session.cwd = payload.cwd || '.';
+        updateTabLabel(targetSessionId, session.label);
+        if (targetSessionId === state.activeSessionId) {
+          updateSessionMeta();
+          updateButtons();
+          sendResize();
+        }
+      }
       return;
     }
 
     if (payload.type === 'exit' || payload.type === 'stopped') {
-      state.sessionActive = false;
-      setSessionMeta();
-      updateButtons();
+      // セッション終了通知
+      const targetSessionId = sessionId || state.activeSessionId;
+      const session = state.sessions.get(targetSessionId);
+      if (session) {
+        session.active = false;
+        if (targetSessionId === state.activeSessionId) {
+          updateSessionMeta();
+          updateButtons();
+        }
+      }
       return;
     }
 
     if (payload.type === 'error') {
-      term.writeln(`\r\n[エラー] ${payload.message}`);
+      // エラー通知
+      const targetSessionId = sessionId || state.activeSessionId;
+      const session = state.sessions.get(targetSessionId);
+      if (session) {
+        session.term.writeln(`\r\n[エラー] ${payload.message}`);
+      }
     }
   }
 
@@ -568,7 +845,11 @@
 
       ws.addEventListener('close', (event) => {
         setStatus('未接続', '#d95a2b');
-        state.sessionActive = false;
+
+        // 全セッションを非アクティブに
+        state.sessions.forEach((session) => {
+          session.active = false;
+        });
         updateButtons();
 
         // 意図しない切断の場合は再接続を試みる
@@ -587,43 +868,94 @@
     });
   }
 
+  // リサイズ情報を送信（アクティブセッション）
   function sendResize() {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+    if (!state.activeSessionId) return;
+
+    const session = state.sessions.get(state.activeSessionId);
+    if (!session) return;
+
     state.ws.send(
       JSON.stringify({
         type: 'resize',
-        cols: term.cols,
-        rows: term.rows
+        sessionId: state.activeSessionId,
+        cols: session.term.cols,
+        rows: session.term.rows
       })
     );
   }
 
+  // ウィンドウリサイズ時の処理
+  window.addEventListener('resize', () => {
+    // アクティブセッションをフィット
+    if (state.activeSessionId) {
+      const session = state.sessions.get(state.activeSessionId);
+      if (session) {
+        session.fitAddon.fit();
+        sendResize();
+      }
+    }
+  });
+
+  // ==================================================
+  // セッション操作
+  // ==================================================
+
   async function startSession() {
+    if (!state.activeSessionId) {
+      showToast('セッションを選択してください', 'warning');
+      return;
+    }
+
+    const session = state.sessions.get(state.activeSessionId);
+    if (!session) return;
+
+    if (session.active) {
+      showToast('このセッションは既に開始しています', 'warning');
+      return;
+    }
+
     try {
       await connectWebSocket();
       state.ws.send(
         JSON.stringify({
           type: 'start',
+          sessionId: state.activeSessionId,
           mode: state.mode,
           cwd: elements.cwdInput.value.trim() || '.',
           command: elements.commandInput.value.trim()
         })
       );
     } catch (error) {
-      term.writeln('\r\n[エラー] サーバーに接続できません');
+      session.term.writeln('\r\n[エラー] サーバーに接続できません');
     }
   }
 
   function stopSession() {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
-    // 手動停止なので再接続しない
-    state.reconnect.manualDisconnect = true;
-    state.ws.send(JSON.stringify({ type: 'stop' }));
+    if (!state.activeSessionId) return;
+
+    const session = state.sessions.get(state.activeSessionId);
+    if (!session || !session.active) return;
+
+    state.ws.send(JSON.stringify({
+      type: 'stop',
+      sessionId: state.activeSessionId
+    }));
   }
 
   function clearTerminal() {
-    term.clear();
+    if (!state.activeSessionId) return;
+    const session = state.sessions.get(state.activeSessionId);
+    if (session) {
+      session.term.clear();
+    }
   }
+
+  // ==================================================
+  // イベントリスナー
+  // ==================================================
 
   elements.modeGrid.addEventListener('click', (event) => {
     const button = event.target.closest('[data-mode]');
@@ -635,6 +967,20 @@
   elements.startBtn.addEventListener('click', startSession);
   elements.stopBtn.addEventListener('click', stopSession);
   elements.clearBtn.addEventListener('click', clearTerminal);
+
+  // セッション追加ボタン
+  if (elements.sessionAddBtn) {
+    elements.sessionAddBtn.addEventListener('click', () => {
+      const session = createSession();
+      if (session) {
+        switchSession(session.id);
+      }
+    });
+  }
+
+  // ==================================================
+  // ファイル管理
+  // ==================================================
 
   const currentFile = {
     path: null
@@ -758,6 +1104,7 @@
     }
   });
 
+  // タブ切り替え（ターミナル/ファイル）
   elements.tabs.addEventListener('click', (event) => {
     const button = event.target.closest('[data-tab]');
     if (!button) return;
@@ -772,9 +1119,19 @@
       elements.filesPanel.classList.add('active');
       elements.terminalPanel.classList.remove('active');
     }
-    fitAddon.fit();
-    sendResize();
+    // アクティブセッションをフィット
+    if (state.activeSessionId) {
+      const session = state.sessions.get(state.activeSessionId);
+      if (session) {
+        session.fitAddon.fit();
+        sendResize();
+      }
+    }
   });
+
+  // ==================================================
+  // 初期化
+  // ==================================================
 
   async function init() {
     try {
@@ -783,6 +1140,9 @@
       await loadAddresses();
       await loadFiles('.');
       elements.terminalPanel.classList.add('active');
+
+      // 初期セッションを作成
+      initSessions();
     } catch (error) {
       // Auth prompts are handled elsewhere.
     }
