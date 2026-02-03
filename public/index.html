@@ -25,9 +25,15 @@
           <p>スマホからCodex/Claude CLIを操作できる開発コンソール。</p>
         </div>
       </div>
-      <div class="status" id="status-chip">
-        <span class="status-dot" id="ws-dot"></span>
-        <span id="status-text">未接続</span>
+      <div class="header-actions">
+        <button class="theme-toggle" id="theme-toggle" aria-label="テーマ切替">
+          <span class="icon-sun">☀</span>
+          <span class="icon-moon">🌙</span>
+        </button>
+        <div class="status" id="status-chip">
+          <span class="status-dot" id="ws-dot"></span>
+          <span id="status-text">未接続</span>
+        </div>
       </div>
     </header>
 
@@ -103,8 +109,17 @@
       <div class="panels">
         <section class="panel terminal" id="terminal-panel">
           <div class="panel-header">
-            <h2>ライブターミナル</h2>
-            <p id="session-meta">セッション未開始</p>
+            <div class="panel-header-row">
+              <div>
+                <h2>ライブターミナル</h2>
+                <p id="session-meta">セッション未開始</p>
+              </div>
+              <div class="font-size-controls">
+                <button class="font-btn" id="font-decrease" title="フォントサイズを縮小">−</button>
+                <span class="font-size-label" id="font-size-label">13px</span>
+                <button class="font-btn" id="font-increase" title="フォントサイズを拡大">+</button>
+              </div>
+            </div>
           </div>
           <div class="terminal-shell" id="terminal"></div>
           <div class="hint">ターミナルをタップするとキーボードが出ます。</div>

@@ -46,8 +46,77 @@
     authOverlay: document.getElementById('auth-overlay'),
     authInput: document.getElementById('auth-input'),
     authSave: document.getElementById('auth-save'),
-    toastContainer: document.getElementById('toast-container')
+    toastContainer: document.getElementById('toast-container'),
+    themeToggle: document.getElementById('theme-toggle')
   };
+
+  // ==================================================
+  // テーマ管理
+  // ==================================================
+
+  // LocalStorageキー
+  const THEME_STORAGE_KEY = 'pdr_theme';
+
+  // 現在のテーマを取得（light / dark）
+  function getCurrentTheme() {
+    // LocalStorageに保存された設定を優先
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
+    }
+    // システム設定に追従
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  // テーマを適用
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    // meta theme-color も更新（PWA対応）
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', theme === 'dark' ? '#1a1a1a' : '#f4efe8');
+    }
+  }
+
+  // テーマを切り替え
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    // 手動切替なのでLocalStorageに保存
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+  }
+
+  // システム設定の変更を監視
+  function watchSystemTheme() {
+    if (!window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e) => {
+      // LocalStorageに保存された設定がなければシステム設定に追従
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (!saved) {
+        applyTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+  }
+
+  // テーマ初期化
+  function initTheme() {
+    const theme = getCurrentTheme();
+    applyTheme(theme);
+    watchSystemTheme();
+
+    // テーマ切替ボタンのイベントリスナー
+    if (elements.themeToggle) {
+      elements.themeToggle.addEventListener('click', toggleTheme);
+    }
+  }
+
+  // 即座にテーマを適用（FOUC防止）
+  initTheme();
 
   // トースト通知を表示
   function showToast(message, type = 'info', duration = 3000) {
@@ -77,9 +146,38 @@
     return toast;
   }
 
+  // ==================================================
+  // フォントサイズ管理（10px〜24px、デフォルト13px）
+  // ==================================================
+
+  const FONT_SIZE_MIN = 10;
+  const FONT_SIZE_MAX = 24;
+  const FONT_SIZE_DEFAULT = 13;
+  const FONT_SIZE_KEY = 'pdr_terminal_font_size';
+
+  // LocalStorageからフォントサイズを取得（無効な値の場合はデフォルト）
+  function getStoredFontSize() {
+    const stored = localStorage.getItem(FONT_SIZE_KEY);
+    if (stored) {
+      const size = parseInt(stored, 10);
+      if (!isNaN(size) && size >= FONT_SIZE_MIN && size <= FONT_SIZE_MAX) {
+        return size;
+      }
+    }
+    return FONT_SIZE_DEFAULT;
+  }
+
+  // フォントサイズをLocalStorageに保存
+  function saveFontSize(size) {
+    localStorage.setItem(FONT_SIZE_KEY, String(size));
+  }
+
+  // 現在のフォントサイズ
+  let currentFontSize = getStoredFontSize();
+
   const term = new Terminal({
     cursorBlink: true,
-    fontSize: 13,
+    fontSize: currentFontSize,
     fontFamily: '"JetBrains Mono", "Menlo", monospace',
     theme: {
       background: '#14110d',
@@ -93,6 +191,52 @@
   term.loadAddon(fitAddon);
   term.open(document.getElementById('terminal'));
   fitAddon.fit();
+
+  // フォントサイズコントロールの要素取得
+  const fontDecreaseBtn = document.getElementById('font-decrease');
+  const fontIncreaseBtn = document.getElementById('font-increase');
+  const fontSizeLabel = document.getElementById('font-size-label');
+
+  // フォントサイズのUI更新
+  function updateFontSizeUI() {
+    if (fontSizeLabel) {
+      fontSizeLabel.textContent = `${currentFontSize}px`;
+    }
+    // ボタンの有効/無効を更新
+    if (fontDecreaseBtn) {
+      fontDecreaseBtn.disabled = currentFontSize <= FONT_SIZE_MIN;
+    }
+    if (fontIncreaseBtn) {
+      fontIncreaseBtn.disabled = currentFontSize >= FONT_SIZE_MAX;
+    }
+  }
+
+  // フォントサイズ変更
+  function changeFontSize(delta) {
+    const newSize = currentFontSize + delta;
+    if (newSize < FONT_SIZE_MIN || newSize > FONT_SIZE_MAX) {
+      return;
+    }
+    currentFontSize = newSize;
+    saveFontSize(currentFontSize);
+    // ターミナルのフォントサイズを更新
+    term.options.fontSize = currentFontSize;
+    // ターミナルをrefitして行数・列数を再計算
+    fitAddon.fit();
+    sendResize();
+    updateFontSizeUI();
+  }
+
+  // フォントサイズボタンのイベントリスナー
+  if (fontDecreaseBtn) {
+    fontDecreaseBtn.addEventListener('click', () => changeFontSize(-1));
+  }
+  if (fontIncreaseBtn) {
+    fontIncreaseBtn.addEventListener('click', () => changeFontSize(1));
+  }
+
+  // 初期状態のUI更新
+  updateFontSizeUI();
 
   window.addEventListener('resize', () => {
     fitAddon.fit();
