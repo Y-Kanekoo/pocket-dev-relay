@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4efe8" />
+    <title>Pocket Dev Relay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/vendor/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <header class="top">
+      <div class="brand">
+        <div class="brand-mark">PDR</div>
+        <div>
+          <h1>Pocket Dev Relay</h1>
+          <p>スマホからCodex/Claude CLIを操作できる開発コンソール。</p>
+        </div>
+      </div>
+      <div class="status" id="status-chip">
+        <span class="status-dot" id="ws-dot"></span>
+        <span id="status-text">未接続</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="panel controls">
+        <div class="panel-header">
+          <h2>セッション開始</h2>
+          <p>モードを選んでライブターミナルを起動します。</p>
+        </div>
+        <div class="mode-grid" id="mode-grid">
+          <button class="mode-card" data-mode="codex">
+            <span>Codex CLI</span>
+            <small>タスク駆動で実装・レビュー・修正。</small>
+          </button>
+          <button class="mode-card" data-mode="claude">
+            <span>Claude Code</span>
+            <small>深いリファクタとコンテキスト分析。</small>
+          </button>
+          <button class="mode-card" data-mode="shell">
+            <span>Shell</span>
+            <small>手動コマンド用の標準シェル。</small>
+          </button>
+          <button class="mode-card" data-mode="custom" id="custom-mode">
+            <span>Custom</span>
+            <small>任意のCLIを起動します。</small>
+          </button>
+        </div>
+        <div class="input-row">
+          <label for="cwd-input">作業ディレクトリ</label>
+          <input id="cwd-input" type="text" value="." placeholder="." />
+        </div>
+        <div class="input-row" id="custom-command-row">
+          <label for="command-input">カスタムコマンド</label>
+          <input id="command-input" type="text" placeholder="tool --flag value" />
+        </div>
+        <div class="control-actions">
+          <button class="primary" id="start-btn">開始</button>
+          <button class="ghost" id="stop-btn" disabled>停止</button>
+          <button class="ghost" id="clear-btn">クリア</button>
+        </div>
+      </section>
+
+      <section class="panel connect" id="connect-panel">
+        <div class="panel-header">
+          <h2>接続</h2>
+          <p>スマホで開くURLをコピー/QRで共有できます。</p>
+        </div>
+        <div class="connect-grid">
+          <div class="connect-urls">
+            <div class="url-list" id="url-list"></div>
+            <div class="connect-note">
+              <p>同じWi-Fiにいることを確認してください。</p>
+              <p>
+                Safariなら「共有」→「ホーム画面に追加」でアプリのように使えます。
+              </p>
+            </div>
+          </div>
+          <div class="connect-qr">
+            <div class="qr-card">
+              <div class="qr-title">QRで開く</div>
+              <img id="qr-image" alt="QR code" />
+              <div class="qr-label" id="qr-label"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="terminal">ターミナル</button>
+        <button class="tab" data-tab="files">ファイル</button>
+      </div>
+
+      <div class="panels">
+        <section class="panel terminal" id="terminal-panel">
+          <div class="panel-header">
+            <h2>ライブターミナル</h2>
+            <p id="session-meta">セッション未開始</p>
+          </div>
+          <div class="terminal-shell" id="terminal"></div>
+          <div class="hint">ターミナルをタップするとキーボードが出ます。</div>
+        </section>
+
+        <section class="panel files" id="files-panel">
+          <div class="panel-header">
+            <h2>ワークスペース</h2>
+            <p id="file-path">.</p>
+          </div>
+          <div class="file-list" id="file-list"></div>
+          <div class="file-editor">
+            <div class="editor-header">
+              <span id="file-name">ファイルを選ぶと内容を表示します。</span>
+              <button class="ghost" id="save-file" disabled>保存</button>
+            </div>
+            <textarea id="file-content" spellcheck="false" readonly></textarea>
+            <div class="editor-status" id="file-status"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div>
+        ローカルLAN上で動作します。安全のため <code>.env</code> に
+        <strong>AUTH_TOKEN</strong> を設定してください。
+      </div>
+    </footer>
+
+    <div class="overlay hidden" id="auth-overlay">
+      <div class="auth-card">
+        <h3>アクセストークンが必要です</h3>
+        <p>サーバーの環境変数で設定したトークンを入力してください。</p>
+        <input id="auth-input" type="password" placeholder="トークン" />
+        <button class="primary" id="auth-save">認証</button>
+      </div>
+    </div>
+
+    <script src="/vendor/xterm/lib/xterm.js"></script>
+    <script src="/vendor/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

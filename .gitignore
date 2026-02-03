@@ -1,0 +1,23 @@
+# 依存関係
+node_modules/
+
+# 環境設定（機密情報を含む可能性）
+.env
+.env.local
+
+# ログ
+*.log
+npm-debug.log*
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# エディタ設定
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude設定（ローカル専用）
+.claude/

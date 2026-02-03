@@ -1,0 +1,15 @@
+{
+  "name": "Pocket Dev Relay",
+  "short_name": "PDR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4efe8",
+  "theme_color": "#0b8f7a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
