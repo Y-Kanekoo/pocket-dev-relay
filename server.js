@@ -16,8 +16,36 @@ const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 const ALLOW_CUSTOM_COMMANDS = process.env.ALLOW_CUSTOM_COMMANDS === 'true';
 const ALLOW_FILE_WRITE = process.env.ALLOW_FILE_WRITE === 'true';
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '1048576', 10);
+const ENABLE_SESSION_LOGS = process.env.ENABLE_SESSION_LOGS === 'true';
+const LOG_DIR = path.resolve(process.env.LOG_DIR || path.join(ROOT_DIR, 'logs'));
 
 const SHELL_CMD = process.env.SHELL_CMD || process.env.SHELL || 'zsh';
+
+// セッションログ用のメタデータを保存
+const sessionLogs = new Map();
+
+// ログディレクトリの初期化
+async function initLogDir() {
+  if (!ENABLE_SESSION_LOGS) return;
+  try {
+    await fs.mkdir(LOG_DIR, { recursive: true });
+  } catch (error) {
+    console.error('ログディレクトリの作成に失敗しました:', error.message);
+  }
+}
+
+// ログファイル名を生成
+function generateLogFileName(sessionId, mode) {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  return `session-${timestamp}-${mode}-${sessionId}.log`;
+}
+
+// ANSIエスケープシーケンスを除去
+function stripAnsi(str) {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
+}
 
 function parseArgs(input) {
   if (!input) return [];
@@ -196,7 +224,8 @@ app.get('/api/config', authMiddleware, (req, res) => {
     allowCustomCommands: ALLOW_CUSTOM_COMMANDS,
     fileWriteEnabled: ALLOW_FILE_WRITE,
     authEnabled: Boolean(AUTH_TOKEN),
-    maxFileSize: MAX_FILE_SIZE
+    maxFileSize: MAX_FILE_SIZE,
+    sessionLogsEnabled: ENABLE_SESSION_LOGS
   });
 });
 
@@ -303,6 +332,73 @@ app.post('/api/file', authMiddleware, async (req, res) => {
   }
 });
 
+// セッションログ一覧を取得
+app.get('/api/logs', authMiddleware, async (req, res) => {
+  if (!ENABLE_SESSION_LOGS) {
+    return res.status(403).json({ error: 'session-logs-disabled' });
+  }
+
+  try {
+    // ディスク上のログファイルを取得
+    const files = await fs.readdir(LOG_DIR).catch(() => []);
+    const logFiles = files
+      .filter((f) => f.startsWith('session-') && f.endsWith('.log'))
+      .sort()
+      .reverse();
+
+    // メタデータとマージ
+    const logs = await Promise.all(
+      logFiles.map(async (fileName) => {
+        // メモリ上のメタデータを検索
+        for (const [, meta] of sessionLogs) {
+          if (meta.fileName === fileName) {
+            return meta;
+          }
+        }
+        // メタデータがない場合はファイル情報から生成
+        const filePath = path.join(LOG_DIR, fileName);
+        const stats = await fs.stat(filePath).catch(() => null);
+        return {
+          fileName,
+          startedAt: stats ? stats.birthtime.toISOString() : null,
+          size: stats ? stats.size : 0
+        };
+      })
+    );
+
+    res.json({ logs });
+  } catch (error) {
+    res.status(500).json({ error: 'failed-to-list-logs' });
+  }
+});
+
+// セッションログ内容を取得
+app.get('/api/log/:fileName', authMiddleware, async (req, res) => {
+  if (!ENABLE_SESSION_LOGS) {
+    return res.status(403).json({ error: 'session-logs-disabled' });
+  }
+
+  try {
+    const fileName = req.params.fileName;
+    // ディレクトリトラバーサル防止
+    if (fileName.includes('/') || fileName.includes('..')) {
+      return res.status(400).json({ error: 'invalid-filename' });
+    }
+    if (!fileName.startsWith('session-') || !fileName.endsWith('.log')) {
+      return res.status(400).json({ error: 'invalid-filename' });
+    }
+
+    const logPath = path.join(LOG_DIR, fileName);
+    const content = await fs.readFile(logPath, 'utf8');
+    res.json({ fileName, content });
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return res.status(404).json({ error: 'log-not-found' });
+    }
+    res.status(500).json({ error: 'failed-to-read-log' });
+  }
+});
+
 const sessions = new Map();
 
 function send(ws, payload) {
@@ -347,7 +443,7 @@ function spawnForMode(mode, customCommand) {
   return { command: preset.command, args: preset.args, label: preset.label };
 }
 
-function startSession({ mode, cwd, customCommand }, ws) {
+async function startSession({ mode, cwd, customCommand }, ws) {
   const spawnConfig = spawnForMode(mode, customCommand);
   const sessionId = nanoid(10);
   const startDir = resolveCwd(cwd || '.');
@@ -360,23 +456,68 @@ function startSession({ mode, cwd, customCommand }, ws) {
     env: { ...process.env, TERM: 'xterm-256color' }
   });
 
+  // ログファイルのセットアップ
+  let logStream = null;
+  let logFileName = null;
+  if (ENABLE_SESSION_LOGS) {
+    logFileName = generateLogFileName(sessionId, mode);
+    const logPath = path.join(LOG_DIR, logFileName);
+    try {
+      const { createWriteStream } = await import('fs');
+      logStream = createWriteStream(logPath, { flags: 'a' });
+      // ログヘッダーを書き込み
+      const header = `=== セッション開始 ===\n日時: ${new Date().toISOString()}\nモード: ${spawnConfig.label}\nディレクトリ: ${startDir}\nコマンド: ${spawnConfig.command} ${spawnConfig.args.join(' ')}\n${'='.repeat(40)}\n\n`;
+      logStream.write(header);
+      // メタデータを保存
+      sessionLogs.set(sessionId, {
+        id: sessionId,
+        fileName: logFileName,
+        mode,
+        label: spawnConfig.label,
+        cwd: path.relative(ROOT_DIR, startDir) || '.',
+        startedAt: new Date().toISOString(),
+        endedAt: null
+      });
+    } catch (error) {
+      console.error('ログファイルの作成に失敗しました:', error.message);
+    }
+  }
+
   const session = {
     id: sessionId,
     mode,
     cwd: path.relative(ROOT_DIR, startDir) || '.',
     label: spawnConfig.label,
     pty: ptyProcess,
-    ws
+    ws,
+    logStream,
+    logFileName
   };
 
   sessions.set(sessionId, session);
 
   ptyProcess.onData((data) => {
     send(ws, { type: 'data', data });
+    // ログに書き込み（ANSIコードを除去）
+    if (logStream) {
+      logStream.write(stripAnsi(data));
+    }
   });
 
   ptyProcess.onExit(({ exitCode, signal }) => {
     send(ws, { type: 'exit', exitCode, signal });
+    // ログを閉じる
+    if (logStream) {
+      const footer = `\n${'='.repeat(40)}\n=== セッション終了 ===\n日時: ${new Date().toISOString()}\n終了コード: ${exitCode}\nシグナル: ${signal || 'なし'}\n`;
+      logStream.write(footer);
+      logStream.end();
+      // メタデータを更新
+      const logMeta = sessionLogs.get(sessionId);
+      if (logMeta) {
+        logMeta.endedAt = new Date().toISOString();
+        logMeta.exitCode = exitCode;
+      }
+    }
     sessions.delete(sessionId);
   });
 
@@ -390,6 +531,18 @@ function stopSession(sessionId, reason) {
     session.pty.kill();
   } catch (error) {
     // Ignore kill errors.
+  }
+  // ログストリームを閉じる
+  if (session.logStream) {
+    const footer = `\n${'='.repeat(40)}\n=== セッション停止 ===\n日時: ${new Date().toISOString()}\n理由: ${reason}\n`;
+    session.logStream.write(footer);
+    session.logStream.end();
+    // メタデータを更新
+    const logMeta = sessionLogs.get(sessionId);
+    if (logMeta) {
+      logMeta.endedAt = new Date().toISOString();
+      logMeta.stopReason = reason;
+    }
   }
   sessions.delete(sessionId);
   if (session.ws) {
@@ -468,7 +621,13 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
+  // ログディレクトリを初期化
+  if (ENABLE_SESSION_LOGS) {
+    await initLogDir();
+    console.log(`セッションログ: 有効 (${LOG_DIR})`);
+  }
+
   console.log('Pocket Dev Relay is running.');
   console.log(`Local: http://localhost:${PORT}`);
   buildAccessUrls()

@@ -21,3 +21,6 @@ Thumbs.db
 
 # Claude設定（ローカル専用）
 .claude/
+
+# セッションログ
+logs/
