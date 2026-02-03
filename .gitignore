@@ -24,3 +24,6 @@ Thumbs.db
 
 # セッションログ
 logs/
+
+# TypeScriptビルド生成物
+dist/

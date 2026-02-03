@@ -3,16 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "description": "Mobile-first local web app to run Codex or Claude CLI on your workstation.",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js",
-    "start:awake": "caffeinate -dimsu node server.js",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --external:node-pty",
+    "build:client": "esbuild src/client/app.ts --bundle --minify --outfile=public/app.js",
+    "dev": "npm run build && node dist/server.js",
+    "start": "node dist/server.js",
+    "start:legacy": "node server.js",
+    "start:awake": "caffeinate -dimsu node dist/server.js",
+    "watch": "concurrently \"npm run watch:server\" \"npm run watch:client\"",
+    "watch:server": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --external:node-pty --watch",
+    "watch:client": "esbuild src/client/app.ts --bundle --outfile=public/app.js --watch",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "concurrently": "^9.0.0",
+    "esbuild": "^0.24.0",
     "eslint": "^8.57.0",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "typescript": "^5.6.0"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
