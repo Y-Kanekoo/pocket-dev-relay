@@ -6,7 +6,17 @@
     sessionLabel: '',
     sessionCwd: '',
     config: null,
-    token: localStorage.getItem('pdr_token') || ''
+    token: localStorage.getItem('pdr_token') || '',
+    // 自動再接続用の状態
+    reconnect: {
+      enabled: true,
+      attempts: 0,
+      maxAttempts: 10,
+      baseDelay: 1000,
+      maxDelay: 30000,
+      timer: null,
+      manualDisconnect: false
+    }
   };
 
   const elements = {
@@ -35,8 +45,37 @@
     saveFile: document.getElementById('save-file'),
     authOverlay: document.getElementById('auth-overlay'),
     authInput: document.getElementById('auth-input'),
-    authSave: document.getElementById('auth-save')
+    authSave: document.getElementById('auth-save'),
+    toastContainer: document.getElementById('toast-container')
   };
+
+  // トースト通知を表示
+  function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    const icons = {
+      success: '✓',
+      error: '✕',
+      warning: '!',
+      info: 'i'
+    };
+
+    toast.innerHTML = `
+      <span class="toast-icon">${icons[type] || icons.info}</span>
+      <span class="toast-message">${message}</span>
+    `;
+
+    elements.toastContainer.appendChild(toast);
+
+    // 自動で消える
+    setTimeout(() => {
+      toast.classList.add('toast-out');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+
+    return toast;
+  }
 
   const term = new Terminal({
     cursorBlink: true,
@@ -308,9 +347,63 @@
     }
   }
 
+  // 再接続の遅延時間を計算（指数バックオフ）
+  function getReconnectDelay() {
+    const delay = Math.min(
+      state.reconnect.baseDelay * Math.pow(2, state.reconnect.attempts),
+      state.reconnect.maxDelay
+    );
+    return delay;
+  }
+
+  // 再接続をスケジュール
+  function scheduleReconnect() {
+    if (!state.reconnect.enabled || state.reconnect.manualDisconnect) {
+      return;
+    }
+
+    if (state.reconnect.attempts >= state.reconnect.maxAttempts) {
+      showToast('再接続の上限に達しました。手動で再接続してください。', 'error', 5000);
+      return;
+    }
+
+    const delay = getReconnectDelay();
+    state.reconnect.attempts += 1;
+
+    showToast(`再接続中... (${state.reconnect.attempts}/${state.reconnect.maxAttempts})`, 'warning', delay);
+    setStatus(`再接続中 (${Math.round(delay / 1000)}秒後)`, '#f0b94b');
+
+    state.reconnect.timer = setTimeout(() => {
+      connectWebSocket().catch(() => {
+        // エラーはcloseイベントで処理される
+      });
+    }, delay);
+  }
+
+  // 再接続をキャンセル
+  function cancelReconnect() {
+    if (state.reconnect.timer) {
+      clearTimeout(state.reconnect.timer);
+      state.reconnect.timer = null;
+    }
+  }
+
+  // 再接続状態をリセット
+  function resetReconnect() {
+    cancelReconnect();
+    state.reconnect.attempts = 0;
+    state.reconnect.manualDisconnect = false;
+  }
+
   function connectWebSocket() {
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
       return Promise.resolve();
+    }
+
+    // 既存の接続があれば閉じる
+    if (state.ws) {
+      state.reconnect.manualDisconnect = true;
+      state.ws.close();
     }
 
     return new Promise((resolve, reject) => {
@@ -319,15 +412,28 @@
 
       ws.addEventListener('open', () => {
         setStatus('接続済み', '#0b8f7a');
+        // 再接続成功時
+        if (state.reconnect.attempts > 0) {
+          showToast('接続しました', 'success');
+        }
+        resetReconnect();
         resolve();
       });
 
       ws.addEventListener('message', handleWsMessage);
 
-      ws.addEventListener('close', () => {
+      ws.addEventListener('close', (event) => {
         setStatus('未接続', '#d95a2b');
         state.sessionActive = false;
         updateButtons();
+
+        // 意図しない切断の場合は再接続を試みる
+        if (!state.reconnect.manualDisconnect && state.reconnect.enabled) {
+          if (state.reconnect.attempts === 0) {
+            showToast('接続が切れました', 'error');
+          }
+          scheduleReconnect();
+        }
       });
 
       ws.addEventListener('error', () => {
@@ -366,6 +472,8 @@
 
   function stopSession() {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+    // 手動停止なので再接続しない
+    state.reconnect.manualDisconnect = true;
     state.ws.send(JSON.stringify({ type: 'stop' }));
   }
 
