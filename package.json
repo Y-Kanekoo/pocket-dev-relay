@@ -17,17 +17,22 @@
     "watch:client": "esbuild src/client/app.ts --bundle --outfile=public/app.js --watch",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.5.0",
+    "@vitest/ui": "^4.0.18",
     "concurrently": "^9.0.0",
     "esbuild": "^0.24.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
