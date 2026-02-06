@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # node-ptyのビルドに必要なネイティブ依存
+      - name: ネイティブビルドツールをインストール
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      - name: 型チェック
+        run: npm run typecheck
+
+      - name: テスト実行
+        run: npm run test:run
+
+      - name: ビルド
+        run: npm run build
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # node-ptyのビルドに必要なネイティブ依存
+      - name: ネイティブビルドツールをインストール
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      - name: ESLint
+        run: npx eslint . --ext .ts,.js
+
+      - name: Prettier（フォーマットチェック）
+        run: npx prettier --check "src/**/*.ts"
