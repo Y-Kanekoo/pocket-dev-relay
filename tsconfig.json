@@ -24,6 +24,7 @@
   },
   "include": [
     "src/server.ts",
+    "src/cli.ts",
     "src/server/**/*",
     "src/types/**/*"
   ],

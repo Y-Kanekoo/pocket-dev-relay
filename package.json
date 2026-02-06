@@ -1,13 +1,22 @@
 {
   "name": "pocket-dev-relay",
   "version": "0.1.0",
-  "private": true,
-  "description": "Mobile-first local web app to run Codex or Claude CLI on your workstation.",
+  "description": "スマホからPCのターミナルにアクセスするリモート開発ツール",
   "main": "dist/server.js",
+  "bin": {
+    "pocket-dev-relay": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "public/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "npm run build:server && npm run build:client",
+    "build": "npm run build:server && npm run build:client && npm run build:cli",
     "build:server": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --external:node-pty",
     "build:client": "esbuild src/client/app.ts --bundle --minify --outfile=public/app.js",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --outfile=dist/cli.js --external:node-pty --banner:js='#!/usr/bin/env node'",
     "dev": "npm run build && node dist/server.js",
     "start": "node dist/server.js",
     "start:legacy": "node server.js",
@@ -22,6 +31,14 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
   },
+  "keywords": [
+    "terminal",
+    "remote",
+    "mobile",
+    "development",
+    "websocket",
+    "pty"
+  ],
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
@@ -33,6 +50,14 @@
     "prettier": "^3.2.5",
     "typescript": "^5.6.0",
     "vitest": "^4.0.18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Y-Kanekoo/pocket-dev-relay.git"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
