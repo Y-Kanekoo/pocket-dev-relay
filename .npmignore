@@ -1,0 +1,36 @@
+# ソースコード（dist/のみ公開）
+src/
+tests/
+
+# CI/CD・GitHub
+.github/
+
+# ドキュメント（READMEは除く）
+docs/
+
+# 環境変数・機密情報
+.env
+.env.*
+!.env.example
+
+# リンター・フォーマッター設定
+.eslintrc.json
+.eslintignore
+.prettierrc
+
+# TypeScript設定
+tsconfig*.json
+
+# テスト設定
+vitest.config.ts
+
+# Docker関連
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# レガシーサーバーファイル
+server.js
+
+# Claude設定
+.claude/
