@@ -7,7 +7,7 @@
  */
 
 // キャッシュバージョン（更新時にインクリメント）
-const CACHE_VERSION = 'pdr-cache-v1';
+const CACHE_VERSION = 'pdr-cache-v2';
 
 // キャッシュ対象の静的アセット
 const STATIC_ASSETS = [
@@ -17,9 +17,9 @@ const STATIC_ASSETS = [
   '/app.js',
   '/icon.svg',
   '/manifest.json',
-  '/vendor/xterm/css/xterm.css',
-  '/vendor/xterm/lib/xterm.js',
-  '/vendor/xterm-addon-fit/lib/xterm-addon-fit.js'
+  '/vendor/@xterm/xterm/css/xterm.css',
+  '/vendor/@xterm/xterm/lib/xterm.js',
+  '/vendor/@xterm/addon-fit/lib/addon-fit.js'
 ];
 
 // Google Fontsのキャッシュ名
