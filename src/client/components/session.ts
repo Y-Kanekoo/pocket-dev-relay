@@ -8,6 +8,8 @@ import { sessionStore } from '../state/sessionStore.js';
 import { showToast } from './toast.js';
 import { updateTabLabel, fitActiveSession } from './terminal.js';
 import { connectWebSocket, sendMessage, sendResize } from '../services/websocket.js';
+import { showSSHDialog } from './sshDialog.js';
+import { showNotification } from '../services/notification.js';
 
 // ==================================================
 // DOM要素の参照
@@ -145,12 +147,20 @@ export async function startSession(): Promise<void> {
     return;
   }
 
+  const mode = sessionStore.getMode();
+
+  // SSHモードの場合はダイアログを表示
+  if (mode === 'ssh') {
+    showSSHDialog();
+    return;
+  }
+
   try {
     await connectWebSocket();
     const message: ClientMessage = {
       type: 'start',
       sessionId: activeSessionId,
-      mode: sessionStore.getMode(),
+      mode,
       cwd: elements.cwdInput?.value.trim() || '.',
       command: elements.commandInput?.value.trim(),
     };
@@ -238,6 +248,12 @@ export function handleServerMessage(payload: ServerMessage): void {
         }
       }
     }
+    return;
+  }
+
+  if (payload.type === 'notification') {
+    // ブラウザ通知（エラー検知・プロセス終了）
+    showNotification(payload.title, payload.body, payload.level);
     return;
   }
 

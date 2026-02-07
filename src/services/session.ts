@@ -10,10 +10,14 @@ import WebSocket from 'ws';
 import * as pty from 'node-pty';
 import { nanoid } from 'nanoid';
 
+import { Client as SSHClient, ClientChannel } from 'ssh2';
+
 import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
 import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR } from '../config.js';
 import { resolvePath } from '../utils/path.js';
 import { spawnForMode } from './pty.js';
+import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
+import { detectError, sendErrorNotification, sendExitNotification, clearNotificationState } from './notifier.js';
 
 // ============================================================
 // 型定義（サーバー内部用）
@@ -30,7 +34,12 @@ export interface SessionInternal {
   mode: SessionMode;
   cwd: string;
   label: string;
-  pty: pty.IPty;
+  /** PTYプロセス（PTYモード時） */
+  pty: pty.IPty | null;
+  /** SSHクライアント（SSHモード時） */
+  sshClient: SSHClient | null;
+  /** SSHチャンネル（SSHモード時） */
+  sshChannel: ClientChannel | null;
   ws: WebSocket;
   logStream: fsSync.WriteStream | null;
   logFileName: string | null;
@@ -167,6 +176,8 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
     cwd: path.relative(ROOT_DIR, startDir) || '.',
     label: spawnConfig.label,
     pty: ptyProcess,
+    sshClient: null,
+    sshChannel: null,
     ws,
     logStream,
     logFileName,
@@ -180,10 +191,19 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
     if (logStream) {
       logStream.write(stripAnsi(data));
     }
+    // エラーパターン検知 → 通知送信
+    const errorLine = detectError(data);
+    if (errorLine) {
+      sendErrorNotification(ws, sessionId, errorLine);
+    }
   });
 
   ptyProcess.onExit(({ exitCode, signal }) => {
     send(ws, { type: 'exit', exitCode, signal: signal?.toString() });
+    // プロセス終了通知を送信
+    sendExitNotification(ws, sessionId, exitCode, signal, spawnConfig.label);
+    // 通知状態をクリア
+    clearNotificationState(sessionId);
     // ログを閉じる
     if (logStream) {
       const footer = `\n${'='.repeat(40)}\n=== セッション終了 ===\n日時: ${new Date().toISOString()}\n終了コード: ${exitCode}\nシグナル: ${signal || 'なし'}\n`;
@@ -203,6 +223,136 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
 }
 
 /**
+ * SSHセッションを開始
+ * @param config セッション設定（sshConfigが必須）
+ * @param ws WebSocket
+ * @returns セッション情報
+ */
+export async function startSSHSession(config: SessionConfig, ws: WebSocket): Promise<SessionInternal> {
+  if (!isSSHEnabled()) {
+    throw new Error('ssh-disabled');
+  }
+
+  if (!config.sshConfig) {
+    throw new Error('ssh-config-required');
+  }
+
+  const sessionId = nanoid(10);
+  const sshResult = await createSSHSession(config.sshConfig);
+  const { client: sshClient, channel: sshChannel } = sshResult;
+
+  const label = `SSH: ${config.sshConfig.username}@${config.sshConfig.host}`;
+  const cwdDisplay = `${config.sshConfig.host}:${config.sshConfig.port}`;
+
+  // ログファイルのセットアップ
+  let logStream: fsSync.WriteStream | null = null;
+  let logFileName: string | null = null;
+  if (ENABLE_SESSION_LOGS) {
+    logFileName = generateLogFileName(sessionId, 'ssh');
+    const logPath = path.join(LOG_DIR, logFileName);
+    try {
+      logStream = fsSync.createWriteStream(logPath, { flags: 'a' });
+      const header = `=== SSHセッション開始 ===\n日時: ${new Date().toISOString()}\n接続先: ${config.sshConfig.username}@${config.sshConfig.host}:${config.sshConfig.port}\n認証方式: ${config.sshConfig.authMethod}\n${'='.repeat(40)}\n\n`;
+      logStream.write(header);
+      sessionLogs.set(sessionId, {
+        id: sessionId,
+        fileName: logFileName,
+        mode: 'ssh',
+        label,
+        cwd: cwdDisplay,
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+      });
+    } catch (error) {
+      const err = error as Error;
+      console.error('ログファイルの作成に失敗しました:', err.message);
+    }
+  }
+
+  const session: SessionInternal = {
+    id: sessionId,
+    mode: 'ssh',
+    cwd: cwdDisplay,
+    label,
+    pty: null,
+    sshClient,
+    sshChannel,
+    ws,
+    logStream,
+    logFileName,
+  };
+
+  sessions.set(sessionId, session);
+
+  // SSHチャンネルからのデータをWebSocketに転送
+  sshChannel.on('data', (data: Buffer) => {
+    const str = data.toString('utf-8');
+    send(ws, { type: 'data', data: str });
+    if (logStream) {
+      logStream.write(stripAnsi(str));
+    }
+    // エラーパターン検知
+    const errorLine = detectError(str);
+    if (errorLine) {
+      sendErrorNotification(ws, sessionId, errorLine);
+    }
+  });
+
+  // 標準エラー出力
+  sshChannel.stderr.on('data', (data: Buffer) => {
+    const str = data.toString('utf-8');
+    send(ws, { type: 'data', data: str });
+    if (logStream) {
+      logStream.write(stripAnsi(str));
+    }
+  });
+
+  // チャンネルのクローズイベント
+  sshChannel.on('close', () => {
+    send(ws, { type: 'exit', exitCode: 0 });
+    sendExitNotification(ws, sessionId, 0, undefined, label);
+    clearNotificationState(sessionId);
+    if (logStream) {
+      const footer = `\n${'='.repeat(40)}\n=== SSHセッション終了 ===\n日時: ${new Date().toISOString()}\n`;
+      logStream.write(footer);
+      logStream.end();
+      const logMeta = sessionLogs.get(sessionId);
+      if (logMeta) {
+        logMeta.endedAt = new Date().toISOString();
+        logMeta.exitCode = 0;
+      }
+    }
+    sessions.delete(sessionId);
+    closeSSHConnection(sshClient);
+  });
+
+  // SSH接続のエラー
+  sshClient.on('error', (err) => {
+    send(ws, { type: 'error', message: `SSH接続エラー: ${err.message}` });
+  });
+
+  // SSH接続の切断
+  sshClient.on('end', () => {
+    if (sessions.has(sessionId)) {
+      send(ws, { type: 'exit', exitCode: 0 });
+      clearNotificationState(sessionId);
+      if (logStream) {
+        const footer = `\n${'='.repeat(40)}\n=== SSH接続切断 ===\n日時: ${new Date().toISOString()}\n`;
+        logStream.write(footer);
+        logStream.end();
+        const logMeta = sessionLogs.get(sessionId);
+        if (logMeta) {
+          logMeta.endedAt = new Date().toISOString();
+        }
+      }
+      sessions.delete(sessionId);
+    }
+  });
+
+  return session;
+}
+
+/**
  * セッションを停止
  * @param sessionId セッションID
  * @param reason 停止理由
@@ -210,10 +360,17 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
 export function stopSession(sessionId: string, reason: string): void {
   const session = sessions.get(sessionId);
   if (!session) return;
-  try {
-    session.pty.kill();
-  } catch {
-    // killエラーは無視
+
+  // PTYまたはSSH接続を終了
+  if (session.sshClient) {
+    closeSSHConnection(session.sshClient);
+  }
+  if (session.pty) {
+    try {
+      session.pty.kill();
+    } catch {
+      // killエラーは無視
+    }
   }
   // ログストリームを閉じる
   if (session.logStream) {
@@ -240,7 +397,12 @@ export function stopSession(sessionId: string, reason: string): void {
 export function cleanupAllSessions(): void {
   sessions.forEach((session) => {
     try {
-      session.pty.kill();
+      if (session.sshClient) {
+        closeSSHConnection(session.sshClient);
+      }
+      if (session.pty) {
+        session.pty.kill();
+      }
     } catch {
       // クリーンアップエラーは無視
     }

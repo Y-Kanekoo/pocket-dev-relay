@@ -15,6 +15,10 @@ import {
   ALLOW_FILE_WRITE,
   MAX_FILE_SIZE,
   ENABLE_SESSION_LOGS,
+  ENABLE_SSH,
+  SSH_DEFAULT_HOST,
+  SSH_DEFAULT_PORT,
+  SSH_DEFAULT_USER,
 } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -45,15 +49,25 @@ const router = Router();
  * GET /api/config - アプリケーション設定を取得
  */
 router.get('/config', authMiddleware, (_req: Request, res: Response) => {
+  // 利用可能なモードを構築（SSHが有効な場合はsshモードも追加）
+  const modes = Object.keys(PRESETS) as SessionMode[];
+  if (ENABLE_SSH) {
+    modes.push('ssh');
+  }
+
   const config: AppConfig = {
     workspaceRoot: ROOT_DIR,
     workspaceName: path.basename(ROOT_DIR),
-    modes: Object.keys(PRESETS) as SessionMode[],
+    modes,
     allowCustomCommands: ALLOW_CUSTOM_COMMANDS,
     fileWriteEnabled: ALLOW_FILE_WRITE,
     authEnabled: Boolean(AUTH_TOKEN),
     maxFileSize: MAX_FILE_SIZE,
     sessionLogsEnabled: ENABLE_SESSION_LOGS,
+    sshEnabled: ENABLE_SSH,
+    sshDefaultHost: ENABLE_SSH ? SSH_DEFAULT_HOST : undefined,
+    sshDefaultPort: ENABLE_SSH ? SSH_DEFAULT_PORT : undefined,
+    sshDefaultUser: ENABLE_SSH ? SSH_DEFAULT_USER : undefined,
   };
   res.json(config);
 });

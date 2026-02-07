@@ -28,6 +28,22 @@ export interface TerminalOptions {
   };
 }
 
+// ターミナルバッファ行の型
+export interface BufferLine {
+  translateToString(trimRight?: boolean): string;
+}
+
+// ターミナルバッファの型
+export interface TerminalBuffer {
+  readonly length: number;
+  getLine(y: number): BufferLine | undefined;
+}
+
+// ターミナルバッファマネージャの型
+export interface TerminalBufferNamespace {
+  readonly active: TerminalBuffer;
+}
+
 // Terminal インスタンスの型
 export interface TerminalInstance {
   cols: number;
@@ -35,6 +51,7 @@ export interface TerminalInstance {
   options: {
     fontSize: number;
   };
+  buffer: TerminalBufferNamespace;
   loadAddon(addon: FitAddonInstance): void;
   open(container: HTMLElement): void;
   write(data: string): void;

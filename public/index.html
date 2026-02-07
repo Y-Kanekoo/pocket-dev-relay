@@ -26,6 +26,26 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="header-icon-btn" id="clipboard-btn" title="クリップボード共有">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="4" rx="1"/>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          </svg>
+        </button>
+        <button class="header-icon-btn" id="snippet-btn" title="コマンドスニペット">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </button>
+        <button class="header-icon-btn ai-toggle-btn" id="ai-toggle-btn" title="AI解析" style="display:none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z"/>
+            <circle cx="9" cy="14" r="1"/>
+            <circle cx="15" cy="14" r="1"/>
+            <path d="M9 18h6"/>
+          </svg>
+        </button>
         <button class="theme-toggle" id="theme-toggle" aria-label="テーマ切替">
           <span class="icon-sun">☀</span>
           <span class="icon-moon">🌙</span>
@@ -59,6 +79,10 @@
           <button class="mode-card" data-mode="custom" id="custom-mode">
             <span>Custom</span>
             <small>任意のCLIを起動します。</small>
+          </button>
+          <button class="mode-card" data-mode="ssh" id="ssh-mode" disabled>
+            <span>SSH</span>
+            <small>リモートサーバーにSSH接続。</small>
           </button>
         </div>
         <div class="input-row">
@@ -132,13 +156,55 @@
             <!-- ターミナルインスタンスはJSで動的に追加される -->
           </div>
           <div class="hint">ターミナルをタップするとキーボードが出ます。最大5セッションまで同時利用可能です。</div>
+
+          <!-- AIパネル -->
+          <div class="ai-panel hidden" id="ai-panel">
+            <div class="ai-panel-header">
+              <h3>AI解析</h3>
+              <span class="ai-provider-label" id="ai-provider-label"></span>
+            </div>
+            <div class="ai-presets" id="ai-presets">
+              <!-- プリセット質問ボタンはJSで動的に追加される -->
+            </div>
+            <div class="ai-input-row">
+              <textarea id="ai-question" class="ai-question" placeholder="質問を入力（空欄で自動解析）..." rows="2"></textarea>
+              <button class="primary ai-send-btn" id="ai-send-btn">送信</button>
+            </div>
+            <div class="ai-loading" id="ai-loading" style="display:none">
+              <div class="ai-spinner"></div>
+              <span>AIが解析中...</span>
+            </div>
+            <div class="ai-answer" id="ai-answer" style="display:none"></div>
+          </div>
         </section>
 
         <section class="panel files" id="files-panel">
           <div class="panel-header">
-            <h2>ワークスペース</h2>
-            <p id="file-path">.</p>
+            <div class="panel-header-row">
+              <div>
+                <h2>ワークスペース</h2>
+                <p id="file-path">.</p>
+              </div>
+              <button class="primary upload-btn" id="upload-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                アップロード
+              </button>
+            </div>
           </div>
+          <input type="file" id="upload-input" style="display: none;" />
+          <div class="upload-area" id="upload-area">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>ファイルをドラッグ&ドロップ</p>
+          </div>
+          <div class="upload-progress" id="upload-progress" style="display: none;"></div>
           <div class="file-list" id="file-list"></div>
           <div class="file-editor">
             <div class="editor-header">
@@ -151,6 +217,38 @@
         </section>
       </div>
     </main>
+
+    <!-- 通知設定パネル -->
+    <section class="panel notification-settings" id="notification-panel">
+      <div class="panel-header">
+        <h2>通知設定</h2>
+        <p>バックグラウンド時にブラウザ通知を受け取れます。</p>
+      </div>
+      <div class="notification-controls">
+        <div class="notification-permit-row">
+          <button class="ghost" id="notification-permit-btn">通知を許可</button>
+          <span class="notification-status" id="notification-status">未設定</span>
+        </div>
+        <div class="notification-toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="notification-toggle" checked disabled />
+            <span>通知全体</span>
+          </label>
+        </div>
+        <div class="notification-toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="notification-error-toggle" checked disabled />
+            <span>エラー通知</span>
+          </label>
+        </div>
+        <div class="notification-toggle-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="notification-exit-toggle" checked disabled />
+            <span>プロセス終了通知</span>
+          </label>
+        </div>
+      </div>
+    </section>
 
     <footer class="footer">
       <div>
@@ -165,6 +263,93 @@
         <p>サーバーの環境変数で設定したトークンを入力してください。</p>
         <input id="auth-input" type="password" placeholder="トークン" />
         <button class="primary" id="auth-save">認証</button>
+      </div>
+    </div>
+
+    <!-- クリップボードモーダル -->
+    <div class="overlay hidden" id="clipboard-modal">
+      <div class="clipboard-card">
+        <div class="clipboard-header">
+          <h3>クリップボード共有</h3>
+          <button class="clipboard-close" id="clipboard-close" aria-label="閉じる">&times;</button>
+        </div>
+        <p class="clipboard-desc">PC⇔スマホ間でテキストを転送します。</p>
+        <textarea id="clipboard-text" class="clipboard-textarea" placeholder="テキストを入力..." rows="5"></textarea>
+        <div class="clipboard-actions">
+          <button class="ghost" id="clipboard-paste">ペースト</button>
+          <button class="ghost" id="clipboard-copy">コピー</button>
+          <button class="primary" id="clipboard-send">送信</button>
+          <button class="ghost" id="clipboard-clear">クリア</button>
+        </div>
+        <div class="clipboard-status" id="clipboard-status">クリップボードは空です</div>
+      </div>
+    </div>
+
+    <!-- スニペットドロワー -->
+    <div class="snippet-overlay hidden" id="snippet-overlay"></div>
+    <div class="snippet-drawer" id="snippet-drawer">
+      <div class="snippet-drawer-header">
+        <h3>コマンドスニペット</h3>
+        <button class="snippet-close" id="snippet-close" aria-label="閉じる">&times;</button>
+      </div>
+      <div class="snippet-list" id="snippet-list">
+        <!-- スニペットはJSで動的に追加される -->
+      </div>
+      <div class="snippet-form">
+        <h4>新規追加</h4>
+        <div class="snippet-form-row">
+          <input id="snippet-label" type="text" placeholder="ラベル (例: npm start)" />
+        </div>
+        <div class="snippet-form-row">
+          <input id="snippet-command" type="text" placeholder="コマンド (例: npm start)" />
+        </div>
+        <button class="primary" id="snippet-add">追加</button>
+      </div>
+    </div>
+
+    <!-- SSH接続ダイアログ -->
+    <div class="overlay hidden" id="ssh-overlay">
+      <div class="ssh-card">
+        <h3>SSH接続</h3>
+        <p class="ssh-desc">リモートサーバーにSSH接続します。</p>
+        <div class="ssh-warning" id="ssh-https-warning" style="display: none;">
+          HTTPS接続ではありません。パスワード認証を使用する場合はセキュリティに注意してください。
+        </div>
+        <div class="ssh-form">
+          <div class="input-row">
+            <label for="ssh-host">ホスト名</label>
+            <input id="ssh-host" type="text" placeholder="192.168.1.100 or example.com" />
+          </div>
+          <div class="input-row">
+            <label for="ssh-port">ポート</label>
+            <input id="ssh-port" type="number" value="22" min="1" max="65535" />
+          </div>
+          <div class="input-row">
+            <label for="ssh-username">ユーザー名</label>
+            <input id="ssh-username" type="text" placeholder="user" />
+          </div>
+          <div class="input-row">
+            <label>認証方式</label>
+            <div class="ssh-auth-methods">
+              <label class="ssh-radio-label">
+                <input type="radio" name="ssh-auth" id="ssh-auth-key" value="key" checked />
+                秘密鍵（サーバー上の鍵を使用）
+              </label>
+              <label class="ssh-radio-label">
+                <input type="radio" name="ssh-auth" id="ssh-auth-password" value="password" />
+                パスワード
+              </label>
+            </div>
+          </div>
+          <div class="input-row" id="ssh-password-row" style="display: none;">
+            <label for="ssh-password">パスワード</label>
+            <input id="ssh-password" type="password" placeholder="パスワード" />
+          </div>
+        </div>
+        <div class="ssh-actions">
+          <button class="primary" id="ssh-connect-btn">接続</button>
+          <button class="ghost" id="ssh-cancel-btn">キャンセル</button>
+        </div>
       </div>
     </div>
 

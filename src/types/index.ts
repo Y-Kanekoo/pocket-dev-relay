@@ -13,12 +13,29 @@
  * - claude: Claude Code を使用
  * - shell: シェル（bash/zsh等）を使用
  * - custom: カスタムコマンドを使用
+ * - ssh: SSH中継接続を使用
  */
-export type SessionMode = 'codex' | 'claude' | 'shell' | 'custom';
+export type SessionMode = 'codex' | 'claude' | 'shell' | 'custom' | 'ssh';
 
 // ============================================================
 // WebSocketメッセージ型（クライアント → サーバー）
 // ============================================================
+
+/**
+ * SSH接続設定（クライアントから送信）
+ */
+export interface SSHConnectionConfig {
+  /** 接続先ホスト */
+  host: string;
+  /** ポート番号 */
+  port: number;
+  /** ユーザー名 */
+  username: string;
+  /** 認証方式 */
+  authMethod: 'password' | 'key';
+  /** パスワード（パスワード認証時） */
+  password?: string;
+}
 
 /**
  * セッション開始メッセージ
@@ -29,6 +46,8 @@ export interface StartMessage {
   cwd?: string;
   command?: string;
   sessionId?: string;
+  /** SSH接続設定（SSHモード時） */
+  sshConfig?: SSHConnectionConfig;
 }
 
 /**
@@ -115,6 +134,23 @@ export interface ErrorMessage {
 }
 
 /**
+ * 通知メッセージ（サーバー → クライアント）
+ * エラー検知やプロセス終了時に送信される
+ */
+export interface NotificationMessage {
+  type: 'notification';
+  title: string;
+  body: string;
+  level: 'info' | 'success' | 'warning' | 'error';
+  sessionId?: string;
+}
+
+/**
+ * 通知レベル
+ */
+export type NotificationLevel = NotificationMessage['level'];
+
+/**
  * サーバーからクライアントへ送信するメッセージの共用体型
  */
 export type ServerMessage =
@@ -122,7 +158,8 @@ export type ServerMessage =
   | StartedMessage
   | ExitMessage
   | StoppedMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | NotificationMessage;
 
 // ============================================================
 // セッション関連
@@ -135,6 +172,8 @@ export interface SessionConfig {
   mode: SessionMode;
   cwd?: string;
   customCommand?: string;
+  /** SSH接続設定（SSHモード時） */
+  sshConfig?: SSHConnectionConfig;
 }
 
 /**
@@ -179,6 +218,14 @@ export interface AppConfig {
   maxFileSize: number;
   /** セッションログが有効か */
   sessionLogsEnabled: boolean;
+  /** SSH機能が有効か */
+  sshEnabled: boolean;
+  /** SSHデフォルトホスト */
+  sshDefaultHost?: string;
+  /** SSHデフォルトポート */
+  sshDefaultPort?: number;
+  /** SSHデフォルトユーザー */
+  sshDefaultUser?: string;
 }
 
 // ============================================================
@@ -312,6 +359,81 @@ export interface QrResponse {
 }
 
 // ============================================================
+// ヘルスチェック
+// ============================================================
+
+/**
+ * メモリ使用量情報
+ */
+export interface MemoryUsage {
+  /** Resident Set Size（バイト） */
+  rss: number;
+  /** 使用中のヒープサイズ（バイト） */
+  heapUsed: number;
+}
+
+/**
+ * API /api/health のレスポンス型
+ */
+export interface HealthResponse {
+  /** ステータス */
+  status: 'ok';
+  /** サーバー稼働時間（秒） */
+  uptime: number;
+  /** アプリケーションバージョン */
+  version: string;
+  /** 現在のタイムスタンプ（ISO 8601形式） */
+  timestamp: string;
+  /** アクティブセッション数 */
+  activeSessions: number;
+  /** メモリ使用量 */
+  memory: MemoryUsage;
+}
+
+// ============================================================
+// AI解析関連
+// ============================================================
+
+/**
+ * AIプロバイダー名
+ */
+export type AIProviderName = 'claude' | 'openai';
+
+/**
+ * AI解析リクエストボディ
+ */
+export interface AIAnalyzeRequest {
+  /** ターミナル出力のコンテキスト */
+  context: string;
+  /** ユーザーの質問（オプション） */
+  question?: string;
+}
+
+/**
+ * AI解析レスポンス
+ */
+export interface AIAnalyzeResponse {
+  /** AIの回答 */
+  answer: string;
+  /** 使用したプロバイダー名 */
+  provider: AIProviderName;
+  /** 使用したモデル名 */
+  model: string;
+}
+
+/**
+ * AIステータスレスポンス
+ */
+export interface AIStatusResponse {
+  /** AI機能が有効かどうか */
+  enabled: boolean;
+  /** 使用中のプロバイダー名（無効時はnull） */
+  provider: AIProviderName | null;
+  /** 使用中のモデル名（無効時はnull） */
+  model: string | null;
+}
+
+// ============================================================
 // エラーレスポンス
 // ============================================================
 
@@ -348,7 +470,7 @@ export interface CommandPreset {
  * プリセット辞書型
  */
 export type Presets = {
-  [K in Exclude<SessionMode, 'custom'>]: CommandPreset;
+  [K in Exclude<SessionMode, 'custom' | 'ssh'>]: CommandPreset;
 };
 
 // ============================================================
@@ -382,3 +504,88 @@ export interface ReconnectConfig {
  * トースト通知の種別
  */
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+// ============================================================
+// クリップボード共有関連
+// ============================================================
+
+/**
+ * クリップボードデータ
+ */
+export interface ClipboardData {
+  /** テキスト内容 */
+  text: string;
+  /** 更新日時（ISO 8601形式） */
+  updatedAt: string;
+}
+
+/**
+ * API /api/clipboard (POST) のリクエストボディ
+ */
+export interface ClipboardSetRequest {
+  text: string;
+}
+
+/**
+ * API /api/clipboard のレスポンス型
+ */
+export interface ClipboardResponse {
+  text: string;
+  updatedAt: string;
+}
+
+// ============================================================
+// コマンドスニペット関連
+// ============================================================
+
+/**
+ * スニペットアイテム
+ */
+export interface Snippet {
+  /** 一意なID */
+  id: string;
+  /** 表示ラベル */
+  label: string;
+  /** 実行するコマンド */
+  command: string;
+}
+
+/**
+ * API /api/snippets (POST) のリクエストボディ
+ */
+export interface SnippetCreateRequest {
+  label: string;
+  command: string;
+}
+
+/**
+ * API /api/snippets のレスポンス型
+ */
+export interface SnippetsResponse {
+  snippets: Snippet[];
+}
+
+/**
+ * API /api/snippets/:id/execute のレスポンス型
+ */
+export interface SnippetExecuteResponse {
+  ok: boolean;
+  message: string;
+}
+
+// ============================================================
+// ファイルアップロード関連
+// ============================================================
+
+/**
+ * API /api/upload のレスポンス型
+ */
+export interface UploadResponse {
+  ok: boolean;
+  /** アップロードされたファイル名 */
+  fileName: string;
+  /** アップロード先の相対パス */
+  path: string;
+  /** ファイルサイズ（バイト） */
+  size: number;
+}

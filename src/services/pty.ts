@@ -130,6 +130,11 @@ export function spawnForMode(mode: SessionMode, customCommand: string | undefine
     return { command, args: parts, label: 'Custom' };
   }
 
+  // SSHモードはPTYプリセットを使用しない（session.tsで別途処理）
+  if (mode === 'ssh') {
+    throw new Error('ssh-mode-not-pty');
+  }
+
   const preset = PRESETS[mode];
   if (!preset) {
     throw new Error('unknown-mode');

@@ -158,6 +158,66 @@ async function networkFirst(request) {
   }
 }
 
+// ============================================================
+// プッシュ通知イベント
+// ============================================================
+
+/**
+ * プッシュイベントハンドラ
+ * サーバーからのプッシュ通知を受信して表示
+ */
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    // JSON解析に失敗した場合はテキストとして扱う
+    data = {
+      title: 'Pocket Dev Relay',
+      body: event.data.text(),
+    };
+  }
+
+  const title = data.title || 'Pocket Dev Relay';
+  const options = {
+    body: data.body || '',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    tag: data.tag || 'pdr-notification',
+    data: data,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+/**
+ * 通知クリックイベントハンドラ
+ * 通知をクリックしたときにアプリにフォーカスする
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // 既存のウィンドウがあればフォーカス
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // なければ新しいウィンドウを開く
+        if (self.clients.openWindow) {
+          return self.clients.openWindow('/');
+        }
+      })
+  );
+});
+
 /**
  * フォント用キャッシュファースト戦略
  * フォントは変更が少ないのでキャッシュを優先

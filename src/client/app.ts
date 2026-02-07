@@ -30,6 +30,10 @@ import {
   loadAddresses,
   updateFileEditor,
 } from './components/fileBrowser.js';
+import { initClipboard } from './components/clipboard.js';
+import { initSnippets } from './components/snippets.js';
+import { initAIPanel, checkAIStatus } from './components/aiPanel.js';
+import { initSSHDialog, setSSHDefaults } from './components/sshDialog.js';
 
 // サービス
 import { fetchConfig } from './services/api.js';
@@ -75,6 +79,11 @@ interface DOMElements {
   fontDecrease: HTMLButtonElement | null;
   fontIncrease: HTMLButtonElement | null;
   fontSizeLabel: HTMLElement | null;
+  notificationPermitBtn: HTMLButtonElement | null;
+  notificationToggle: HTMLInputElement | null;
+  notificationErrorToggle: HTMLInputElement | null;
+  notificationExitToggle: HTMLInputElement | null;
+  notificationStatus: HTMLElement | null;
 }
 
 // ==================================================
@@ -122,6 +131,11 @@ interface DOMElements {
     fontDecrease: document.getElementById('font-decrease') as HTMLButtonElement | null,
     fontIncrease: document.getElementById('font-increase') as HTMLButtonElement | null,
     fontSizeLabel: document.getElementById('font-size-label'),
+    notificationPermitBtn: document.getElementById('notification-permit-btn') as HTMLButtonElement | null,
+    notificationToggle: document.getElementById('notification-toggle') as HTMLInputElement | null,
+    notificationErrorToggle: document.getElementById('notification-error-toggle') as HTMLInputElement | null,
+    notificationExitToggle: document.getElementById('notification-exit-toggle') as HTMLInputElement | null,
+    notificationStatus: document.getElementById('notification-status'),
   };
 
   // ==================================================
@@ -177,6 +191,21 @@ interface DOMElements {
       elements.customMode.style.display = 'none';
     }
 
+    // SSHモードカードの制御
+    const sshModeCard = document.getElementById('ssh-mode') as HTMLButtonElement | null;
+    if (sshModeCard) {
+      if (!config.sshEnabled) {
+        sshModeCard.style.display = 'none';
+      } else {
+        sshModeCard.disabled = false;
+      }
+    }
+
+    // SSHデフォルト値を設定
+    if (config.sshEnabled) {
+      setSSHDefaults(config);
+    }
+
     updateModeUI();
     updateFileEditor();
   }
@@ -188,13 +217,18 @@ interface DOMElements {
   // トースト初期化（最初に）
   initToast(elements.toastContainer);
 
-  // 設定UI初期化（テーマを即座に適用）
+  // 設定UI初期化（テーマ・通知を即座に適用）
   initSettings(
     {
       themeToggle: elements.themeToggle,
       fontDecrease: elements.fontDecrease,
       fontIncrease: elements.fontIncrease,
       fontSizeLabel: elements.fontSizeLabel,
+      notificationPermit: elements.notificationPermitBtn,
+      notificationToggle: elements.notificationToggle,
+      notificationErrorToggle: elements.notificationErrorToggle,
+      notificationExitToggle: elements.notificationExitToggle,
+      notificationStatus: elements.notificationStatus,
     },
     {
       onFontSizeChange: sendResize,
@@ -257,9 +291,85 @@ interface DOMElements {
       urlList: elements.urlList,
       qrImage: elements.qrImage,
       qrLabel: elements.qrLabel,
+      uploadBtn: document.getElementById('upload-btn') as HTMLButtonElement | null,
+      uploadInput: document.getElementById('upload-input') as HTMLInputElement | null,
+      uploadArea: document.getElementById('upload-area'),
+      uploadProgress: document.getElementById('upload-progress'),
     },
     {
       onAuthRequired: showAuth,
+    },
+  );
+
+  // クリップボード初期化
+  initClipboard({
+    clipboardBtn: document.getElementById('clipboard-btn') as HTMLButtonElement | null,
+    clipboardModal: document.getElementById('clipboard-modal'),
+    clipboardClose: document.getElementById('clipboard-close') as HTMLButtonElement | null,
+    clipboardText: document.getElementById('clipboard-text') as HTMLTextAreaElement | null,
+    clipboardSend: document.getElementById('clipboard-send') as HTMLButtonElement | null,
+    clipboardPaste: document.getElementById('clipboard-paste') as HTMLButtonElement | null,
+    clipboardCopy: document.getElementById('clipboard-copy') as HTMLButtonElement | null,
+    clipboardClear: document.getElementById('clipboard-clear') as HTMLButtonElement | null,
+    clipboardStatus: document.getElementById('clipboard-status'),
+  });
+
+  // スニペット初期化
+  initSnippets({
+    snippetBtn: document.getElementById('snippet-btn') as HTMLButtonElement | null,
+    snippetDrawer: document.getElementById('snippet-drawer'),
+    snippetClose: document.getElementById('snippet-close') as HTMLButtonElement | null,
+    snippetList: document.getElementById('snippet-list'),
+    snippetLabel: document.getElementById('snippet-label') as HTMLInputElement | null,
+    snippetCommand: document.getElementById('snippet-command') as HTMLInputElement | null,
+    snippetAdd: document.getElementById('snippet-add') as HTMLButtonElement | null,
+    snippetOverlay: document.getElementById('snippet-overlay'),
+  });
+
+  // AIパネル初期化
+  initAIPanel();
+
+  // SSHダイアログ初期化
+  initSSHDialog(
+    {
+      overlay: document.getElementById('ssh-overlay'),
+      hostInput: document.getElementById('ssh-host') as HTMLInputElement | null,
+      portInput: document.getElementById('ssh-port') as HTMLInputElement | null,
+      usernameInput: document.getElementById('ssh-username') as HTMLInputElement | null,
+      authMethodPassword: document.getElementById('ssh-auth-password') as HTMLInputElement | null,
+      authMethodKey: document.getElementById('ssh-auth-key') as HTMLInputElement | null,
+      passwordRow: document.getElementById('ssh-password-row'),
+      passwordInput: document.getElementById('ssh-password') as HTMLInputElement | null,
+      connectBtn: document.getElementById('ssh-connect-btn') as HTMLButtonElement | null,
+      cancelBtn: document.getElementById('ssh-cancel-btn') as HTMLButtonElement | null,
+      httpsWarning: document.getElementById('ssh-https-warning'),
+    },
+    {
+      onConnect: (sshConfig) => {
+        // SSH接続: セッション開始メッセージを送信
+        import('./services/websocket.js').then(({ connectWebSocket, sendMessage }) => {
+          import('./state/sessionStore.js').then(({ sessionStore }) => {
+            const activeSessionId = sessionStore.getActiveSessionId();
+            if (!activeSessionId) return;
+
+            const session = sessionStore.getSession(activeSessionId);
+            if (!session || session.active) return;
+
+            connectWebSocket()
+              .then(() => {
+                sendMessage({
+                  type: 'start',
+                  mode: 'ssh',
+                  sessionId: activeSessionId,
+                  sshConfig,
+                });
+              })
+              .catch(() => {
+                session.term.writeln('\r\n[エラー] サーバーに接続できません');
+              });
+          });
+        });
+      },
     },
   );
 
@@ -280,6 +390,9 @@ interface DOMElements {
 
       // 初期セッションを作成
       initSessions();
+
+      // AIステータスを確認（非同期、画面ブロックしない）
+      checkAIStatus();
     } catch (error) {
       if (error instanceof Error && error.message === 'unauthorized') {
         showAuth();

@@ -899,3 +899,762 @@ button:disabled {
     transform: translateY(-10px);
   }
 }
+
+/* ============================================================
+   ヘッダーアイコンボタン
+   ============================================================ */
+
+.header-icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.header-icon-btn:hover {
+  transform: scale(1.08);
+  background: rgba(11, 143, 122, 0.08);
+}
+
+.header-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================
+   クリップボードモーダル
+   ============================================================ */
+
+.clipboard-card {
+  background: var(--card);
+  padding: 24px;
+  border-radius: 20px;
+  display: grid;
+  gap: 12px;
+  width: min(440px, 92vw);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  backdrop-filter: blur(10px);
+}
+
+.clipboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.clipboard-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.clipboard-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(31, 26, 20, 0.06);
+  border: none;
+  color: var(--ink);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.clipboard-close:hover {
+  background: rgba(217, 90, 43, 0.15);
+  color: var(--accent-2);
+}
+
+[data-theme="dark"] .clipboard-close {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.clipboard-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.clipboard-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 12px;
+  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--ink);
+}
+
+.clipboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clipboard-actions button {
+  font-size: 0.85rem;
+  padding: 8px 14px;
+}
+
+.clipboard-status {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   スニペットドロワー
+   ============================================================ */
+
+.snippet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 10, 5, 0.35);
+  z-index: 900;
+  transition: opacity 0.3s ease;
+}
+
+.snippet-overlay.hidden {
+  display: none;
+}
+
+[data-theme="dark"] .snippet-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.snippet-drawer {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: min(360px, 85vw);
+  height: 100vh;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(24, 17, 8, 0.15);
+  backdrop-filter: blur(12px);
+  z-index: 910;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+
+.snippet-drawer.open {
+  right: 0;
+}
+
+.snippet-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.snippet-drawer-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.snippet-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(31, 26, 20, 0.06);
+  border: none;
+  color: var(--ink);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.snippet-close:hover {
+  background: rgba(217, 90, 43, 0.15);
+  color: var(--accent-2);
+}
+
+[data-theme="dark"] .snippet-close {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.snippet-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snippet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--url-item-bg);
+  border: 1px solid var(--border);
+  transition: background 0.2s ease;
+}
+
+.snippet-item:hover {
+  background: rgba(11, 143, 122, 0.06);
+}
+
+.snippet-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.snippet-item-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.snippet-item-command {
+  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snippet-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.snippet-exec-btn {
+  background: rgba(11, 143, 122, 0.12);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: background 0.2s ease;
+}
+
+.snippet-exec-btn:hover {
+  background: rgba(11, 143, 122, 0.22);
+}
+
+.snippet-delete-btn {
+  background: rgba(217, 90, 43, 0.1);
+  color: var(--accent-2);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: background 0.2s ease;
+}
+
+.snippet-delete-btn:hover {
+  background: rgba(217, 90, 43, 0.2);
+}
+
+.snippet-empty,
+.snippet-error {
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.snippet-form {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+}
+
+.snippet-form h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.snippet-form-row input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: var(--input-bg);
+  color: var(--ink);
+}
+
+/* ============================================================
+   ファイルアップロード
+   ============================================================ */
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+}
+
+.upload-area {
+  margin-top: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.upload-area p {
+  margin: 0;
+}
+
+.upload-area:hover {
+  border-color: var(--accent);
+  background: rgba(11, 143, 122, 0.04);
+}
+
+.upload-area.drag-over {
+  border-color: var(--accent);
+  background: rgba(11, 143, 122, 0.1);
+  color: var(--accent);
+}
+
+.upload-progress {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.upload-progress.uploading {
+  background: rgba(240, 185, 75, 0.15);
+  color: #b38600;
+  border: 1px solid rgba(240, 185, 75, 0.3);
+}
+
+.upload-progress.success {
+  background: rgba(11, 143, 122, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(11, 143, 122, 0.3);
+}
+
+.upload-progress.error {
+  background: rgba(217, 90, 43, 0.1);
+  color: var(--accent-2);
+  border: 1px solid rgba(217, 90, 43, 0.3);
+}
+
+/* ============================================================
+   AIパネル
+   ============================================================ */
+
+/* AIトグルボタン（ヘッダー） */
+.ai-toggle-btn {
+  position: relative;
+}
+
+.ai-toggle-btn svg {
+  stroke: var(--accent);
+}
+
+/* AIパネル本体 */
+.ai-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: grid;
+  gap: 12px;
+  animation: fadeUp 0.3s ease forwards;
+}
+
+.ai-panel.hidden {
+  display: none;
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-panel-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ai-provider-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: rgba(11, 143, 122, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* プリセット質問 */
+.ai-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-preset-btn {
+  background: rgba(11, 143, 122, 0.08);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(11, 143, 122, 0.2);
+}
+
+.ai-preset-btn:hover:not(:disabled) {
+  background: rgba(11, 143, 122, 0.18);
+  border-color: rgba(11, 143, 122, 0.4);
+}
+
+.ai-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 質問入力行 */
+.ai-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ai-question {
+  flex: 1;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 40px;
+  background: var(--input-bg);
+  color: var(--ink);
+}
+
+.ai-question:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(11, 143, 122, 0.15);
+}
+
+.ai-send-btn {
+  flex-shrink: 0;
+  height: 40px;
+}
+
+/* ローディング */
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.ai-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: aiSpin 0.8s linear infinite;
+}
+
+@keyframes aiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 回答表示エリア */
+.ai-answer {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  word-wrap: break-word;
+}
+
+.ai-answer h3.ai-heading,
+.ai-answer h4.ai-heading {
+  margin: 12px 0 6px;
+  font-size: 1rem;
+}
+
+.ai-answer h3.ai-heading:first-child,
+.ai-answer h4.ai-heading:first-child {
+  margin-top: 0;
+}
+
+.ai-answer ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.ai-answer li {
+  margin: 4px 0;
+}
+
+.ai-answer strong {
+  color: var(--accent);
+}
+
+/* コードブロック */
+.ai-code-block {
+  background: #14110d;
+  color: #f5efe6;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .ai-code-block {
+  background: #0d0d0d;
+}
+
+.ai-inline-code {
+  background: rgba(11, 143, 122, 0.1);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-size: 0.88em;
+}
+
+/* ダークモード対応 */
+[data-theme="dark"] .ai-preset-btn {
+  background: rgba(15, 191, 159, 0.1);
+  border-color: rgba(15, 191, 159, 0.2);
+}
+
+[data-theme="dark"] .ai-preset-btn:hover:not(:disabled) {
+  background: rgba(15, 191, 159, 0.2);
+}
+
+[data-theme="dark"] .ai-provider-label {
+  background: rgba(15, 191, 159, 0.12);
+}
+
+/* ============================================================
+   通知設定パネル
+   ============================================================ */
+
+.notification-settings {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 1.5rem;
+}
+
+.notification-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notification-permit-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.notification-permit-row .ghost {
+  min-width: 140px;
+}
+
+.notification-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.notification-status.granted {
+  background: rgba(11, 143, 122, 0.15);
+  color: var(--accent);
+}
+
+.notification-status.denied {
+  background: rgba(217, 90, 43, 0.15);
+  color: var(--accent-2);
+}
+
+.notification-status.default {
+  background: rgba(107, 95, 82, 0.15);
+  color: var(--muted);
+}
+
+.notification-status.unsupported {
+  background: rgba(107, 95, 82, 0.1);
+  color: var(--muted);
+}
+
+.notification-toggle-row {
+  padding: 0.5rem 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-label span {
+  user-select: none;
+}
+
+/* ============================================================
+   SSH接続ダイアログ
+   ============================================================ */
+
+.ssh-card {
+  background: var(--card);
+  padding: 24px;
+  border-radius: 20px;
+  display: grid;
+  gap: 16px;
+  width: min(420px, 92vw);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  backdrop-filter: blur(10px);
+}
+
+.ssh-card h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.ssh-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.ssh-warning {
+  background: rgba(240, 185, 75, 0.15);
+  color: #b38600;
+  border: 1px solid rgba(240, 185, 75, 0.3);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .ssh-warning {
+  background: rgba(245, 201, 96, 0.12);
+  color: var(--accent-3);
+  border-color: rgba(245, 201, 96, 0.25);
+}
+
+.ssh-form {
+  display: grid;
+  gap: 12px;
+}
+
+.ssh-form .input-row input {
+  width: 100%;
+}
+
+.ssh-auth-methods {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ssh-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.ssh-radio-label input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ssh-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.ssh-actions button {
+  min-width: 100px;
+}
+
+/* SSHモードカードのアイコン風装飾 */
+.mode-card[data-mode="ssh"] {
+  border-style: dashed;
+  border-color: var(--border);
+}
+
+.mode-card[data-mode="ssh"].active {
+  border-style: solid;
+  border-color: var(--accent);
+}

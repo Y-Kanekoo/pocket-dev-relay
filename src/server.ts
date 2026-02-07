@@ -22,9 +22,15 @@ import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
 import { setupWebSocketHandlers } from './services/websocket.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { createRateLimiter } from './middleware/rateLimit.js';
+import { securityHeaders } from './middleware/security.js';
+import healthRouter from './routes/health.js';
 import apiRouter from './routes/api.js';
 import filesRouter from './routes/files.js';
 import logsRouter from './routes/logs.js';
+import clipboardRouter from './routes/clipboard.js';
+import snippetsRouter from './routes/snippets.js';
+import aiRouter from './routes/ai.js';
 
 // Expressアプリケーション
 const app = express();
@@ -66,15 +72,27 @@ if (ENABLE_HTTPS) {
 const wss = new WebSocketServer({ server, path: '/ws' });
 setupWebSocketHandlers(wss);
 
+// セキュリティヘッダー（全リクエストに適用）
+app.use(securityHeaders);
+
 // ミドルウェア
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/vendor', express.static(path.join(__dirname, '..', 'node_modules')));
 
+// ヘルスチェック（認証・レート制限の前に配置）
+app.use(healthRouter);
+
+// APIレート制限
+app.use('/api', createRateLimiter());
+
 // ルーター
 app.use('/api', apiRouter);
 app.use('/api', filesRouter);
 app.use('/api', logsRouter);
+app.use('/api', clipboardRouter);
+app.use('/api', snippetsRouter);
+app.use('/api', aiRouter);
 
 // エラーハンドリング
 app.use(notFoundHandler);
