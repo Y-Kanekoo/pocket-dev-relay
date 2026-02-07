@@ -3,10 +3,12 @@
  * ファイル一覧表示、ファイル内容の読み込み・保存
  */
 
-import type { FileItem } from '../../types/index.js';
+import type { FileItem, UploadResponse } from '../../types/index.js';
 import type { AccessUrl } from '../../types/index.js';
 import { sessionStore } from '../state/sessionStore.js';
+import { showToast } from './toast.js';
 import {
+  authHeaders,
   fetchFileList,
   fetchFileContent,
   saveFile as saveFileApi,
@@ -31,6 +33,10 @@ interface FileBrowserElements {
   urlList: HTMLElement | null;
   qrImage: HTMLImageElement | null;
   qrLabel: HTMLElement | null;
+  uploadBtn: HTMLButtonElement | null;
+  uploadInput: HTMLInputElement | null;
+  uploadArea: HTMLElement | null;
+  uploadProgress: HTMLElement | null;
 }
 
 let elements: FileBrowserElements = {
@@ -43,6 +49,10 @@ let elements: FileBrowserElements = {
   urlList: null,
   qrImage: null,
   qrLabel: null,
+  uploadBtn: null,
+  uploadInput: null,
+  uploadArea: null,
+  uploadProgress: null,
 };
 
 // コールバック関数
@@ -52,6 +62,9 @@ let onAuthRequired: (() => void) | null = null;
 const currentFile: { path: string | null } = {
   path: null,
 };
+
+// 現在のディレクトリパス（アップロード先として使用）
+let currentDirPath = '.';
 
 // ==================================================
 // パス操作ユーティリティ
@@ -87,6 +100,7 @@ function renderFileList(items: FileItem[], currentPath: string): void {
 
   elements.fileList.innerHTML = '';
   elements.filePath.textContent = currentPath;
+  currentDirPath = currentPath;
 
   if (currentPath !== '.') {
     const parent = document.createElement('div');
@@ -324,4 +338,143 @@ export function initFileBrowser(
 
   // ファイル保存ボタン
   elements.saveFile?.addEventListener('click', saveCurrentFile);
+
+  // アップロードボタン
+  elements.uploadBtn?.addEventListener('click', () => {
+    elements.uploadInput?.click();
+  });
+
+  // ファイル選択時のアップロード処理
+  elements.uploadInput?.addEventListener('change', () => {
+    const files = elements.uploadInput?.files;
+    if (files && files.length > 0) {
+      uploadFile(files[0]);
+    }
+  });
+
+  // ドラッグ&ドロップ対応
+  if (elements.uploadArea) {
+    elements.uploadArea.addEventListener('dragover', (e: Event) => {
+      e.preventDefault();
+      (e as DragEvent).stopPropagation();
+      elements.uploadArea?.classList.add('drag-over');
+    });
+
+    elements.uploadArea.addEventListener('dragleave', (e: Event) => {
+      e.preventDefault();
+      (e as DragEvent).stopPropagation();
+      elements.uploadArea?.classList.remove('drag-over');
+    });
+
+    elements.uploadArea.addEventListener('drop', (e: Event) => {
+      e.preventDefault();
+      (e as DragEvent).stopPropagation();
+      elements.uploadArea?.classList.remove('drag-over');
+      const dragEvent = e as DragEvent;
+      const files = dragEvent.dataTransfer?.files;
+      if (files && files.length > 0) {
+        uploadFile(files[0]);
+      }
+    });
+  }
+}
+
+// ==================================================
+// ファイルアップロード
+// ==================================================
+
+/**
+ * ファイルをアップロード
+ */
+async function uploadFile(file: File): Promise<void> {
+  if (elements.uploadProgress) {
+    elements.uploadProgress.style.display = 'block';
+    elements.uploadProgress.textContent = 'アップロード中...';
+    elements.uploadProgress.className = 'upload-progress uploading';
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('uploadPath', currentDirPath);
+
+  try {
+    const xhr = new XMLHttpRequest();
+
+    // プログレス更新
+    xhr.upload.addEventListener('progress', (e: ProgressEvent) => {
+      if (e.lengthComputable && elements.uploadProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        elements.uploadProgress.textContent = `アップロード中... ${percent}%`;
+      }
+    });
+
+    // アップロード完了
+    const result = await new Promise<UploadResponse>((resolve, reject) => {
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error('レスポンスの解析に失敗しました'));
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new Error(errorData.message || `アップロード失敗 (${xhr.status})`));
+          } catch {
+            reject(new Error(`アップロード失敗 (${xhr.status})`));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('ネットワークエラーが発生しました'));
+      });
+
+      xhr.open('POST', '/api/upload');
+
+      // 認証ヘッダーを設定
+      const headers = authHeaders();
+      Object.entries(headers).forEach(([key, value]) => {
+        xhr.setRequestHeader(key, value);
+      });
+
+      xhr.send(formData);
+    });
+
+    if (elements.uploadProgress) {
+      elements.uploadProgress.textContent = `"${result.fileName}" をアップロードしました`;
+      elements.uploadProgress.className = 'upload-progress success';
+    }
+    showToast(`"${result.fileName}" をアップロードしました`, 'success');
+
+    // ファイル一覧を更新
+    await loadFiles(currentDirPath);
+
+    // プログレス表示を3秒後に非表示
+    setTimeout(() => {
+      if (elements.uploadProgress) {
+        elements.uploadProgress.style.display = 'none';
+      }
+    }, 3000);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'アップロードに失敗しました';
+    if (elements.uploadProgress) {
+      elements.uploadProgress.textContent = message;
+      elements.uploadProgress.className = 'upload-progress error';
+    }
+    showToast(message, 'error');
+
+    // エラー表示を5秒後に非表示
+    setTimeout(() => {
+      if (elements.uploadProgress) {
+        elements.uploadProgress.style.display = 'none';
+      }
+    }, 5000);
+  }
+
+  // ファイル入力をリセット
+  if (elements.uploadInput) {
+    elements.uploadInput.value = '';
+  }
 }

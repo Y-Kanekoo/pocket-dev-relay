@@ -1,14 +1,15 @@
 /**
  * ファイルルーター
- * /api/files, /api/file エンドポイント
+ * /api/files, /api/file, /api/upload エンドポイント
  */
 
 import { Router, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import multer from 'multer';
 
-import { FileItem, FileListResponse, FileContentResponse } from '../types/index.js';
-import { ROOT_DIR, ALLOW_FILE_WRITE, MAX_FILE_SIZE } from '../config.js';
+import { FileItem, FileListResponse, FileContentResponse, UploadResponse } from '../types/index.js';
+import { ROOT_DIR, ALLOW_FILE_WRITE, MAX_FILE_SIZE, MAX_UPLOAD_SIZE } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { resolvePath, convertFsError } from '../utils/path.js';
@@ -17,6 +18,7 @@ import {
   FileTooLargeError,
   FeatureDisabledError,
   ValidationError,
+  InvalidPathError,
 } from '../errors/AppError.js';
 
 const router = Router();
@@ -134,6 +136,117 @@ router.post(
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
     await fs.writeFile(targetPath, content, 'utf8');
     res.json({ ok: true });
+  }),
+);
+
+// ============================================================
+// ファイルアップロード
+// ============================================================
+
+/**
+ * multerストレージ設定
+ * アップロード先をリクエストのuploadPathパラメータで制御
+ */
+const storage = multer.diskStorage({
+  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+    // 一時的にROOT_DIRに保存（実際のパスはリクエスト処理時に移動）
+    cb(null, ROOT_DIR);
+  },
+  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+    // オリジナルファイル名を使用
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: MAX_UPLOAD_SIZE,
+  },
+});
+
+/**
+ * POST /api/upload - ファイルをアップロード
+ * マルチパート形式でファイルを受け取り、指定パスに保存
+ */
+router.post(
+  '/upload',
+  authMiddleware,
+  upload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!ALLOW_FILE_WRITE) {
+      // アップロードされたファイルを削除
+      if (req.file) {
+        try {
+          await fs.unlink(req.file.path);
+        } catch {
+          // 削除失敗は無視
+        }
+      }
+      throw new FeatureDisabledError('ファイルアップロード');
+    }
+
+    if (!req.file) {
+      throw new ValidationError('ファイルが選択されていません');
+    }
+
+    // アップロード先のディレクトリ（クエリパラメータまたはbodyで指定）
+    const uploadDir = (req.body.uploadPath as string) || '.';
+
+    // パストラバーサル防止
+    let targetDir: string;
+    try {
+      targetDir = resolvePath(uploadDir);
+    } catch (error) {
+      // アップロードされたファイルを削除
+      try {
+        await fs.unlink(req.file.path);
+      } catch {
+        // 削除失敗は無視
+      }
+      throw convertFsError(error, 'パス');
+    }
+
+    // ファイル名のサニタイズ（パストラバーサル防止）
+    const safeFileName = path.basename(req.file.originalname);
+    if (!safeFileName || safeFileName === '.' || safeFileName === '..') {
+      try {
+        await fs.unlink(req.file.path);
+      } catch {
+        // 削除失敗は無視
+      }
+      throw new InvalidPathError('不正なファイル名です');
+    }
+
+    const targetPath = path.join(targetDir, safeFileName);
+
+    // ターゲットパスがROOT_DIR内にあることを再度検証
+    const relative = path.relative(ROOT_DIR, targetPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch {
+        // 削除失敗は無視
+      }
+      throw new InvalidPathError();
+    }
+
+    // ディレクトリを作成（存在しない場合）
+    await fs.mkdir(targetDir, { recursive: true });
+
+    // multerがROOT_DIRに保存したファイルを目的のパスに移動
+    const sourcePath = req.file.path;
+    if (sourcePath !== targetPath) {
+      await fs.rename(sourcePath, targetPath);
+    }
+
+    const response: UploadResponse = {
+      ok: true,
+      fileName: safeFileName,
+      path: path.relative(ROOT_DIR, targetPath),
+      size: req.file.size,
+    };
+    res.json(response);
   }),
 );
 
