@@ -8,12 +8,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 
 import { ClientMessage } from '../types/index.js';
 import { authorizeWebSocket } from '../middleware/auth.js';
-import {
-  sessions,
-  send,
-  startSession,
-  stopSession,
-} from './session.js';
+import { sessions, send, startSession, stopSession } from './session.js';
 
 /**
  * WebSocketサーバーの接続ハンドラを設定
@@ -50,7 +45,7 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
                 cwd: payload.cwd,
                 customCommand: payload.command,
               },
-              ws
+              ws,
             );
             activeSessionId = session.id;
             send(ws, {

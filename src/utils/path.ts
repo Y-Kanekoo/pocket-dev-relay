@@ -28,10 +28,7 @@ export function resolvePath(relativePath: string): string {
  * @param resourceName リソース名（エラーメッセージ用）
  * @returns AppError インスタンス
  */
-export function convertFsError(
-  error: unknown,
-  resourceName = 'ファイル'
-): AppError {
+export function convertFsError(error: unknown, resourceName = 'ファイル'): AppError {
   // InvalidPathError はそのまま再スロー
   if (error instanceof InvalidPathError) {
     return error;
@@ -49,6 +46,6 @@ export function convertFsError(
     'FS_ERROR',
     500,
     'ファイル操作に失敗しました',
-    process.env.NODE_ENV !== 'production' ? { originalError: String(error) } : undefined
+    process.env.NODE_ENV !== 'production' ? { originalError: String(error) } : undefined,
   );
 }

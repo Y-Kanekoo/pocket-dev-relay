@@ -3,17 +3,14 @@
  * 複数セッションの状態を一元管理するストア
  */
 
-import type {
-  SessionMode,
-  AppConfig,
-  ReconnectConfig,
-} from '../../types/index.js';
+import type { SessionMode, AppConfig, ReconnectConfig } from '../../types/index.js';
 
 // ==================================================
 // xterm.js のグローバル変数宣言（CDNから読み込み）
 // ==================================================
 
 // xterm.js はCDNから読み込まれるため、グローバル変数として宣言
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare const Terminal: {
   new (options?: TerminalOptions): TerminalInstance;
 };
@@ -48,6 +45,7 @@ export interface TerminalInstance {
 }
 
 // FitAddon のグローバル変数
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare const FitAddon: {
   FitAddon: {
     new (): FitAddonInstance;
@@ -58,7 +56,6 @@ declare const FitAddon: {
 export interface FitAddonInstance {
   fit(): void;
 }
-
 
 // ==================================================
 // クライアント側のセッション情報型
@@ -137,9 +134,9 @@ class SessionStore {
         baseDelay: 1000,
         maxDelay: 30000,
         timer: null,
-        manualDisconnect: false
+        manualDisconnect: false,
       },
-      currentFontSize: this.getStoredFontSize()
+      currentFontSize: this.getStoredFontSize(),
     };
   }
 
@@ -373,10 +370,7 @@ class SessionStore {
    */
   getReconnectDelay(): number {
     const { baseDelay, attempts, maxDelay } = this.state.reconnect;
-    const delay = Math.min(
-      baseDelay * Math.pow(2, attempts),
-      maxDelay
-    );
+    const delay = Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
     return delay;
   }
 }

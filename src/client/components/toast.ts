@@ -22,7 +22,11 @@ export function initToast(container: HTMLElement | null): void {
  * @param duration - 表示時間（ミリ秒）
  * @returns 作成されたトースト要素
  */
-export function showToast(message: string, type: ToastType = 'info', duration = 3000): HTMLElement | null {
+export function showToast(
+  message: string,
+  type: ToastType = 'info',
+  duration = 3000,
+): HTMLElement | null {
   if (!toastContainer) {
     console.warn('トーストコンテナが初期化されていません');
     return null;
@@ -35,7 +39,7 @@ export function showToast(message: string, type: ToastType = 'info', duration = 
     success: '\u2713',
     error: '\u2715',
     warning: '!',
-    info: 'i'
+    info: 'i',
   };
 
   toast.innerHTML = `

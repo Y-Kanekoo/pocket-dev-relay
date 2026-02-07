@@ -24,7 +24,7 @@ export function errorHandler(
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
   // AppError の場合は構造化されたレスポンスを返す
   if (err instanceof AppError) {
@@ -75,7 +75,7 @@ export function notFoundHandler(
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
   res.status(404).json({
     error: 'NOT_FOUND',
@@ -90,7 +90,7 @@ export function notFoundHandler(
  * @returns ラップされたハンドラー
  */
 export function asyncHandler<T>(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<T>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<T>,
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);

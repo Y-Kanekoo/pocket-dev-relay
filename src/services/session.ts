@@ -10,17 +10,8 @@ import WebSocket from 'ws';
 import * as pty from 'node-pty';
 import { nanoid } from 'nanoid';
 
-import {
-  SessionMode,
-  SessionConfig,
-  SessionLogMeta,
-  ServerMessage,
-} from '../types/index.js';
-import {
-  ROOT_DIR,
-  ENABLE_SESSION_LOGS,
-  LOG_DIR,
-} from '../config.js';
+import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
+import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR } from '../config.js';
 import { resolvePath } from '../utils/path.js';
 import { spawnForMode } from './pty.js';
 
@@ -129,10 +120,7 @@ function resolveCwd(requested: string | undefined): string {
  * @param ws WebSocket
  * @returns セッション情報
  */
-export async function startSession(
-  config: SessionConfig,
-  ws: WebSocket
-): Promise<SessionInternal> {
+export async function startSession(config: SessionConfig, ws: WebSocket): Promise<SessionInternal> {
   const { mode, cwd, customCommand } = config;
   const spawnConfig = spawnForMode(mode, customCommand);
   const sessionId = nanoid(10);

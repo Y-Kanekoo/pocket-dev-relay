@@ -15,10 +15,7 @@ import type http from 'http';
  * @param authToken 設定されているトークン
  * @returns 認証結果
  */
-export function isAuthorizedHeader(
-  header: string | undefined,
-  authToken: string
-): boolean {
+export function isAuthorizedHeader(header: string | undefined, authToken: string): boolean {
   if (!authToken) return true;
   return header === `Bearer ${authToken}`;
 }
@@ -29,11 +26,7 @@ export function isAuthorizedHeader(
  * @returns Express ミドルウェア
  */
 export function createAuthMiddleware(authToken: string) {
-  return function authMiddleware(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): void {
+  return function authMiddleware(req: Request, res: Response, next: NextFunction): void {
     if (!authToken) {
       next();
       return;
@@ -62,10 +55,7 @@ export function getTokenFromRequest(req: http.IncomingMessage): string {
  * @param authToken 認証トークン
  * @returns 認証結果
  */
-export function authorizeWebSocket(
-  req: http.IncomingMessage,
-  authToken: string
-): boolean {
+export function authorizeWebSocket(req: http.IncomingMessage, authToken: string): boolean {
   if (!authToken) return true;
   return getTokenFromRequest(req) === authToken;
 }

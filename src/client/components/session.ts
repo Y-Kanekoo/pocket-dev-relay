@@ -152,7 +152,7 @@ export async function startSession(): Promise<void> {
       sessionId: activeSessionId,
       mode: sessionStore.getMode(),
       cwd: elements.cwdInput?.value.trim() || '.',
-      command: elements.commandInput?.value.trim()
+      command: elements.commandInput?.value.trim(),
     };
     sendMessage(message);
   } catch {
@@ -172,7 +172,7 @@ export function stopSession(): void {
 
   const message: ClientMessage = {
     type: 'stop',
-    sessionId: activeSessionId
+    sessionId: activeSessionId,
   };
   sendMessage(message);
 }
@@ -261,7 +261,7 @@ export function initSessionUI(
   elems: SessionElements,
   callbacks: {
     onClearTerminal: () => void;
-  }
+  },
 ): void {
   elements = elems;
   onClearTerminal = callbacks.onClearTerminal;

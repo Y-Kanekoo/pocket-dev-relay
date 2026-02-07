@@ -92,7 +92,7 @@ export function extractErrorMessage(response: ApiErrorResponse): string {
 export function handleApiError(
   error: unknown,
   showToast: (message: string, type: ToastType) => void,
-  defaultMessage = '予期しないエラーが発生しました'
+  defaultMessage = '予期しないエラーが発生しました',
 ): void {
   // ApiErrorResponse 型のチェック
   if (isApiErrorResponse(error)) {
@@ -118,7 +118,7 @@ export function handleApiError(
  */
 export async function handleFetchError(
   response: Response,
-  showToast: (message: string, type: ToastType) => void
+  showToast: (message: string, type: ToastType) => void,
 ): Promise<boolean> {
   if (response.ok) {
     return false;
@@ -137,9 +137,7 @@ export async function handleFetchError(
       413: 'ファイルサイズが大きすぎます',
       500: 'サーバーエラーが発生しました',
     };
-    const message =
-      statusMessages[response.status] ||
-      `エラーが発生しました (${response.status})`;
+    const message = statusMessages[response.status] || `エラーが発生しました (${response.status})`;
     showToast(message, 'error');
   }
 
@@ -166,7 +164,7 @@ function isApiErrorResponse(obj: unknown): obj is ApiErrorResponse {
  */
 export function handleNetworkError(
   error: unknown,
-  showToast: (message: string, type: ToastType) => void
+  showToast: (message: string, type: ToastType) => void,
 ): void {
   if (error instanceof TypeError && error.message.includes('fetch')) {
     showToast('ネットワークエラー: サーバーに接続できません', 'error');

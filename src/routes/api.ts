@@ -6,12 +6,7 @@
 import { Router, Request, Response } from 'express';
 import path from 'path';
 
-import {
-  SessionMode,
-  AppConfig,
-  AddressesResponse,
-  QrResponse,
-} from '../types/index.js';
+import { SessionMode, AppConfig, AddressesResponse, QrResponse } from '../types/index.js';
 import {
   PORT,
   ROOT_DIR,
@@ -38,10 +33,11 @@ interface QRCodeToDataURLOptions {
 }
 
 // QRCode モジュールのインポート（CommonJSモジュール）
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+/* eslint-disable @typescript-eslint/no-require-imports */
 const QRCode: {
   toDataURL: (text: string, options?: QRCodeToDataURLOptions) => Promise<string>;
 } = require('qrcode');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const router = Router();
 
@@ -76,22 +72,26 @@ router.get('/addresses', authMiddleware, (_req: Request, res: Response) => {
 /**
  * GET /api/qr - QRコードを生成
  */
-router.get('/qr', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
-  const text = String(req.query.text || '').trim();
-  if (!text) {
-    throw new ValidationError('テキストが指定されていません');
-  }
+router.get(
+  '/qr',
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const text = String(req.query.text || '').trim();
+    if (!text) {
+      throw new ValidationError('テキストが指定されていません');
+    }
 
-  const dataUrl = await QRCode.toDataURL(text, {
-    margin: 1,
-    scale: 6,
-    color: {
-      dark: '#1f1a14',
-      light: '#ffffff',
-    },
-  });
-  const response: QrResponse = { dataUrl };
-  res.json(response);
-}));
+    const dataUrl = await QRCode.toDataURL(text, {
+      margin: 1,
+      scale: 6,
+      color: {
+        dark: '#1f1a14',
+        light: '#ffffff',
+      },
+    });
+    const response: QrResponse = { dataUrl };
+    res.json(response);
+  }),
+);
 
 export default router;

@@ -33,7 +33,9 @@ const app = express();
 let server: http.Server | https.Server;
 if (ENABLE_HTTPS) {
   if (!SSL_KEY_PATH || !SSL_CERT_PATH) {
-    console.error('エラー: HTTPS が有効ですが、SSL_KEY_PATH または SSL_CERT_PATH が設定されていません。');
+    console.error(
+      'エラー: HTTPS が有効ですが、SSL_KEY_PATH または SSL_CERT_PATH が設定されていません。',
+    );
     process.exit(1);
   }
   if (!fsSync.existsSync(SSL_KEY_PATH)) {

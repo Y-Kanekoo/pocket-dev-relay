@@ -7,7 +7,7 @@ export class AppError extends Error {
     public readonly code: string,
     public readonly statusCode: number,
     message: string,
-    public readonly details?: unknown
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'AppError';
@@ -77,7 +77,7 @@ export class FileTooLargeError extends AppError {
       'FILE_TOO_LARGE',
       413,
       `ファイルサイズが上限(${formatBytes(maxSize)})を超えています`,
-      actualSize !== undefined ? { size: actualSize, maxSize } : { maxSize }
+      actualSize !== undefined ? { size: actualSize, maxSize } : { maxSize },
     );
     this.name = 'FileTooLargeError';
     Object.setPrototypeOf(this, FileTooLargeError.prototype);
@@ -117,7 +117,7 @@ export class FileTypeError extends AppError {
     super(
       expected === 'file' ? 'NOT_A_FILE' : 'NOT_A_DIRECTORY',
       400,
-      `${expected === 'file' ? 'ファイル' : 'ディレクトリ'}ではありません（実際: ${actual === 'file' ? 'ファイル' : 'ディレクトリ'}）`
+      `${expected === 'file' ? 'ファイル' : 'ディレクトリ'}ではありません（実際: ${actual === 'file' ? 'ファイル' : 'ディレクトリ'}）`,
     );
     this.name = 'FileTypeError';
     Object.setPrototypeOf(this, FileTypeError.prototype);

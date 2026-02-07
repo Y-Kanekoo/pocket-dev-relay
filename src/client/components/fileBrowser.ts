@@ -3,7 +3,7 @@
  * ファイル一覧表示、ファイル内容の読み込み・保存
  */
 
-import type { FileItem, AppConfig } from '../../types/index.js';
+import type { FileItem } from '../../types/index.js';
 import type { AccessUrl } from '../../types/index.js';
 import { sessionStore } from '../state/sessionStore.js';
 import {
@@ -50,7 +50,7 @@ let onAuthRequired: (() => void) | null = null;
 
 // 現在のファイル
 const currentFile: { path: string | null } = {
-  path: null
+  path: null,
 };
 
 // ==================================================
@@ -151,7 +151,10 @@ export async function loadFile(path: string): Promise<void> {
       return;
     }
     if (elements.fileStatus) {
-      elements.fileStatus.textContent = error instanceof Error ? `読み込み失敗: ${error.message}` : 'ファイルの読み込みに失敗しました。';
+      elements.fileStatus.textContent =
+        error instanceof Error
+          ? `読み込み失敗: ${error.message}`
+          : 'ファイルの読み込みに失敗しました。';
     }
   }
 }
@@ -171,8 +174,7 @@ export function updateFileEditor(): void {
   }
   if (elements.fileStatus) {
     if (!writable) {
-      elements.fileStatus.textContent =
-        '読み取り専用です（ALLOW_FILE_WRITE=true で保存可）。';
+      elements.fileStatus.textContent = '読み取り専用です（ALLOW_FILE_WRITE=true で保存可）。';
     } else {
       elements.fileStatus.textContent = '';
     }
@@ -196,7 +198,8 @@ async function saveCurrentFile(): Promise<void> {
       return;
     }
     if (elements.fileStatus) {
-      elements.fileStatus.textContent = error instanceof Error ? `保存に失敗しました: ${error.message}` : '保存に失敗しました。';
+      elements.fileStatus.textContent =
+        error instanceof Error ? `保存に失敗しました: ${error.message}` : '保存に失敗しました。';
     }
   } finally {
     if (elements.saveFile) {
@@ -305,7 +308,7 @@ export function initFileBrowser(
   elems: FileBrowserElements,
   callbacks: {
     onAuthRequired: () => void;
-  }
+  },
 ): void {
   elements = elems;
   onAuthRequired = callbacks.onAuthRequired;

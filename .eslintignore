@@ -1,2 +1,7 @@
-node_modules
-logs
+dist/
+public/app.js
+docs/
+node_modules/
+logs/
+*.js
+!.eslintrc.js

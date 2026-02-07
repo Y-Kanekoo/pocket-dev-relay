@@ -3,11 +3,7 @@
  * サーバーとのHTTP通信を管理
  */
 
-import type {
-  AppConfig,
-  FileItem,
-  AccessUrl,
-} from '../../types/index.js';
+import type { AppConfig, FileItem, AccessUrl } from '../../types/index.js';
 import { sessionStore } from '../state/sessionStore.js';
 
 // ==================================================
@@ -76,7 +72,7 @@ export async function fetchAddresses(): Promise<AccessUrl[]> {
  */
 export async function fetchQrCode(url: string): Promise<string> {
   const res = await fetch(`/api/qr?text=${encodeURIComponent(url)}`, {
-    headers: authHeaders()
+    headers: authHeaders(),
   });
   if (res.status === 401) {
     throw new Error('unauthorized');
@@ -99,7 +95,7 @@ export async function fetchQrCode(url: string): Promise<string> {
  */
 export async function fetchFileList(path: string): Promise<{ path: string; items: FileItem[] }> {
   const res = await fetch(`/api/files?path=${encodeURIComponent(path || '.')}`, {
-    headers: authHeaders()
+    headers: authHeaders(),
   });
   if (res.status === 401) {
     throw new Error('unauthorized');
@@ -110,7 +106,7 @@ export async function fetchFileList(path: string): Promise<{ path: string; items
   const data = await res.json();
   return {
     path: data.path || '.',
-    items: data.items || []
+    items: data.items || [],
   };
 }
 
@@ -121,7 +117,7 @@ export async function fetchFileList(path: string): Promise<{ path: string; items
  */
 export async function fetchFileContent(path: string): Promise<{ path: string; content: string }> {
   const res = await fetch(`/api/file?path=${encodeURIComponent(path)}`, {
-    headers: authHeaders()
+    headers: authHeaders(),
   });
   if (res.status === 401) {
     throw new Error('unauthorized');
@@ -133,7 +129,7 @@ export async function fetchFileContent(path: string): Promise<{ path: string; co
   const data = await res.json();
   return {
     path: data.path,
-    content: data.content || ''
+    content: data.content || '',
   };
 }
 
@@ -148,9 +144,9 @@ export async function saveFile(path: string, content: string): Promise<void> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...authHeaders()
+      ...authHeaders(),
     },
-    body: JSON.stringify({ path, content })
+    body: JSON.stringify({ path, content }),
   });
   if (res.status === 401) {
     throw new Error('unauthorized');

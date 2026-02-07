@@ -7,22 +7,15 @@
  */
 
 // 型定義をインポート
-import type { SessionMode, AppConfig } from '../types/index.js';
+import type { SessionMode } from '../types/index.js';
 
 // 状態管理
 import { sessionStore } from './state/sessionStore.js';
 
 // コンポーネント
-import { initToast, showToast } from './components/toast.js';
+import { initToast } from './components/toast.js';
 import { initSettings } from './components/settings.js';
-import {
-  initTerminal,
-  initSessions,
-  createSession,
-  switchSession,
-  clearActiveTerminal,
-  fitActiveSession,
-} from './components/terminal.js';
+import { initTerminal, initSessions, clearActiveTerminal } from './components/terminal.js';
 import {
   initSessionUI,
   setStatus,
@@ -205,7 +198,7 @@ interface DOMElements {
     },
     {
       onFontSizeChange: sendResize,
-    }
+    },
   );
 
   // WebSocket初期化
@@ -227,7 +220,7 @@ interface DOMElements {
         updateSessionMeta();
         updateButtons();
       },
-    }
+    },
   );
 
   // セッションUI初期化
@@ -249,7 +242,7 @@ interface DOMElements {
     },
     {
       onClearTerminal: clearActiveTerminal,
-    }
+    },
   );
 
   // ファイルブラウザ初期化
@@ -267,7 +260,7 @@ interface DOMElements {
     },
     {
       onAuthRequired: showAuth,
-    }
+    },
   );
 
   // ==================================================

@@ -81,8 +81,8 @@ export function createSession(): ClientSessionInfo | null {
       background: '#14110d',
       foreground: '#f5efe6',
       cursor: '#f0b94b',
-      selection: 'rgba(240, 185, 75, 0.3)'
-    }
+      selection: 'rgba(240, 185, 75, 0.3)',
+    },
   });
 
   const fitAddon = new FitAddon.FitAddon();
@@ -95,7 +95,7 @@ export function createSession(): ClientSessionInfo | null {
     const message: ClientMessage = {
       type: 'input',
       sessionId: sessionId,
-      data
+      data,
     };
     sendMessage(message);
   });
@@ -136,7 +136,7 @@ export function createSession(): ClientSessionInfo | null {
     tabElement,
     active: false,
     label: `セッション ${sessionNum}`,
-    cwd: '.'
+    cwd: '.',
   };
 
   sessionStore.addSession(session);
@@ -188,7 +188,7 @@ export function closeSession(sessionId: string): void {
   if (session.active && sessionStore.isConnected()) {
     const message: ClientMessage = {
       type: 'stop',
-      sessionId: sessionId
+      sessionId: sessionId,
     };
     sendMessage(message);
   }
@@ -278,7 +278,7 @@ export function initTerminal(
   },
   callbacks: {
     onSessionChange: () => void;
-  }
+  },
 ): void {
   terminalContainer = elements.terminalContainer;
   sessionTabList = elements.sessionTabList;

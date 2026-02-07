@@ -3,10 +3,7 @@
  * サーバーとのリアルタイム通信を管理
  */
 
-import type {
-  ClientMessage,
-  ServerMessage,
-} from '../../types/index.js';
+import type { ClientMessage, ServerMessage } from '../../types/index.js';
 import { sessionStore } from '../state/sessionStore.js';
 import { showToast } from '../components/toast.js';
 
@@ -173,7 +170,7 @@ export function sendResize(): void {
     type: 'resize',
     sessionId: activeSessionId,
     cols: session.term.cols,
-    rows: session.term.rows
+    rows: session.term.rows,
   };
   sendMessage(message);
 }

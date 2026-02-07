@@ -143,7 +143,7 @@ export function initSettings(
   },
   callbacks: {
     onFontSizeChange: () => void;
-  }
+  },
 ): void {
   themeToggleBtn = elements.themeToggle;
   fontDecreaseBtn = elements.fontDecrease;
