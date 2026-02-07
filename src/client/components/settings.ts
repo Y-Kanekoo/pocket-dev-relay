@@ -1,6 +1,6 @@
 /**
  * 設定UIコンポーネント
- * テーマ切り替えとフォントサイズ管理
+ * テーマ切り替え、フォントサイズ管理、通知設定
  */
 
 import {
@@ -9,6 +9,16 @@ import {
   FONT_SIZE_MAX,
   THEME_STORAGE_KEY,
 } from '../state/sessionStore.js';
+import {
+  requestPermission,
+  getPermissionState,
+  getSettings,
+  setEnabled,
+  setErrorEnabled,
+  setExitEnabled,
+  initNotification,
+} from '../services/notification.js';
+import { showToast } from './toast.js';
 
 // ==================================================
 // DOM要素の参照
@@ -18,6 +28,13 @@ let themeToggleBtn: HTMLButtonElement | null = null;
 let fontDecreaseBtn: HTMLButtonElement | null = null;
 let fontIncreaseBtn: HTMLButtonElement | null = null;
 let fontSizeLabel: HTMLElement | null = null;
+
+// 通知関連のDOM要素
+let notificationPermitBtn: HTMLButtonElement | null = null;
+let notificationToggle: HTMLInputElement | null = null;
+let notificationErrorToggle: HTMLInputElement | null = null;
+let notificationExitToggle: HTMLInputElement | null = null;
+let notificationStatus: HTMLElement | null = null;
 
 // リサイズ送信コールバック（外部から設定）
 let onFontSizeChange: (() => void) | null = null;
@@ -126,6 +143,106 @@ export function changeFontSize(delta: number): void {
 }
 
 // ==================================================
+// 通知設定管理
+// ==================================================
+
+/**
+ * 通知許可状態のUI表示を更新
+ */
+export function updateNotificationUI(): void {
+  const state = getPermissionState();
+  const settings = getSettings();
+
+  // 許可状態のテキスト
+  if (notificationStatus) {
+    switch (state) {
+      case 'granted':
+        notificationStatus.textContent = '許可済み';
+        notificationStatus.className = 'notification-status granted';
+        break;
+      case 'denied':
+        notificationStatus.textContent = 'ブロック中';
+        notificationStatus.className = 'notification-status denied';
+        break;
+      case 'default':
+        notificationStatus.textContent = '未設定';
+        notificationStatus.className = 'notification-status default';
+        break;
+      case 'unsupported':
+        notificationStatus.textContent = '非対応';
+        notificationStatus.className = 'notification-status unsupported';
+        break;
+    }
+  }
+
+  // 許可ボタンの状態
+  if (notificationPermitBtn) {
+    notificationPermitBtn.disabled = state === 'granted' || state === 'unsupported';
+    notificationPermitBtn.textContent = state === 'granted' ? '通知許可済み' : '通知を許可';
+  }
+
+  // トグルの状態
+  const togglesEnabled = state === 'granted';
+  if (notificationToggle) {
+    notificationToggle.checked = settings.enabled;
+    notificationToggle.disabled = !togglesEnabled;
+  }
+  if (notificationErrorToggle) {
+    notificationErrorToggle.checked = settings.errorEnabled;
+    notificationErrorToggle.disabled = !togglesEnabled || !settings.enabled;
+  }
+  if (notificationExitToggle) {
+    notificationExitToggle.checked = settings.exitEnabled;
+    notificationExitToggle.disabled = !togglesEnabled || !settings.enabled;
+  }
+}
+
+/**
+ * 通知許可をリクエストしてUIを更新
+ */
+async function handlePermissionRequest(): Promise<void> {
+  const granted = await requestPermission();
+  if (granted) {
+    showToast('通知を許可しました', 'success');
+  } else {
+    showToast('通知が許可されませんでした', 'warning');
+  }
+  updateNotificationUI();
+}
+
+/**
+ * 通知設定のイベントリスナーを設定
+ */
+function setupNotificationListeners(): void {
+  // 許可ボタン
+  notificationPermitBtn?.addEventListener('click', () => {
+    handlePermissionRequest();
+  });
+
+  // 通知全体のON/OFF
+  notificationToggle?.addEventListener('change', () => {
+    if (notificationToggle) {
+      setEnabled(notificationToggle.checked);
+      updateNotificationUI();
+    }
+  });
+
+  // エラー通知のON/OFF
+  notificationErrorToggle?.addEventListener('change', () => {
+    if (notificationErrorToggle) {
+      setErrorEnabled(notificationErrorToggle.checked);
+    }
+  });
+
+  // プロセス終了通知のON/OFF
+  notificationExitToggle?.addEventListener('change', () => {
+    if (notificationExitToggle) {
+      setExitEnabled(notificationExitToggle.checked);
+    }
+  });
+}
+
+// ==================================================
 // 初期化
 // ==================================================
 
@@ -140,6 +257,11 @@ export function initSettings(
     fontDecrease: HTMLButtonElement | null;
     fontIncrease: HTMLButtonElement | null;
     fontSizeLabel: HTMLElement | null;
+    notificationPermit?: HTMLButtonElement | null;
+    notificationToggle?: HTMLInputElement | null;
+    notificationErrorToggle?: HTMLInputElement | null;
+    notificationExitToggle?: HTMLInputElement | null;
+    notificationStatus?: HTMLElement | null;
   },
   callbacks: {
     onFontSizeChange: () => void;
@@ -150,6 +272,13 @@ export function initSettings(
   fontIncreaseBtn = elements.fontIncrease;
   fontSizeLabel = elements.fontSizeLabel;
   onFontSizeChange = callbacks.onFontSizeChange;
+
+  // 通知関連のDOM要素
+  notificationPermitBtn = elements.notificationPermit ?? null;
+  notificationToggle = elements.notificationToggle ?? null;
+  notificationErrorToggle = elements.notificationErrorToggle ?? null;
+  notificationExitToggle = elements.notificationExitToggle ?? null;
+  notificationStatus = elements.notificationStatus ?? null;
 
   // テーマ初期化
   const theme = getCurrentTheme();
@@ -169,6 +298,11 @@ export function initSettings(
     fontIncreaseBtn.addEventListener('click', () => changeFontSize(1));
   }
 
+  // 通知サービス初期化
+  initNotification();
+  setupNotificationListeners();
+
   // 初期状態のUI更新
   updateFontSizeUI();
+  updateNotificationUI();
 }
