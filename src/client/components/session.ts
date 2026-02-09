@@ -10,6 +10,7 @@ import { updateTabLabel, fitActiveSession } from './terminal.js';
 import { connectWebSocket, sendMessage, sendResize } from '../services/websocket.js';
 import { showSSHDialog } from './sshDialog.js';
 import { showNotification } from '../services/notification.js';
+import { translateError } from '../services/errorHandler.js';
 
 // ==================================================
 // DOM要素の参照
@@ -258,10 +259,11 @@ export function handleServerMessage(payload: ServerMessage): void {
   }
 
   if (payload.type === 'error') {
-    // エラー通知
+    // エラーコードをユーザーフレンドリーなメッセージに変換して通知
+    const friendlyMessage = translateError(payload.message);
     const activeSession = sessionStore.getActiveSession();
     if (activeSession) {
-      activeSession.term.writeln(`\r\n[エラー] ${payload.message}`);
+      activeSession.term.writeln(`\r\n[エラー] ${friendlyMessage}`);
     }
   }
 }

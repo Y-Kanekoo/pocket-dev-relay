@@ -31,7 +31,7 @@ interface NotificationSettings {
 }
 
 /** 現在の通知設定 */
-let settings: NotificationSettings = {
+const settings: NotificationSettings = {
   enabled: true,
   errorEnabled: true,
   exitEnabled: true,

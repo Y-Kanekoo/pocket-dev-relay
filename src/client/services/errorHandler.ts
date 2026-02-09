@@ -19,20 +19,22 @@ interface ApiErrorResponse {
 const ERROR_MESSAGES: Record<string, string> = {
   // 認証関連
   AUTHENTICATION_FAILED: '認証に失敗しました。トークンを確認してください。',
-  unauthorized: '認証が必要です。',
+  unauthorized: '認証に失敗しました。トークンを確認してください。',
 
   // ファイル関連
   NOT_FOUND: 'リソースが見つかりません。',
   NOT_A_FILE: 'ファイルではありません。',
   NOT_A_DIRECTORY: 'ディレクトリではありません。',
   FILE_TOO_LARGE: 'ファイルサイズが上限を超えています。',
+  'file-too-large': 'ファイルサイズが上限を超えています。',
   INVALID_PATH: 'パスが無効です。ワークスペース外にはアクセスできません。',
 
   // 機能関連
   FEATURE_DISABLED: 'この機能は無効化されています。',
   'file-write-disabled': 'ファイル書き込みは無効化されています。',
+  'write-disabled': 'ファイル書き込みが無効になっています。',
   'session-logs-disabled': 'セッションログは無効化されています。',
-  'custom-commands-disabled': 'カスタムコマンドは無効化されています。',
+  'custom-commands-disabled': 'カスタムコマンドは無効になっています。管理者に連絡してください。',
 
   // バリデーション関連
   VALIDATION_ERROR: '入力値が不正です。',
@@ -41,9 +43,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   'invalid-filename': 'ファイル名が不正です。',
 
   // セッション関連
-  'session-already-running': 'セッションは既に実行中です。',
+  'session-already-running': 'セッションは既に実行中です。新しいセッションを開始するには、現在のセッションを停止してください。',
+  'failed-to-start': 'セッションの開始に失敗しました。もう一度お試しください。',
+  'session-timeout': 'セッションがタイムアウトしました。',
   'unknown-mode': '不明なモードです。',
   'missing-command': 'コマンドが指定されていません。',
+
+  // SSH関連
+  'ssh-disabled': 'SSH機能は無効になっています。サーバー設定で ENABLE_SSH=true を設定してください。',
+  'ssh-host-required': 'ホスト名を入力してください。',
+  'ssh-username-required': 'ユーザー名を入力してください。',
+  'ssh-password-required': 'パスワードを入力してください。',
+  'ssh-config-required': 'SSH接続設定が不足しています。',
 
   // 一般エラー
   INTERNAL_SERVER_ERROR: 'サーバーエラーが発生しました。',
@@ -64,6 +75,16 @@ const ERROR_MESSAGES: Record<string, string> = {
  */
 export function getErrorMessage(code: string): string {
   return ERROR_MESSAGES[code] || `エラーが発生しました: ${code}`;
+}
+
+/**
+ * エラーコードをユーザーフレンドリーな日本語メッセージに変換
+ * WebSocketのエラーメッセージ等で使用する
+ * @param code エラーコード
+ * @returns 日本語メッセージ（マッピングがない場合はコードをそのまま返す）
+ */
+export function translateError(code: string): string {
+  return ERROR_MESSAGES[code] || code;
 }
 
 /**
