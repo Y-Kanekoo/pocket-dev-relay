@@ -13,7 +13,8 @@ import { nanoid } from 'nanoid';
 import { Client as SSHClient, ClientChannel } from 'ssh2';
 
 import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
-import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR } from '../config.js';
+import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR, LOG_MAX_AGE_DAYS, LOG_MAX_SIZE_MB } from '../config.js';
+import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
@@ -66,9 +67,57 @@ export async function initLogDir(): Promise<void> {
   if (!ENABLE_SESSION_LOGS) return;
   try {
     await fs.mkdir(LOG_DIR, { recursive: true });
+    // ログローテーション: 古いログを削除
+    await rotateOldLogs();
   } catch (error) {
     const err = error as Error;
-    console.error('ログディレクトリの作成に失敗しました:', err.message);
+    logger.error({ err }, 'ログディレクトリの作成に失敗しました');
+  }
+}
+
+/**
+ * 古いセッションログを削除
+ * LOG_MAX_AGE_DAYSより古いログファイルを削除
+ * LOG_MAX_SIZE_MBを超過した場合も古い順に削除
+ */
+async function rotateOldLogs(): Promise<void> {
+  try {
+    const files = await fs.readdir(LOG_DIR);
+    const now = Date.now();
+    const maxAgeMs = LOG_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+    let totalSize = 0;
+
+    // ファイル情報を取得してソート（古い順）
+    const fileInfos: Array<{ name: string; mtime: number; size: number }> = [];
+    for (const file of files) {
+      if (!file.startsWith('session-')) continue;
+      const filePath = path.join(LOG_DIR, file);
+      const stat = await fs.stat(filePath);
+      fileInfos.push({ name: file, mtime: stat.mtimeMs, size: stat.size });
+      totalSize += stat.size;
+    }
+    fileInfos.sort((a, b) => a.mtime - b.mtime);
+
+    const maxSizeBytes = LOG_MAX_SIZE_MB * 1024 * 1024;
+    let deletedCount = 0;
+
+    for (const info of fileInfos) {
+      const isOld = (now - info.mtime) > maxAgeMs;
+      const isOverSize = totalSize > maxSizeBytes;
+
+      if (isOld || isOverSize) {
+        await fs.unlink(path.join(LOG_DIR, info.name));
+        totalSize -= info.size;
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount > 0) {
+      logger.info({ deletedCount }, 'ログローテーション: 古いログを削除しました');
+    }
+  } catch (error) {
+    const err = error as Error;
+    logger.error({ err }, 'ログローテーションに失敗しました');
   }
 }
 
@@ -166,7 +215,7 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
       });
     } catch (error) {
       const err = error as Error;
-      console.error('ログファイルの作成に失敗しました:', err.message);
+      logger.error({ err }, 'ログファイルの作成に失敗しました');
     }
   }
 
@@ -265,7 +314,7 @@ export async function startSSHSession(config: SessionConfig, ws: WebSocket): Pro
       });
     } catch (error) {
       const err = error as Error;
-      console.error('ログファイルの作成に失敗しました:', err.message);
+      logger.error({ err }, 'ログファイルの作成に失敗しました');
     }
   }
 

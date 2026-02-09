@@ -18,6 +18,7 @@ import {
   ENABLE_SESSION_LOGS,
   LOG_DIR,
 } from './config.js';
+import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
 import { setupWebSocketHandlers } from './services/websocket.js';
@@ -39,17 +40,17 @@ const app = express();
 let server: http.Server | https.Server;
 if (ENABLE_HTTPS) {
   if (!SSL_KEY_PATH || !SSL_CERT_PATH) {
-    console.error(
+    logger.error(
       'エラー: HTTPS が有効ですが、SSL_KEY_PATH または SSL_CERT_PATH が設定されていません。',
     );
     process.exit(1);
   }
   if (!fsSync.existsSync(SSL_KEY_PATH)) {
-    console.error(`エラー: 秘密鍵ファイルが見つかりません: ${SSL_KEY_PATH}`);
+    logger.error('エラー: 秘密鍵ファイルが見つかりません: %s', SSL_KEY_PATH);
     process.exit(1);
   }
   if (!fsSync.existsSync(SSL_CERT_PATH)) {
-    console.error(`エラー: 証明書ファイルが見つかりません: ${SSL_CERT_PATH}`);
+    logger.error('エラー: 証明書ファイルが見つかりません: %s', SSL_CERT_PATH);
     process.exit(1);
   }
   try {
@@ -58,10 +59,10 @@ if (ENABLE_HTTPS) {
       cert: fsSync.readFileSync(SSL_CERT_PATH),
     };
     server = https.createServer(httpsOptions, app);
-    console.log('HTTPS モードで起動します');
+    logger.info('HTTPS モードで起動します');
   } catch (error) {
     const err = error as Error;
-    console.error(`エラー: SSL証明書の読み込みに失敗しました: ${err.message}`);
+    logger.error({ err }, 'SSL証明書の読み込みに失敗しました');
     process.exit(1);
   }
 } else {
@@ -102,16 +103,16 @@ app.use(errorHandler);
 server.listen(PORT, '0.0.0.0', async () => {
   if (ENABLE_SESSION_LOGS) {
     await initLogDir();
-    console.log(`セッションログ: 有効 (${LOG_DIR})`);
+    logger.info({ logDir: LOG_DIR }, 'セッションログ: 有効');
   }
 
   const protocol = ENABLE_HTTPS ? 'https' : 'http';
-  console.log('Pocket Dev Relay is running.');
-  console.log(`Local: ${protocol}://localhost:${PORT}`);
+  logger.info('Pocket Dev Relay is running.');
+  logger.info('Local: %s://localhost:%d', protocol, PORT);
   buildAccessUrls()
     .filter((entry) => entry.type === 'lan')
     .forEach((entry) => {
-      console.log(`LAN (${entry.name}): ${entry.url}`);
+      logger.info('LAN (%s): %s', entry.name, entry.url);
     });
 });
 

@@ -6,6 +6,7 @@
 
 import { AI_PROVIDER, ANTHROPIC_API_KEY, OPENAI_API_KEY, AI_MODEL } from '../config.js';
 import type { AIProviderName } from '../types/index.js';
+import logger from './logger.js';
 
 // ============================================================
 // AIプロバイダーインターフェース
@@ -223,13 +224,13 @@ interface OpenAIResponse {
  */
 export function createAIProvider(): AIProvider | null {
   if (AI_PROVIDER === 'claude' && ANTHROPIC_API_KEY) {
-    console.log(`AI解析: 有効 (Claude, モデル: ${AI_MODEL})`);
+    logger.info({ provider: 'Claude', model: AI_MODEL }, 'AI解析: 有効');
     return new ClaudeProvider(ANTHROPIC_API_KEY, AI_MODEL);
   }
   if (AI_PROVIDER === 'openai' && OPENAI_API_KEY) {
-    console.log(`AI解析: 有効 (OpenAI, モデル: ${AI_MODEL})`);
+    logger.info({ provider: 'OpenAI', model: AI_MODEL }, 'AI解析: 有効');
     return new OpenAIProvider(OPENAI_API_KEY, AI_MODEL);
   }
-  console.log('AI解析: 無効（APIキー未設定）');
+  logger.info('AI解析: 無効（APIキー未設定）');
   return null;
 }

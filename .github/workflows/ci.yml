@@ -58,3 +58,22 @@ jobs:
 
       - name: Prettier（フォーマットチェック）
         run: npx prettier --check "src/**/*.ts"
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: ネイティブビルドツールをインストール
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      - name: npm audit（脆弱性チェック）
+        run: npm audit --audit-level=high || true

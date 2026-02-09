@@ -4,6 +4,7 @@
  */
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/AppError.js';
+import logger from '../services/logger.js';
 
 /**
  * エラーレスポンスの型定義
@@ -43,12 +44,11 @@ export function errorHandler(
   }
 
   // 予期しないエラーのログ出力
-  console.error('予期しないエラーが発生しました:', {
-    message: err.message,
-    stack: err.stack,
+  logger.error({
+    err,
     url: req.url,
     method: req.method,
-  });
+  }, '予期しないエラーが発生しました');
 
   // 本番環境では詳細を隠す
   const isProduction = process.env.NODE_ENV === 'production';
