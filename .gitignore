@@ -27,3 +27,6 @@ logs/
 
 # TypeScriptビルド生成物
 dist/
+
+# テストカバレッジ
+coverage/
