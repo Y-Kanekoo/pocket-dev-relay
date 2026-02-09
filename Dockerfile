@@ -32,11 +32,20 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
+# アプリケーションディレクトリの所有者をnodeユーザーに変更
+RUN chown -R node:node /app
+
+# ワークスペースディレクトリを作成
+RUN mkdir -p /workspace && chown -R node:node /workspace
+
 # 環境変数のデフォルト値
 ENV PORT=4173
 ENV HOST=0.0.0.0
 ENV WORKSPACE_ROOT=/workspace
 
 EXPOSE 4173
+
+# 非rootユーザーで実行
+USER node
 
 CMD ["node", "dist/server.js"]

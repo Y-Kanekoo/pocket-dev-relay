@@ -32,11 +32,20 @@ export const ALLOW_FILE_WRITE: boolean = process.env.ALLOW_FILE_WRITE === 'true'
 /** 最大ファイルサイズ（バイト） */
 export const MAX_FILE_SIZE: number = parseInt(process.env.MAX_FILE_SIZE || '1048576', 10);
 
+/** ログレベル */
+export const LOG_LEVEL: string = process.env.LOG_LEVEL || 'info';
+
 /** セッションログの有効化 */
 export const ENABLE_SESSION_LOGS: boolean = process.env.ENABLE_SESSION_LOGS === 'true';
 
 /** ログディレクトリ */
 export const LOG_DIR: string = path.resolve(process.env.LOG_DIR || path.join(ROOT_DIR, 'logs'));
+
+/** ログ保持日数（デフォルト: 30日） */
+export const LOG_MAX_AGE_DAYS: number = parseInt(process.env.LOG_MAX_AGE_DAYS || '30', 10);
+
+/** ログ最大サイズ（MB、デフォルト: 100MB） */
+export const LOG_MAX_SIZE_MB: number = parseInt(process.env.LOG_MAX_SIZE_MB || '100', 10);
 
 /** シェルコマンド */
 export const SHELL_CMD: string = process.env.SHELL_CMD || process.env.SHELL || 'zsh';
@@ -117,3 +126,9 @@ export const SSH_DEFAULT_USER: string = process.env.SSH_DEFAULT_USER || '';
 
 /** SSH秘密鍵パス */
 export const SSH_KEY_PATH: string = process.env.SSH_KEY_PATH || path.join(os.homedir(), '.ssh', 'id_rsa');
+
+/** SSHホスト鍵の厳格な検証（デフォルト: true） */
+export const SSH_STRICT_HOST_KEY: boolean = process.env.SSH_STRICT_HOST_KEY !== 'false';
+
+/** SSHパスワード認証にHTTPSを要求する（デフォルト: true） */
+export const SSH_REQUIRE_HTTPS_FOR_PASSWORD: boolean = process.env.SSH_REQUIRE_HTTPS_FOR_PASSWORD !== 'false';

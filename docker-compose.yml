@@ -10,4 +10,10 @@ services:
       - AUTH_TOKEN=${AUTH_TOKEN:-pdr-local}
       - WORKSPACE_ROOT=/workspace
       - PORT=4173
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4173/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
