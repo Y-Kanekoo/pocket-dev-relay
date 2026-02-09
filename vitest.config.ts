@@ -11,9 +11,27 @@ export default defineConfig({
     // カバレッジ設定
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/types/**/*.ts'],
+      exclude: [
+        'src/client/**/*.ts',
+        'src/types/**/*.ts',
+        // 外部依存が強くユニットテスト困難なモジュール
+        'src/server.ts',
+        'src/cli.ts',
+        'src/services/session.ts',
+        'src/services/websocket.ts',
+        'src/services/ssh.ts',
+        'src/services/pty.ts',
+        'src/services/ai.ts',
+        'src/utils/network.ts',
+      ],
+      thresholds: {
+        statements: 50,
+        branches: 40,
+        functions: 50,
+        lines: 50,
+      },
     },
   },
 });
