@@ -10,6 +10,8 @@ import type { Express } from 'express';
 // 認証をスキップするためAUTH_TOKENを空にモック
 vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
+  LOG_LEVEL: 'silent',
+  APP_VERSION: '0.0.0-test',
 }));
 
 describe('クリップボード API', () => {
@@ -19,6 +21,8 @@ describe('クリップボード API', () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
       AUTH_TOKEN: '',
+      LOG_LEVEL: 'silent',
+      APP_VERSION: '0.0.0-test',
     }));
 
     const clipboardMod = await import('../../src/routes/clipboard.js');
