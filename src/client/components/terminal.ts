@@ -42,6 +42,9 @@ let sessionAddBtn: HTMLButtonElement | null = null;
 // コールバック関数
 let onSessionChange: (() => void) | null = null;
 
+/** リサイズデバウンス用タイマー */
+let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+
 // ==================================================
 // セッション管理
 // ==================================================
@@ -253,6 +256,17 @@ export function fitActiveSession(): void {
   }
 }
 
+/** デバウンス付きリサイズハンドラ（100ms） */
+function handleResize(): void {
+  if (resizeTimer) {
+    clearTimeout(resizeTimer);
+  }
+  resizeTimer = setTimeout(() => {
+    fitActiveSession();
+    resizeTimer = null;
+  }, 100);
+}
+
 /**
  * アクティブセッションのターミナルをクリア
  */
@@ -293,8 +307,8 @@ export function initTerminal(
     }
   });
 
-  // ウィンドウリサイズ時の処理
-  window.addEventListener('resize', fitActiveSession);
+  // ウィンドウリサイズ時の処理（デバウンス付き）
+  window.addEventListener('resize', handleResize);
 }
 
 /**
