@@ -159,6 +159,38 @@ export function send(ws: WebSocket, payload: ServerMessage): void {
 }
 
 // ============================================================
+// PTY環境変数フィルタ
+// ============================================================
+
+/** PTYに渡す環境変数の許可リスト */
+const ENV_ALLOWLIST: ReadonlySet<string> = new Set([
+  'HOME', 'USER', 'LOGNAME', 'SHELL', 'LANG', 'LC_ALL', 'LC_CTYPE',
+  'PATH', 'TERM', 'COLORTERM', 'EDITOR', 'VISUAL', 'PAGER',
+  'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR',
+  'TMPDIR', 'TMP', 'TEMP',
+  'HOSTNAME', 'PWD', 'OLDPWD', 'SHLVL',
+  'SSH_AUTH_SOCK', 'GPG_AGENT_INFO',
+  // Node.js関連
+  'NODE_ENV', 'NODE_PATH', 'NODE_OPTIONS',
+  // Git関連
+  'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL',
+]);
+
+/**
+ * PTYに渡す安全な環境変数を構築
+ * 許可リストに含まれる変数のみを渡し、機密情報の漏洩を防止する
+ */
+function buildSafeEnv(): Record<string, string> {
+  const env: Record<string, string> = { TERM: 'xterm-256color' };
+  for (const key of ENV_ALLOWLIST) {
+    if (process.env[key]) {
+      env[key] = process.env[key] as string;
+    }
+  }
+  return env;
+}
+
+// ============================================================
 // セッション操作
 // ============================================================
 
@@ -184,12 +216,15 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   const sessionId = nanoid(10);
   const startDir = resolveCwd(cwd || '.');
 
+  // 安全な環境変数のみPTYに渡す（機密情報の漏洩防止）
+  const safeEnv = buildSafeEnv();
+
   const ptyProcess = pty.spawn(spawnConfig.command, spawnConfig.args, {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
     cwd: startDir,
-    env: { ...process.env, TERM: 'xterm-256color' } as { [key: string]: string },
+    env: safeEnv,
   });
 
   // ログファイルのセットアップ
