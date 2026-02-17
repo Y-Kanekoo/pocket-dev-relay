@@ -116,8 +116,20 @@ server.listen(PORT, '0.0.0.0', async () => {
     });
 });
 
-// シグナルハンドラ
-process.on('SIGINT', () => {
+/** グレースフルシャットダウン */
+function gracefulShutdown(signal: string): void {
+  logger.info({ signal }, 'シャットダウン開始');
   cleanupAllSessions();
-  process.exit(0);
-});
+  server.close(() => {
+    logger.info('サーバーを停止しました');
+    process.exit(0);
+  });
+  // 10秒以内にクローズできなければ強制終了
+  setTimeout(() => {
+    logger.warn('強制終了します');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

@@ -3,6 +3,7 @@
  * 環境変数から読み込んだ設定をエクスポート
  */
 
+import { readFileSync } from 'fs';
 import os from 'os';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -132,3 +133,17 @@ export const SSH_STRICT_HOST_KEY: boolean = process.env.SSH_STRICT_HOST_KEY !== 
 
 /** SSHパスワード認証にHTTPSを要求する（デフォルト: true） */
 export const SSH_REQUIRE_HTTPS_FOR_PASSWORD: boolean = process.env.SSH_REQUIRE_HTTPS_FOR_PASSWORD !== 'false';
+
+// ============================================================
+// アプリケーション情報
+// ============================================================
+
+/** アプリケーションバージョン（package.jsonから取得） */
+export const APP_VERSION: string = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')) as { version?: string };
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
