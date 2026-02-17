@@ -16,6 +16,7 @@ import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../ty
 import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR, LOG_MAX_AGE_DAYS, LOG_MAX_SIZE_MB } from '../config.js';
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
+import { stripAnsi } from '../utils/text.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import { detectError, sendErrorNotification, sendExitNotification, clearNotificationState } from './notifier.js';
@@ -133,15 +134,7 @@ function generateLogFileName(sessionId: string, mode: SessionMode): string {
   return `session-${timestamp}-${mode}-${sessionId}.log`;
 }
 
-/**
- * ANSIエスケープシーケンスを除去
- * @param str 入力文字列
- * @returns ANSI除去後の文字列
- */
-function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
-}
+// stripAnsi は utils/text.ts からインポート
 
 // ============================================================
 // WebSocket通信
@@ -487,8 +480,15 @@ export function cleanupAllSessions(): void {
       if (session.pty) {
         session.pty.kill();
       }
+      // ログストリームを閉じる
+      if (session.logStream) {
+        session.logStream.end();
+      }
     } catch {
       // クリーンアップエラーは無視
     }
   });
+  sessions.clear();
+  // ログメタデータもクリア（メモリリーク防止）
+  sessionLogs.clear();
 }
