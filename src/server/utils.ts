@@ -1,5 +1,11 @@
 /**
  * サーバー側ユーティリティ関数
+ *
+ * 注意: stripAnsi は src/utils/text.ts と重複している。
+ * 本ファイルはテスト容易性のために依存を最小限にした実装であり、
+ * splitArgs, parseArgs, resolvePath, generateLogFileName 等の独自関数も含む。
+ * 将来的には stripAnsi を src/utils/text.ts からの再エクスポートに統一し、
+ * 重複を解消することを推奨する。
  */
 
 import path from 'path';
