@@ -218,6 +218,8 @@ function displayAnswer(text: string): void {
   if (!elements.aiAnswer) return;
 
   // 簡易的なマークダウン → HTML変換
+  // 安全性: convertMarkdownToHtmlは内部で先にescapeHtmlを実行し、
+  // すべてのユーザー入力をエスケープ済みのため、innerHTML使用は安全
   const html = convertMarkdownToHtml(text);
   elements.aiAnswer.innerHTML = html;
   elements.aiAnswer.style.display = 'block';

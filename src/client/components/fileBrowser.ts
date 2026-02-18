@@ -98,14 +98,20 @@ function parentPath(current: string): string {
 function renderFileList(items: FileItem[], currentPath: string): void {
   if (!elements.fileList || !elements.filePath) return;
 
-  elements.fileList.innerHTML = '';
+  // XSS対策: クリア目的のinnerHTMLをreplaceChildrenに変更
+  elements.fileList.replaceChildren();
   elements.filePath.textContent = currentPath;
   currentDirPath = currentPath;
 
   if (currentPath !== '.') {
     const parent = document.createElement('div');
     parent.className = 'file-item';
-    parent.innerHTML = '<span>[DIR] ..</span><span>&gt;</span>';
+    // XSS対策: DOM APIでspan要素を作成し、textContentでテキストを設定
+    const parentLabel = document.createElement('span');
+    parentLabel.textContent = '[DIR] ..';
+    const parentArrow = document.createElement('span');
+    parentArrow.textContent = '>';
+    parent.append(parentLabel, parentArrow);
     parent.addEventListener('click', () => {
       loadFiles(parentPath(currentPath));
     });
@@ -115,7 +121,12 @@ function renderFileList(items: FileItem[], currentPath: string): void {
   items.forEach((item) => {
     const row = document.createElement('div');
     row.className = 'file-item';
-    row.innerHTML = `<span>[${item.type === 'dir' ? 'DIR' : 'FILE'}] ${item.name}</span><span>&gt;</span>`;
+    // XSS対策: item.nameはユーザー制御可能な値のため、textContentで安全に設定
+    const itemLabel = document.createElement('span');
+    itemLabel.textContent = `[${item.type === 'dir' ? 'DIR' : 'FILE'}] ${item.name}`;
+    const itemArrow = document.createElement('span');
+    itemArrow.textContent = '>';
+    row.append(itemLabel, itemArrow);
     row.addEventListener('click', () => {
       if (item.type === 'dir') {
         loadFiles(joinPath(currentPath, item.name));
@@ -232,7 +243,8 @@ async function saveCurrentFile(): Promise<void> {
 function renderUrlList(urls: AccessUrl[]): void {
   if (!elements.urlList) return;
 
-  elements.urlList.innerHTML = '';
+  // XSS対策: クリア目的のinnerHTMLをreplaceChildrenに変更
+  elements.urlList.replaceChildren();
   if (!urls.length) {
     elements.urlList.textContent = '接続URLが見つかりません。';
     return;

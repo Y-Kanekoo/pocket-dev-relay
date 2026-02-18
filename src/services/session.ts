@@ -16,6 +16,7 @@ import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../ty
 import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR, LOG_MAX_AGE_DAYS, LOG_MAX_SIZE_MB } from '../config.js';
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
+import { stripAnsi } from '../utils/text.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import { detectError, sendErrorNotification, sendExitNotification, clearNotificationState } from './notifier.js';
@@ -133,15 +134,7 @@ function generateLogFileName(sessionId: string, mode: SessionMode): string {
   return `session-${timestamp}-${mode}-${sessionId}.log`;
 }
 
-/**
- * ANSIエスケープシーケンスを除去
- * @param str 入力文字列
- * @returns ANSI除去後の文字列
- */
-function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
-}
+// stripAnsi は utils/text.ts からインポート
 
 // ============================================================
 // WebSocket通信
@@ -156,6 +149,38 @@ export function send(ws: WebSocket, payload: ServerMessage): void {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(payload));
   }
+}
+
+// ============================================================
+// PTY環境変数フィルタ
+// ============================================================
+
+/** PTYに渡す環境変数の許可リスト */
+const ENV_ALLOWLIST: ReadonlySet<string> = new Set([
+  'HOME', 'USER', 'LOGNAME', 'SHELL', 'LANG', 'LC_ALL', 'LC_CTYPE',
+  'PATH', 'TERM', 'COLORTERM', 'EDITOR', 'VISUAL', 'PAGER',
+  'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR',
+  'TMPDIR', 'TMP', 'TEMP',
+  'HOSTNAME', 'PWD', 'OLDPWD', 'SHLVL',
+  'SSH_AUTH_SOCK', 'GPG_AGENT_INFO',
+  // Node.js関連
+  'NODE_ENV', 'NODE_PATH', 'NODE_OPTIONS',
+  // Git関連
+  'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL',
+]);
+
+/**
+ * PTYに渡す安全な環境変数を構築
+ * 許可リストに含まれる変数のみを渡し、機密情報の漏洩を防止する
+ */
+function buildSafeEnv(): Record<string, string> {
+  const env: Record<string, string> = { TERM: 'xterm-256color' };
+  for (const key of ENV_ALLOWLIST) {
+    if (process.env[key]) {
+      env[key] = process.env[key] as string;
+    }
+  }
+  return env;
 }
 
 // ============================================================
@@ -184,12 +209,15 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   const sessionId = nanoid(10);
   const startDir = resolveCwd(cwd || '.');
 
+  // 安全な環境変数のみPTYに渡す（機密情報の漏洩防止）
+  const safeEnv = buildSafeEnv();
+
   const ptyProcess = pty.spawn(spawnConfig.command, spawnConfig.args, {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
     cwd: startDir,
-    env: { ...process.env, TERM: 'xterm-256color' } as { [key: string]: string },
+    env: safeEnv,
   });
 
   // ログファイルのセットアップ
@@ -452,8 +480,15 @@ export function cleanupAllSessions(): void {
       if (session.pty) {
         session.pty.kill();
       }
+      // ログストリームを閉じる
+      if (session.logStream) {
+        session.logStream.end();
+      }
     } catch {
       // クリーンアップエラーは無視
     }
   });
+  sessions.clear();
+  // ログメタデータもクリア（メモリリーク防止）
+  sessionLogs.clear();
 }

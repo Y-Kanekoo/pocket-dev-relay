@@ -10,6 +10,8 @@ import type { Express, Request, Response, NextFunction } from 'express';
 // 認証をスキップするためAUTH_TOKENを空にモック
 vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
+  LOG_LEVEL: 'silent',
+  APP_VERSION: '0.0.0-test',
 }));
 
 // session.ts のモック
@@ -24,6 +26,8 @@ describe('スニペット API', () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
       AUTH_TOKEN: '',
+      LOG_LEVEL: 'silent',
+      APP_VERSION: '0.0.0-test',
     }));
     vi.doMock('../../src/services/session.js', () => ({
       sessions: new Map(),

@@ -6,6 +6,7 @@
 import WebSocket from 'ws';
 import { NotificationMessage, ServerMessage } from '../types/index.js';
 import { send } from './session.js';
+import { stripAnsi } from '../utils/text.js';
 
 // ============================================================
 // エラーパターン定義
@@ -33,19 +34,7 @@ const IGNORE_PATTERNS: RegExp[] = [
   /catch.*error/i,
 ];
 
-// ============================================================
-// ANSIエスケープ除去
-// ============================================================
-
-/**
- * ANSIエスケープシーケンスを除去
- * @param str 入力文字列
- * @returns ANSI除去後の文字列
- */
-function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
-}
+// stripAnsi は utils/text.ts からインポート
 
 // ============================================================
 // エラー検知

@@ -75,5 +75,6 @@ jobs:
       - name: 依存パッケージをインストール
         run: npm ci
 
-      - name: npm audit（脆弱性チェック）
-        run: npm audit --audit-level=high || true
+      - name: セキュリティ監査
+        run: npm audit --audit-level=high
+        continue-on-error: true

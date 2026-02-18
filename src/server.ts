@@ -79,7 +79,10 @@ app.use(securityHeaders);
 // ミドルウェア
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/vendor', express.static(path.join(__dirname, '..', 'node_modules')));
+// 必要なクライアントライブラリのみ公開（node_modules全体の公開を防止）
+const nodeModulesDir = path.join(__dirname, '..', 'node_modules');
+app.use('/vendor/@xterm/xterm', express.static(path.join(nodeModulesDir, '@xterm', 'xterm')));
+app.use('/vendor/@xterm/addon-fit', express.static(path.join(nodeModulesDir, '@xterm', 'addon-fit')));
 
 // ヘルスチェック（認証・レート制限の前に配置）
 app.use(healthRouter);
@@ -116,8 +119,20 @@ server.listen(PORT, '0.0.0.0', async () => {
     });
 });
 
-// シグナルハンドラ
-process.on('SIGINT', () => {
+/** グレースフルシャットダウン */
+function gracefulShutdown(signal: string): void {
+  logger.info({ signal }, 'シャットダウン開始');
   cleanupAllSessions();
-  process.exit(0);
-});
+  server.close(() => {
+    logger.info('サーバーを停止しました');
+    process.exit(0);
+  });
+  // 10秒以内にクローズできなければ強制終了
+  setTimeout(() => {
+    logger.warn('強制終了します');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

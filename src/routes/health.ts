@@ -5,11 +5,9 @@
 
 import { Router, Request, Response } from 'express';
 
+import { APP_VERSION } from '../config.js';
 import { HealthResponse } from '../types/index.js';
 import { sessions } from '../services/session.js';
-
-/** package.json から取得したバージョン */
-const APP_VERSION = '0.1.0';
 
 const router = Router();
 
