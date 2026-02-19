@@ -15,16 +15,14 @@ if (!AUTH_TOKEN) {
   logger.warn('AUTH_TOKEN が未設定です。認証なしでアクセス可能な状態です。本番環境では必ず設定してください。');
 }
 
-/** タイミング安全な文字列比較 */
+/**
+ * タイミング安全な文字列比較
+ * SHA-256ハッシュを介して比較することで、入力長に依存しない一定時間比較を実現する。
+ */
 function timingSafeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // 長さが異なる場合もタイミング情報を漏らさないように同じ長さで比較
-    const bufA = Buffer.from(a);
-    const bufB = Buffer.from(b.padEnd(a.length, '\0'));
-    crypto.timingSafeEqual(bufA, bufB);
-    return false;
-  }
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
 }
 
 /**

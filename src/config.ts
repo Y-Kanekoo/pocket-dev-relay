@@ -143,7 +143,9 @@ export const APP_VERSION: string = (() => {
   try {
     const pkg = JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8')) as { version?: string };
     return pkg.version || '0.0.0';
-  } catch {
+  } catch (error: unknown) {
+    // loggerはconfigに依存するため循環依存を避けてconsole.warnを使用
+    console.warn('APP_VERSION: package.jsonの読み込みに失敗しました。デフォルト値 "0.0.0" を使用します。', error);
     return '0.0.0';
   }
 })();

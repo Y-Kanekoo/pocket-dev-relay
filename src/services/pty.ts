@@ -121,10 +121,12 @@ const BLOCKED_COMMANDS: ReadonlySet<string> = new Set([
   'iptables', 'ip6tables',
 ]);
 
-/** シェルメタ文字が含まれているかチェック */
+/**
+ * シェルメタ文字を含むかチェック
+ * ブロック対象: ; | & ` $ ( ) { } >> << 改行 キャリッジリターン $(
+ */
 function containsShellMetaChars(input: string): boolean {
-  // パイプ、セミコロン、リダイレクト、サブシェル、コマンド置換等
-  return /[;|&`$(){}]|>>|<</.test(input);
+  return /[;|&`$(){}\n\r]|>>|<<|\$\(/.test(input);
 }
 
 /**

@@ -164,7 +164,8 @@ const ENV_ALLOWLIST: ReadonlySet<string> = new Set([
   'HOSTNAME', 'PWD', 'OLDPWD', 'SHLVL',
   'SSH_AUTH_SOCK', 'GPG_AGENT_INFO',
   // Node.js関連
-  'NODE_ENV', 'NODE_PATH', 'NODE_OPTIONS',
+  // NODE_OPTIONS は --require で任意コード実行可能なため除外
+  'NODE_ENV', 'NODE_PATH',
   // Git関連
   'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL',
 ]);

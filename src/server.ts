@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 
 import {
   PORT,
+  AUTH_TOKEN,
   ENABLE_HTTPS,
   SSL_KEY_PATH,
   SSL_CERT_PATH,
@@ -101,6 +102,12 @@ app.use('/api', aiRouter);
 // エラーハンドリング
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// 本番環境ではAUTH_TOKENの設定を必須とする
+if (process.env.NODE_ENV === 'production' && !AUTH_TOKEN) {
+  logger.error('本番環境では AUTH_TOKEN の設定が必須です。環境変数 AUTH_TOKEN を設定してください。');
+  process.exit(1);
+}
 
 // サーバー起動
 server.listen(PORT, '0.0.0.0', async () => {

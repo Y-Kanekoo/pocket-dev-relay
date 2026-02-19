@@ -27,11 +27,11 @@ export default defineConfig({
         'src/utils/network.ts',
       ],
       thresholds: {
-        // 実際のカバレッジ（約36%）に合わせた現実的な閾値
-        statements: 35,
-        branches: 35,
-        functions: 35,
-        lines: 35,
+        // カバレッジ閾値ロードマップ: 35% → 40% → 50% → 60%
+        statements: 40,
+        branches: 40,
+        functions: 40,
+        lines: 40,
       },
     },
   },

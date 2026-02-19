@@ -30,8 +30,8 @@ jobs:
       - name: 型チェック
         run: npm run typecheck
 
-      - name: テスト実行
-        run: npm run test:run
+      - name: テスト実行（カバレッジレポート付き）
+        run: npx vitest run --coverage
 
       - name: ビルド
         run: npm run build
@@ -57,7 +57,7 @@ jobs:
         run: npx eslint . --ext .ts,.js
 
       - name: Prettier（フォーマットチェック）
-        run: npx prettier --check "src/**/*.ts"
+        run: npx prettier --check "src/**/*.ts" "tests/**/*.ts"
 
   security:
     runs-on: ubuntu-latest
