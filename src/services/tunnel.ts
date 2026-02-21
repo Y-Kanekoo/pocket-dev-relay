@@ -51,6 +51,11 @@ export const TUNNEL_URL_PATTERN = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/;
  * @throws cloudflared未検出、タイムアウト時
  */
 export async function startTunnel(localPort: number): Promise<TunnelInfo> {
+  // ポート番号のバリデーション
+  if (!Number.isInteger(localPort) || localPort < 1 || localPort > 65535) {
+    throw new Error(`無効なポート番号です: ${localPort}`);
+  }
+
   const binaryPath = findCloudflaredBinary();
   if (!binaryPath) {
     const guide = getInstallGuide();
@@ -80,39 +85,25 @@ export async function startTunnel(localPort: number): Promise<TunnelInfo> {
 
     let urlFound = false;
 
-    // stderrからURLを抽出（cloudflaredはstderrにログを出力する）
-    proc.stderr?.on('data', (data: Buffer) => {
+    /** stderrまたはstdoutのデータからURLを抽出するハンドラ */
+    const handleOutput = (data: Buffer): void => {
+      if (urlFound) return;
       const output = data.toString();
-      if (!urlFound) {
-        const match = output.match(TUNNEL_URL_PATTERN);
-        if (match && tunnelInfo) {
-          urlFound = true;
-          clearTimeout(timeout);
-          tunnelInfo.url = match[0];
-          tunnelInfo.state = 'running';
-          retryCount = 0;
-          logger.info('トンネル開始: %s', tunnelInfo.url);
-          resolve({ ...tunnelInfo });
-        }
+      const match = output.match(TUNNEL_URL_PATTERN);
+      if (match && tunnelInfo) {
+        urlFound = true;
+        clearTimeout(timeout);
+        tunnelInfo.url = match[0];
+        tunnelInfo.state = 'running';
+        retryCount = 0;
+        logger.info('トンネル開始: %s', tunnelInfo.url);
+        resolve({ ...tunnelInfo });
       }
-    });
+    };
 
-    // stdoutも念のため監視
-    proc.stdout?.on('data', (data: Buffer) => {
-      const output = data.toString();
-      if (!urlFound) {
-        const match = output.match(TUNNEL_URL_PATTERN);
-        if (match && tunnelInfo) {
-          urlFound = true;
-          clearTimeout(timeout);
-          tunnelInfo.url = match[0];
-          tunnelInfo.state = 'running';
-          retryCount = 0;
-          logger.info('トンネル開始: %s', tunnelInfo.url);
-          resolve({ ...tunnelInfo });
-        }
-      }
-    });
+    // cloudflaredはstderrにログを出力するが、バージョンによってはstdoutにも出力する
+    proc.stderr?.on('data', handleOutput);
+    proc.stdout?.on('data', handleOutput);
 
     proc.on('error', (err) => {
       clearTimeout(timeout);
@@ -126,10 +117,12 @@ export async function startTunnel(localPort: number): Promise<TunnelInfo> {
       if (tunnelInfo && tunnelInfo.state === 'running') {
         logger.warn('トンネルプロセスが終了しました (code=%s)', String(code ?? 'unknown'));
         tunnelInfo.state = 'stopped';
+        tunnelProcess = null;
         // 自動再起動
         handleRestart(localPort);
       } else if (!urlFound) {
         if (tunnelInfo) tunnelInfo.state = 'error';
+        tunnelProcess = null;
         reject(new Error(`cloudflared が異常終了しました (code=${code})`));
       }
     });

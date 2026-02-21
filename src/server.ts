@@ -133,8 +133,8 @@ server.listen(PORT, '0.0.0.0', async () => {
       logger.info('LAN (%s): %s', entry.name, entry.url);
     });
 
-  // トンネル起動
-  if (ENABLE_TUNNEL) {
+  // トンネル起動（AUTH_TOKENが設定されている場合のみ）
+  if (ENABLE_TUNNEL && AUTH_TOKEN) {
     try {
       const tunnelInfo = await startTunnel(PORT);
       logger.info('外部アクセス: %s', tunnelInfo.url);

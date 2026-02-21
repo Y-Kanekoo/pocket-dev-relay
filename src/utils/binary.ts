@@ -20,7 +20,11 @@ export function findCloudflaredBinary(): string | null {
 
   try {
     const cmd = process.platform === 'win32' ? 'where cloudflared' : 'which cloudflared';
-    const result = execSync(cmd, { encoding: 'utf-8', timeout: 5000 }).trim();
+    const result = execSync(cmd, {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
     // 複数パスが返る可能性があるため最初の行を使用
     return result.split('\n')[0] || null;
   } catch {
