@@ -261,6 +261,14 @@ function renderUrlList(urls: AccessUrl[]): void {
     label.className = 'url-label';
     label.textContent = labelForUrl(entry);
 
+    // トンネルURLにバッジを追加
+    if (entry.type === 'tunnel') {
+      const badge = document.createElement('span');
+      badge.className = 'tunnel-badge';
+      badge.textContent = '外部';
+      label.appendChild(badge);
+    }
+
     const text = document.createElement('div');
     text.className = 'url-text';
     text.textContent = entry.url;

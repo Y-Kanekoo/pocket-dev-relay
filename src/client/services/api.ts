@@ -165,13 +165,18 @@ export async function saveFile(path: string, content: string): Promise<void> {
  * 最適なURLを選択
  */
 export function pickBestUrl(urls: AccessUrl[]): AccessUrl | undefined {
-  return urls.find((entry) => entry.type !== 'local') || urls[0];
+  return (
+    urls.find((entry) => entry.type === 'tunnel') ||
+    urls.find((entry) => entry.type !== 'local') ||
+    urls[0]
+  );
 }
 
 /**
  * URLエントリのラベルを取得
  */
 export function labelForUrl(entry: AccessUrl): string {
+  if (entry.type === 'tunnel') return `外部アクセス (${entry.name})`;
   if (entry.type === 'mdns') return `mDNS (${entry.host})`;
   if (entry.type === 'lan') return `LAN (${entry.name})`;
   if (entry.type === 'local') return 'このPC (localhost)';

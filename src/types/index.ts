@@ -327,7 +327,7 @@ export interface SessionLogContentResponse {
 /**
  * アクセスURLの種別
  */
-export type UrlType = 'mdns' | 'lan' | 'local';
+export type UrlType = 'mdns' | 'lan' | 'local' | 'tunnel';
 
 /**
  * アクセスURL情報

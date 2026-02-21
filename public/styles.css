@@ -342,6 +342,18 @@ body {
   color: var(--muted);
 }
 
+.tunnel-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent-green, #0b8f7a);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
 .url-text {
   font-family: "SFMono-Regular", "Menlo", monospace;
   font-size: 0.88rem;

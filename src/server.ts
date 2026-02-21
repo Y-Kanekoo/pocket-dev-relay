@@ -18,10 +18,12 @@ import {
   SSL_CERT_PATH,
   ENABLE_SESSION_LOGS,
   LOG_DIR,
+  ENABLE_TUNNEL,
 } from './config.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
+import { startTunnel, stopTunnel } from './services/tunnel.js';
 import { setupWebSocketHandlers } from './services/websocket.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
@@ -109,6 +111,12 @@ if (process.env.NODE_ENV === 'production' && !AUTH_TOKEN) {
   process.exit(1);
 }
 
+// トンネルモードではAUTH_TOKENの設定を必須とする（インターネット公開のため）
+if (ENABLE_TUNNEL && !AUTH_TOKEN) {
+  logger.error('トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。');
+  process.exit(1);
+}
+
 // サーバー起動
 server.listen(PORT, '0.0.0.0', async () => {
   if (ENABLE_SESSION_LOGS) {
@@ -124,11 +132,33 @@ server.listen(PORT, '0.0.0.0', async () => {
     .forEach((entry) => {
       logger.info('LAN (%s): %s', entry.name, entry.url);
     });
+
+  // トンネル起動
+  if (ENABLE_TUNNEL) {
+    try {
+      const tunnelInfo = await startTunnel(PORT);
+      logger.info('外部アクセス: %s', tunnelInfo.url);
+      // QRコードをターミナルに表示
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const QRCode = require('qrcode') as { toString: (text: string, opts: { type: string; small: boolean }) => Promise<string> };
+        const qrText = await QRCode.toString(tunnelInfo.url, { type: 'terminal', small: true });
+        console.log(qrText);
+        logger.info('スマホでQRコードを読み取ってアクセスしてください');
+      } catch {
+        // QRコード表示に失敗してもサーバーは継続
+        logger.info('QRコードの表示をスキップしました');
+      }
+    } catch (err) {
+      logger.warn({ err }, 'トンネルの起動に失敗しました。LANアクセスのみ利用可能です。');
+    }
+  }
 });
 
 /** グレースフルシャットダウン */
 function gracefulShutdown(signal: string): void {
   logger.info({ signal }, 'シャットダウン開始');
+  stopTunnel();
   cleanupAllSessions();
   server.close(() => {
     logger.info('サーバーを停止しました');

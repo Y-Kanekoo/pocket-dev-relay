@@ -135,6 +135,22 @@ export const SSH_STRICT_HOST_KEY: boolean = process.env.SSH_STRICT_HOST_KEY !== 
 export const SSH_REQUIRE_HTTPS_FOR_PASSWORD: boolean = process.env.SSH_REQUIRE_HTTPS_FOR_PASSWORD !== 'false';
 
 // ============================================================
+// トンネル設定
+// ============================================================
+
+/** トンネル機能の有効化 */
+export const ENABLE_TUNNEL: boolean = process.env.ENABLE_TUNNEL === 'true';
+
+/** トンネルプロバイダー */
+export const TUNNEL_PROVIDER: string = process.env.TUNNEL_PROVIDER || 'cloudflared';
+
+/** cloudflaredバイナリパス（カスタム指定時） */
+export const CLOUDFLARED_PATH: string = process.env.CLOUDFLARED_PATH || '';
+
+/** トンネル起動タイムアウト（ミリ秒、デフォルト30秒） */
+export const TUNNEL_TIMEOUT: number = parseInt(process.env.TUNNEL_TIMEOUT || '30000', 10);
+
+// ============================================================
 // アプリケーション情報
 // ============================================================
 
