@@ -49,18 +49,6 @@ export function createAuthMiddleware(authToken: string) {
 }
 
 /**
- * トークンを直接検証する（WebSocketメッセージベース認証用）
- * @param token 認証トークン
- * @param authToken 設定されている認証トークン
- * @returns 認証結果
- */
-export function authorizeToken(token: string, authToken: string): boolean {
-  if (!authToken) return true;
-  if (!token) return false;
-  return token === authToken;
-}
-
-/**
  * WebSocketリクエストからトークンを取得
  * @param req HTTPリクエスト
  * @returns トークン
