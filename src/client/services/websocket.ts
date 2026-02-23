@@ -97,6 +97,13 @@ export function connectWebSocket(): Promise<void> {
     newWs.addEventListener('close', () => {
       callbacks?.onStatusChange('未接続', '#d95a2b');
 
+      // 認証待ち中の切断はPromiseをrejectする
+      if (pendingAuthReject) {
+        pendingAuthReject(new Error('connection-closed-during-auth'));
+        pendingAuthResolve = null;
+        pendingAuthReject = null;
+      }
+
       // 全セッションを非アクティブに
       sessionStore.getSessions().forEach((session) => {
         session.active = false;

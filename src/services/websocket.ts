@@ -202,7 +202,7 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
       return;
     }
 
-    // AUTH_TOKEN未設定なら即認証完了
+    // 防御的チェック: authorizeWebSocketの挙動が変更された場合の安全弁
     if (!AUTH_TOKEN) {
       handleAuthenticated(ws);
       return;
