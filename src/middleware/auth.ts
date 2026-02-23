@@ -53,6 +53,17 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 }
 
 /**
+ * トークンを直接検証する（WebSocketメッセージベース認証用）
+ * @param token 認証トークン
+ * @returns 認証結果
+ */
+export function authorizeToken(token: string): boolean {
+  if (!AUTH_TOKEN) return true;
+  if (!token) return false;
+  return timingSafeCompare(token, AUTH_TOKEN);
+}
+
+/**
  * WebSocketリクエストからトークンを取得
  * 注意: URLクエリパラメータ経由のトークン送信はサーバーログに残る可能性がある。
  * 将来的には初回WebSocketメッセージでの認証に移行することを推奨。

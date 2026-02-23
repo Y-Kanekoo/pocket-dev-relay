@@ -42,6 +42,9 @@ export const ENABLE_SESSION_LOGS: boolean = process.env.ENABLE_SESSION_LOGS === 
 /** ログディレクトリ */
 export const LOG_DIR: string = path.resolve(process.env.LOG_DIR || path.join(ROOT_DIR, 'logs'));
 
+/** データ永続化ディレクトリ */
+export const DATA_DIR: string = path.resolve(process.env.DATA_DIR || path.join(ROOT_DIR, '.pocket-dev-relay'));
+
 /** ログ保持日数（デフォルト: 30日） */
 export const LOG_MAX_AGE_DAYS: number = parseInt(process.env.LOG_MAX_AGE_DAYS || '30', 10);
 

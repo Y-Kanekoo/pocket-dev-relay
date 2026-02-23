@@ -8,17 +8,19 @@ import { Router, Request, Response } from 'express';
 import { ClipboardData, ClipboardResponse } from '../types/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { ValidationError } from '../errors/AppError.js';
+import { JsonStore } from '../utils/store.js';
 
 const router = Router();
 
-/** メモリ上のクリップボードデータ */
-let clipboardStore: ClipboardData | null = null;
+/** クリップボードデータの永続化ストア */
+const store = new JsonStore<ClipboardData | null>('clipboard.json', null);
 
 /**
  * GET /api/clipboard - クリップボード内容を取得
  */
 router.get('/clipboard', authMiddleware, (_req: Request, res: Response) => {
-  if (!clipboardStore) {
+  const data = store.load();
+  if (!data) {
     const response: ClipboardResponse = {
       text: '',
       updatedAt: '',
@@ -28,8 +30,8 @@ router.get('/clipboard', authMiddleware, (_req: Request, res: Response) => {
   }
 
   const response: ClipboardResponse = {
-    text: clipboardStore.text,
-    updatedAt: clipboardStore.updatedAt,
+    text: data.text,
+    updatedAt: data.updatedAt,
   };
   res.json(response);
 });
@@ -44,14 +46,15 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
     throw new ValidationError('テキストが不正です');
   }
 
-  clipboardStore = {
+  const data: ClipboardData = {
     text,
     updatedAt: new Date().toISOString(),
   };
+  store.save(data);
 
   const response: ClipboardResponse = {
-    text: clipboardStore.text,
-    updatedAt: clipboardStore.updatedAt,
+    text: data.text,
+    updatedAt: data.updatedAt,
   };
   res.json(response);
 });
@@ -60,7 +63,7 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
  * DELETE /api/clipboard - クリップボードをクリア
  */
 router.delete('/clipboard', authMiddleware, (_req: Request, res: Response) => {
-  clipboardStore = null;
+  store.save(null);
   res.json({ ok: true });
 });
 

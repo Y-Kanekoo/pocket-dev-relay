@@ -15,6 +15,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ValidationError, NotFoundError } from '../errors/AppError.js';
 import { sessions } from '../services/session.js';
+import { JsonStore } from '../utils/store.js';
 
 const router = Router();
 
@@ -26,15 +27,15 @@ const DEFAULT_SNIPPETS: Snippet[] = [
   { id: nanoid(8), label: 'npm test', command: 'npm test\n' },
 ];
 
-/** メモリ上のスニペットストア */
-const snippetStore: Snippet[] = [...DEFAULT_SNIPPETS];
+/** スニペットデータの永続化ストア */
+const store = new JsonStore<Snippet[]>('snippets.json', DEFAULT_SNIPPETS);
 
 /**
  * GET /api/snippets - スニペット一覧を取得
  */
 router.get('/snippets', authMiddleware, (_req: Request, res: Response) => {
   const response: SnippetsResponse = {
-    snippets: snippetStore,
+    snippets: store.load(),
   };
   res.json(response);
 });
@@ -58,7 +59,9 @@ router.post('/snippets', authMiddleware, (req: Request, res: Response) => {
     command: command,
   };
 
-  snippetStore.push(snippet);
+  const snippets = store.load();
+  snippets.push(snippet);
+  store.save(snippets);
   res.json(snippet);
 });
 
@@ -67,13 +70,15 @@ router.post('/snippets', authMiddleware, (req: Request, res: Response) => {
  */
 router.delete('/snippets/:id', authMiddleware, (req: Request, res: Response) => {
   const { id } = req.params;
-  const index = snippetStore.findIndex((s) => s.id === id);
+  const snippets = store.load();
+  const index = snippets.findIndex((s) => s.id === id);
 
   if (index === -1) {
     throw new NotFoundError('スニペット');
   }
 
-  snippetStore.splice(index, 1);
+  snippets.splice(index, 1);
+  store.save(snippets);
   res.json({ ok: true });
 });
 
@@ -85,7 +90,8 @@ router.post(
   authMiddleware,
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const snippet = snippetStore.find((s) => s.id === id);
+    const snippets = store.load();
+    const snippet = snippets.find((s) => s.id === id);
 
     if (!snippet) {
       throw new NotFoundError('スニペット');

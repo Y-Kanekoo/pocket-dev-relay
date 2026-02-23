@@ -25,6 +25,9 @@ Thumbs.db
 # セッションログ
 logs/
 
+# データ永続化
+.pocket-dev-relay/
+
 # TypeScriptビルド生成物
 dist/
 

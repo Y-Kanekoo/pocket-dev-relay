@@ -78,9 +78,17 @@ export interface StopMessage {
 }
 
 /**
+ * 認証メッセージ（メッセージベース認証用）
+ */
+export interface AuthMessage {
+  type: 'auth';
+  token: string;
+}
+
+/**
  * クライアントからサーバーへ送信するメッセージの共用体型
  */
-export type ClientMessage = StartMessage | InputMessage | ResizeMessage | StopMessage;
+export type ClientMessage = StartMessage | InputMessage | ResizeMessage | StopMessage | AuthMessage;
 
 // ============================================================
 // WebSocketメッセージ型（サーバー → クライアント）
@@ -151,6 +159,15 @@ export interface NotificationMessage {
 export type NotificationLevel = NotificationMessage['level'];
 
 /**
+ * 認証結果メッセージ（メッセージベース認証の応答）
+ */
+export interface AuthResultMessage {
+  type: 'auth_result';
+  ok: boolean;
+  message?: string;
+}
+
+/**
  * サーバーからクライアントへ送信するメッセージの共用体型
  */
 export type ServerMessage =
@@ -159,7 +176,8 @@ export type ServerMessage =
   | ExitMessage
   | StoppedMessage
   | ErrorMessage
-  | NotificationMessage;
+  | NotificationMessage
+  | AuthResultMessage;
 
 // ============================================================
 // セッション関連

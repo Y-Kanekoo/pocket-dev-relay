@@ -10,6 +10,7 @@ import {
   createAuthMiddleware,
   getTokenFromRequest,
   authorizeWebSocket,
+  authorizeToken,
 } from '../../src/server/auth.js';
 
 // ============================================================
@@ -178,5 +179,31 @@ describe('authorizeWebSocket', () => {
     const req = { url: '/ws' } as http.IncomingMessage;
 
     expect(authorizeWebSocket(req, authToken)).toBe(false);
+  });
+});
+
+// ============================================================
+// authorizeToken のテスト
+// ============================================================
+
+describe('authorizeToken', () => {
+  it('AUTH_TOKEN未設定時は常にtrueを返すこと', () => {
+    expect(authorizeToken('any-token', '')).toBe(true);
+    expect(authorizeToken('', '')).toBe(true);
+  });
+
+  it('正しいトークンで認証成功すること', () => {
+    const authToken = 'secret-token';
+    expect(authorizeToken(authToken, authToken)).toBe(true);
+  });
+
+  it('不正なトークンで認証失敗すること', () => {
+    const authToken = 'secret-token';
+    expect(authorizeToken('wrong-token', authToken)).toBe(false);
+  });
+
+  it('空文字トークンで認証失敗すること', () => {
+    const authToken = 'secret-token';
+    expect(authorizeToken('', authToken)).toBe(false);
   });
 });

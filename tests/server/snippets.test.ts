@@ -12,7 +12,28 @@ vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
   LOG_LEVEL: 'silent',
   APP_VERSION: '0.0.0-test',
+  DATA_DIR: '/tmp/test-pocket-dev-relay',
 }));
+
+// JsonStoreをメモリベースのモックに差し替え
+vi.mock('../../src/utils/store.js', () => {
+  class MockJsonStore<T> {
+    private data: T;
+    constructor(_filename: string, defaultValue: T) {
+      this.data = structuredClone(defaultValue);
+    }
+    initDir(): void {
+      // テストでは何もしない
+    }
+    load(): T {
+      return this.data;
+    }
+    save(data: T): void {
+      this.data = data;
+    }
+  }
+  return { JsonStore: MockJsonStore };
+});
 
 // session.ts のモック
 vi.mock('../../src/services/session.js', () => ({
@@ -28,7 +49,26 @@ describe('スニペット API', () => {
       AUTH_TOKEN: '',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
+      DATA_DIR: '/tmp/test-pocket-dev-relay',
     }));
+    vi.doMock('../../src/utils/store.js', () => {
+      class MockJsonStore<T> {
+        private data: T;
+        constructor(_filename: string, defaultValue: T) {
+          this.data = structuredClone(defaultValue);
+        }
+        initDir(): void {
+          // テストでは何もしない
+        }
+        load(): T {
+          return this.data;
+        }
+        save(data: T): void {
+          this.data = data;
+        }
+      }
+      return { JsonStore: MockJsonStore };
+    });
     vi.doMock('../../src/services/session.js', () => ({
       sessions: new Map(),
     }));

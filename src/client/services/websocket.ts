@@ -20,18 +20,21 @@ interface WebSocketCallbacks {
 // コールバック関数の保持
 let callbacks: WebSocketCallbacks | null = null;
 
+// メッセージベース認証の待機用
+let pendingAuthResolve: (() => void) | null = null;
+let pendingAuthReject: ((err: Error) => void) | null = null;
+
 // ==================================================
 // WebSocket管理
 // ==================================================
 
 /**
  * WebSocket URLを取得
+ * 認証はメッセージベースで行うため、クエリパラメータにトークンを含めない
  */
 function getWsUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  const token = sessionStore.getToken();
-  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-  return `${protocol}://${window.location.host}/ws${tokenParam}`;
+  return `${protocol}://${window.location.host}/ws`;
 }
 
 /**
@@ -61,14 +64,30 @@ export function connectWebSocket(): Promise<void> {
     sessionStore.setWebSocket(newWs);
 
     newWs.addEventListener('open', () => {
-      callbacks?.onStatusChange('接続済み', '#0b8f7a');
-      // 再接続成功時
-      const reconnect = sessionStore.getReconnectConfig();
-      if (reconnect.attempts > 0) {
-        showToast('接続しました', 'success');
+      const token = sessionStore.getToken();
+      if (token) {
+        // メッセージベース認証を送信
+        pendingAuthResolve = () => {
+          callbacks?.onStatusChange('接続済み', '#0b8f7a');
+          const reconnect = sessionStore.getReconnectConfig();
+          if (reconnect.attempts > 0) {
+            showToast('接続しました', 'success');
+          }
+          sessionStore.resetReconnect();
+          resolve();
+        };
+        pendingAuthReject = reject;
+        newWs.send(JSON.stringify({ type: 'auth', token }));
+      } else {
+        // トークンなし：認証不要
+        callbacks?.onStatusChange('接続済み', '#0b8f7a');
+        const reconnect = sessionStore.getReconnectConfig();
+        if (reconnect.attempts > 0) {
+          showToast('接続しました', 'success');
+        }
+        sessionStore.resetReconnect();
+        resolve();
       }
-      sessionStore.resetReconnect();
-      resolve();
     });
 
     newWs.addEventListener('message', (event: MessageEvent) => {
@@ -109,6 +128,25 @@ function handleWsMessage(event: MessageEvent): void {
   try {
     payload = JSON.parse(event.data);
   } catch {
+    return;
+  }
+
+  // 認証結果の処理
+  if (payload.type === 'auth_result') {
+    if (payload.ok) {
+      if (pendingAuthResolve) {
+        pendingAuthResolve();
+        pendingAuthResolve = null;
+        pendingAuthReject = null;
+      }
+    } else {
+      showToast(payload.message || '認証に失敗しました', 'error');
+      if (pendingAuthReject) {
+        pendingAuthReject(new Error('auth-failed'));
+        pendingAuthResolve = null;
+        pendingAuthReject = null;
+      }
+    }
     return;
   }
 
