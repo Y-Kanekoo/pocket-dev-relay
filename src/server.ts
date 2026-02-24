@@ -19,6 +19,7 @@ import {
   ENABLE_SESSION_LOGS,
   LOG_DIR,
   ENABLE_TUNNEL,
+  TRUST_PROXY,
 } from './config.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
@@ -38,6 +39,9 @@ import aiRouter from './routes/ai.js';
 
 // Expressアプリケーション
 const app = express();
+
+// リバースプロキシ経由のX-Forwarded-For信頼設定
+app.set('trust proxy', TRUST_PROXY);
 
 // HTTPSまたはHTTPサーバーを作成
 let server: http.Server | https.Server;

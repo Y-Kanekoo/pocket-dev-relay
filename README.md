@@ -97,6 +97,8 @@ docker compose up -d
 | `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
 | `MAX_UPLOAD_SIZE` | アップロードファイルの最大サイズ（バイト） | `10485760`（10MB） |
 | `SESSION_TIMEOUT` | セッションタイムアウト（ミリ秒） | `3600000`（1時間） |
+| `TRUST_PROXY` | リバースプロキシ信頼設定（`true`/`false`/数値/IP） | `false` |
+| `DATA_DIR` | データ永続化ディレクトリ | `WORKSPACE_ROOT/.pocket-dev-relay` |
 
 #### コマンド設定
 

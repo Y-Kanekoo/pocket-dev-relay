@@ -33,6 +33,14 @@ jobs:
       - name: テスト実行（カバレッジレポート付き）
         run: npx vitest run --coverage
 
+      - name: カバレッジレポートをアップロード
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-node${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 30
+
       - name: ビルド
         run: npm run build
 

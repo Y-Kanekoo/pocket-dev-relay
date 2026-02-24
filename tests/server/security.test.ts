@@ -49,8 +49,35 @@ describe('セキュリティヘッダーミドルウェア', () => {
     const csp = headers.get('Content-Security-Policy');
     expect(csp).toBeDefined();
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
+    // script-src から 'unsafe-inline' が除去されていることを確認
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
     expect(csp).toContain("connect-src 'self' ws: wss:");
+  });
+
+  it('style-srcにunsafe-inlineが含まれること（xterm.jsが動的インラインスタイルを生成するため）', () => {
+    const { req, res, next, headers } = createMocks();
+    securityHeaders(req, res, next);
+
+    const csp = headers.get('Content-Security-Policy');
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+  });
+
+  it('font-srcにGoogle Fontsが含まれること', () => {
+    const { req, res, next, headers } = createMocks();
+    securityHeaders(req, res, next);
+
+    const csp = headers.get('Content-Security-Policy');
+    expect(csp).toContain('font-src');
+    expect(csp).toContain('https://fonts.gstatic.com');
+  });
+
+  it('style-srcにGoogle Fontsスタイルシートが含まれること', () => {
+    const { req, res, next, headers } = createMocks();
+    securityHeaders(req, res, next);
+
+    const csp = headers.get('Content-Security-Policy');
+    expect(csp).toContain('https://fonts.googleapis.com');
   });
 
   it('X-Content-Type-Optionsが設定されること', () => {

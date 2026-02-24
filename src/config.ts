@@ -12,11 +12,38 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ============================================================
+// バリデーションヘルパー
+// ============================================================
+
+/**
+ * 整数値のバリデーション
+ * 不正値の場合はconsole.warnで警告し、デフォルト値にフォールバック
+ * （config.tsはlogger.tsより先に読み込まれるためconsole.warnを使用）
+ */
+function validateInt(
+  name: string,
+  raw: string | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+): number {
+  if (raw === undefined || raw === '') return defaultValue;
+  const parsed = parseInt(raw, 10);
+  if (isNaN(parsed) || !Number.isInteger(parsed) || parsed < min || parsed > max) {
+    console.warn(
+      `設定値バリデーション: ${name} の値 "${raw}" は不正です（有効範囲: ${min}〜${max}）。デフォルト値 ${defaultValue} を使用します。`,
+    );
+    return defaultValue;
+  }
+  return parsed;
+}
+
+// ============================================================
 // サーバー設定
 // ============================================================
 
 /** サーバーポート */
-export const PORT: number = parseInt(process.env.PORT || '4173', 10);
+export const PORT: number = validateInt('PORT', process.env.PORT, 4173, 1, 65535);
 
 /** ワークスペースルートディレクトリ */
 export const ROOT_DIR: string = path.resolve(process.env.WORKSPACE_ROOT || process.cwd());
@@ -32,6 +59,21 @@ export const ALLOW_FILE_WRITE: boolean = process.env.ALLOW_FILE_WRITE === 'true'
 
 /** 最大ファイルサイズ（バイト） */
 export const MAX_FILE_SIZE: number = parseInt(process.env.MAX_FILE_SIZE || '1048576', 10);
+
+/**
+ * trust proxy設定（リバースプロキシ経由時のX-Forwarded-For信頼設定）
+ * 'true'/'false'/数値/カンマ区切りIPを受け付ける
+ * デフォルト: false（プロキシを信頼しない）
+ */
+export const TRUST_PROXY: string | number | boolean = (() => {
+  const val = process.env.TRUST_PROXY || 'false';
+  if (val === 'true') return true;
+  if (val === 'false') return false;
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && String(num) === val) return num;
+  // IPアドレスやサブネット指定などの文字列をそのまま返す
+  return val;
+})();
 
 /** ログレベル */
 export const LOG_LEVEL: string = process.env.LOG_LEVEL || 'info';
@@ -100,17 +142,17 @@ export const SSL_CERT_PATH: string = process.env.SSL_CERT_PATH || '';
 // ============================================================
 
 /** API全体のレート制限（リクエスト数/分） */
-export const RATE_LIMIT_API: number = parseInt(process.env.RATE_LIMIT_API || '100', 10);
+export const RATE_LIMIT_API: number = validateInt('RATE_LIMIT_API', process.env.RATE_LIMIT_API, 100, 1, Number.MAX_SAFE_INTEGER);
 
 /** 認証失敗のレート制限（回数/分） */
-export const RATE_LIMIT_AUTH: number = parseInt(process.env.RATE_LIMIT_AUTH || '5', 10);
+export const RATE_LIMIT_AUTH: number = validateInt('RATE_LIMIT_AUTH', process.env.RATE_LIMIT_AUTH, 5, 1, Number.MAX_SAFE_INTEGER);
 
 // ============================================================
 // セッションタイムアウト設定
 // ============================================================
 
-/** セッションタイムアウト（ミリ秒、デフォルト1時間） */
-export const SESSION_TIMEOUT: number = parseInt(process.env.SESSION_TIMEOUT || '3600000', 10);
+/** セッションタイムアウト（ミリ秒、デフォルト1時間、0=無効） */
+export const SESSION_TIMEOUT: number = validateInt('SESSION_TIMEOUT', process.env.SESSION_TIMEOUT, 3600000, 0, Number.MAX_SAFE_INTEGER);
 
 // ============================================================
 // SSH設定
@@ -123,7 +165,7 @@ export const ENABLE_SSH: boolean = process.env.ENABLE_SSH === 'true';
 export const SSH_DEFAULT_HOST: string = process.env.SSH_DEFAULT_HOST || '';
 
 /** SSHデフォルトポート */
-export const SSH_DEFAULT_PORT: number = parseInt(process.env.SSH_DEFAULT_PORT || '22', 10);
+export const SSH_DEFAULT_PORT: number = validateInt('SSH_DEFAULT_PORT', process.env.SSH_DEFAULT_PORT, 22, 1, 65535);
 
 /** SSHデフォルトユーザー */
 export const SSH_DEFAULT_USER: string = process.env.SSH_DEFAULT_USER || '';
@@ -151,7 +193,7 @@ export const TUNNEL_PROVIDER: string = process.env.TUNNEL_PROVIDER || 'cloudflar
 export const CLOUDFLARED_PATH: string = process.env.CLOUDFLARED_PATH || '';
 
 /** トンネル起動タイムアウト（ミリ秒、デフォルト30秒） */
-export const TUNNEL_TIMEOUT: number = parseInt(process.env.TUNNEL_TIMEOUT || '30000', 10);
+export const TUNNEL_TIMEOUT: number = validateInt('TUNNEL_TIMEOUT', process.env.TUNNEL_TIMEOUT, 30000, 1000, Number.MAX_SAFE_INTEGER);
 
 // ============================================================
 // アプリケーション情報

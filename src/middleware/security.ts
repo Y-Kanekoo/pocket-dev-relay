@@ -18,17 +18,20 @@ import { ENABLE_HTTPS } from '../config.js';
  */
 export function securityHeaders(req: Request, res: Response, next: NextFunction): void {
   // Content-Security-Policy
-  // self からのリソース読み込みを許可、インラインスクリプト・スタイルを許可
-  // WebSocket接続を許可するため connect-src に ws: wss: を追加
+  // - script-src: インラインスクリプトを外部ファイルに移行済みのため 'unsafe-inline' 不要
+  // - style-src: xterm.js が動的にインラインスタイルを生成するため 'unsafe-inline' が必要
+  //   Google Fonts のスタイルシート読み込みのため fonts.googleapis.com を許可
+  // - font-src: Google Fonts のフォントファイル読み込みのため fonts.gstatic.com を許可
+  // - connect-src: WebSocket接続を許可するため ws: wss: を追加
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data:",
       "connect-src 'self' ws: wss:",
-      "font-src 'self'",
+      "font-src 'self' https://fonts.gstatic.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

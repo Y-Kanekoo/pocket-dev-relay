@@ -99,7 +99,8 @@ function handleAuthenticated(ws: WebSocket): void {
     let payload: ClientMessage;
     try {
       payload = JSON.parse(message.toString()) as ClientMessage;
-    } catch {
+    } catch (error) {
+      logger.debug({ err: error }, 'WebSocketメッセージのJSONパースに失敗しました');
       return;
     }
 
