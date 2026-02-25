@@ -102,7 +102,10 @@ describe('JsonStore#save()', () => {
     fsStore.set(TEST_DATA_DIR, '');
 
     const store = new JsonStore<{ items: number[] }>('data.json', { items: [] });
-    store.save({ items: [1, 2, 3] });
+    const result = store.save({ items: [1, 2, 3] });
+
+    // 成功時はtrueを返す
+    expect(result).toBe(true);
 
     // writeFileSyncが一時ファイルパスで呼ばれたことを確認
     const expectedTmpPath = path.join(TEST_DATA_DIR, 'data.json.tmp');
@@ -119,9 +122,23 @@ describe('JsonStore#save()', () => {
   it('DATA_DIR未存在時はmkdirSyncが呼ばれる', () => {
     // DATA_DIRをfsStoreに入れない = 存在しない状態
     const store = new JsonStore<string>('config.json', '');
-    store.save('test-data');
+    const result = store.save('test-data');
 
+    expect(result).toBe(true);
     expect(fsSync.mkdirSync).toHaveBeenCalledWith(TEST_DATA_DIR, { recursive: true });
+  });
+
+  it('書き込み失敗時はfalseを返しエラーログを出力する', () => {
+    // writeFileSyncがエラーを投げるように設定
+    vi.mocked(fsSync.writeFileSync).mockImplementationOnce(() => {
+      throw new Error('ディスク書き込みエラー');
+    });
+
+    const store = new JsonStore<string>('fail.json', '');
+    const result = store.save('test-data');
+
+    expect(result).toBe(false);
+    expect(logger.error).toHaveBeenCalled();
   });
 });
 

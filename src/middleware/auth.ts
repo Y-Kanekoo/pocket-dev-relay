@@ -17,7 +17,12 @@ if (!AUTH_TOKEN) {
 
 /**
  * タイミング安全な文字列比較
- * SHA-256ハッシュを介して比較することで、入力長に依存しない一定時間比較を実現する。
+ *
+ * crypto.timingSafeEqual は同一長のBufferを要求するため、
+ * 長さが異なる入力をそのまま渡すと例外になるか、長さ差からの情報漏洩が生じる。
+ * SHA-256ハッシュを介することで:
+ *   1. 入力長を固定長（32バイト）に正規化し、長さの差異を隠蔽する
+ *   2. timingSafeEqual による一定時間比較を確実に実行できる
  */
 function timingSafeCompare(a: string, b: string): boolean {
   const hashA = crypto.createHash('sha256').update(a).digest();

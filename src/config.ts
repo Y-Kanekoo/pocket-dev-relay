@@ -57,8 +57,8 @@ export const ALLOW_CUSTOM_COMMANDS: boolean = process.env.ALLOW_CUSTOM_COMMANDS 
 /** ファイル書き込みの許可 */
 export const ALLOW_FILE_WRITE: boolean = process.env.ALLOW_FILE_WRITE === 'true';
 
-/** 最大ファイルサイズ（バイト） */
-export const MAX_FILE_SIZE: number = parseInt(process.env.MAX_FILE_SIZE || '1048576', 10);
+/** 最大ファイルサイズ（バイト、デフォルト: 1MB） */
+export const MAX_FILE_SIZE: number = validateInt('MAX_FILE_SIZE', process.env.MAX_FILE_SIZE, 1048576, 1, Number.MAX_SAFE_INTEGER);
 
 /**
  * trust proxy設定（リバースプロキシ経由時のX-Forwarded-For信頼設定）
@@ -70,7 +70,16 @@ export const TRUST_PROXY: string | number | boolean = (() => {
   if (val === 'true') return true;
   if (val === 'false') return false;
   const num = parseInt(val, 10);
-  if (!isNaN(num) && String(num) === val) return num;
+  if (!isNaN(num) && String(num) === val) {
+    // 0以上の整数のみ許可。負数や不正な数値はfalseにフォールバック
+    if (!Number.isInteger(num) || num < 0) {
+      console.warn(
+        `設定値バリデーション: TRUST_PROXY の値 "${val}" は不正な数値です（0以上の整数が必要）。デフォルト値 false を使用します。`,
+      );
+      return false;
+    }
+    return num;
+  }
   // IPアドレスやサブネット指定などの文字列をそのまま返す
   return val;
 })();
@@ -88,16 +97,16 @@ export const LOG_DIR: string = path.resolve(process.env.LOG_DIR || path.join(ROO
 export const DATA_DIR: string = path.resolve(process.env.DATA_DIR || path.join(ROOT_DIR, '.pocket-dev-relay'));
 
 /** ログ保持日数（デフォルト: 30日） */
-export const LOG_MAX_AGE_DAYS: number = parseInt(process.env.LOG_MAX_AGE_DAYS || '30', 10);
+export const LOG_MAX_AGE_DAYS: number = validateInt('LOG_MAX_AGE_DAYS', process.env.LOG_MAX_AGE_DAYS, 30, 1, Number.MAX_SAFE_INTEGER);
 
 /** ログ最大サイズ（MB、デフォルト: 100MB） */
-export const LOG_MAX_SIZE_MB: number = parseInt(process.env.LOG_MAX_SIZE_MB || '100', 10);
+export const LOG_MAX_SIZE_MB: number = validateInt('LOG_MAX_SIZE_MB', process.env.LOG_MAX_SIZE_MB, 100, 1, Number.MAX_SAFE_INTEGER);
 
 /** シェルコマンド */
 export const SHELL_CMD: string = process.env.SHELL_CMD || process.env.SHELL || 'zsh';
 
-/** アップロード最大サイズ（バイト）デフォルト10MB */
-export const MAX_UPLOAD_SIZE: number = parseInt(process.env.MAX_UPLOAD_SIZE || '10485760', 10);
+/** アップロード最大サイズ（バイト、デフォルト: 10MB） */
+export const MAX_UPLOAD_SIZE: number = validateInt('MAX_UPLOAD_SIZE', process.env.MAX_UPLOAD_SIZE, 10485760, 1, Number.MAX_SAFE_INTEGER);
 
 // ============================================================
 // AI設定
@@ -121,8 +130,8 @@ export const AI_MODEL: string =
   process.env.AI_MODEL ||
   (process.env.ANTHROPIC_API_KEY ? 'claude-sonnet-4-5-20250929' : 'gpt-4o');
 
-/** AI解析に送信するターミナル出力の最大行数 */
-export const AI_MAX_CONTEXT_LINES: number = parseInt(process.env.AI_MAX_CONTEXT_LINES || '100', 10);
+/** AI解析に送信するターミナル出力の最大行数（デフォルト: 200行） */
+export const AI_MAX_CONTEXT_LINES: number = validateInt('AI_MAX_CONTEXT_LINES', process.env.AI_MAX_CONTEXT_LINES, 200, 1, Number.MAX_SAFE_INTEGER);
 
 // ============================================================
 // HTTPS設定

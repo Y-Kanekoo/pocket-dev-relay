@@ -28,8 +28,9 @@ vi.mock('../../src/utils/store.js', () => {
     load(): T {
       return this.data;
     }
-    save(data: T): void {
+    save(data: T): boolean {
       this.data = data;
+      return true;
     }
   }
   return { JsonStore: MockJsonStore };
@@ -58,8 +59,9 @@ describe('クリップボード API', () => {
         load(): T {
           return this.data;
         }
-        save(data: T): void {
+        save(data: T): boolean {
           this.data = data;
+          return true;
         }
       }
       return { JsonStore: MockJsonStore };

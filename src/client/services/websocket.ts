@@ -98,10 +98,12 @@ export function connectWebSocket(): Promise<void> {
       callbacks?.onStatusChange('未接続', '#d95a2b');
 
       // 認証待ち中の切断はPromiseをrejectする
+      // Race Condition対策: ローカル変数にコピーしてからnullクリアし、その後呼び出す
       if (pendingAuthReject) {
-        pendingAuthReject(new Error('connection-closed-during-auth'));
+        const reject = pendingAuthReject;
         pendingAuthResolve = null;
         pendingAuthReject = null;
+        reject(new Error('connection-closed-during-auth'));
       }
 
       // 全セッションを非アクティブに
@@ -139,19 +141,22 @@ function handleWsMessage(event: MessageEvent): void {
   }
 
   // 認証結果の処理
+  // Race Condition対策: ローカル変数にコピーしてからnullクリアし、その後呼び出す
   if (payload.type === 'auth_result') {
     if (payload.ok) {
       if (pendingAuthResolve) {
-        pendingAuthResolve();
+        const resolve = pendingAuthResolve;
         pendingAuthResolve = null;
         pendingAuthReject = null;
+        resolve();
       }
     } else {
       showToast(payload.message || '認証に失敗しました', 'error');
       if (pendingAuthReject) {
-        pendingAuthReject(new Error('auth-failed'));
+        const reject = pendingAuthReject;
         pendingAuthResolve = null;
         pendingAuthReject = null;
+        reject(new Error('auth-failed'));
       }
     }
     return;

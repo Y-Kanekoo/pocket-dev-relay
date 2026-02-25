@@ -61,7 +61,11 @@ router.post('/snippets', authMiddleware, (req: Request, res: Response) => {
 
   const snippets = store.load();
   snippets.push(snippet);
-  store.save(snippets);
+
+  if (!store.save(snippets)) {
+    res.status(500).json({ error: 'データの保存に失敗しました' });
+    return;
+  }
   res.json(snippet);
 });
 
@@ -78,7 +82,11 @@ router.delete('/snippets/:id', authMiddleware, (req: Request, res: Response) => 
   }
 
   snippets.splice(index, 1);
-  store.save(snippets);
+
+  if (!store.save(snippets)) {
+    res.status(500).json({ error: 'データの保存に失敗しました' });
+    return;
+  }
   res.json({ ok: true });
 });
 

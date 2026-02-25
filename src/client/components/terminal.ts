@@ -107,6 +107,7 @@ export function createSession(): ClientSessionInfo | null {
   const tabElement = document.createElement('div');
   tabElement.className = 'session-tab';
   tabElement.dataset.sessionId = sessionId;
+  // 安全性: タブラベルはアプリケーション制御のテキストのみ（ユーザー入力なし）
   tabElement.innerHTML = `
     <span class="session-tab-label">セッション ${sessionNum}</span>
     <button class="session-tab-close" title="セッションを閉じる">\u00d7</button>

@@ -44,15 +44,17 @@ export class JsonStore<T> {
     }
   }
 
-  /** データをファイルに保存する（アトミック書き込み: 一時ファイル → rename） */
-  save(data: T): void {
+  /** データをファイルに保存する（アトミック書き込み: 一時ファイル → rename）。成功時true、失敗時false */
+  save(data: T): boolean {
     try {
       this.initDir();
       const tmpPath = this.filePath + '.tmp';
       fsSync.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
       fsSync.renameSync(tmpPath, this.filePath);
+      return true;
     } catch (err) {
       logger.error({ err }, 'データファイルの保存に失敗しました: %s', this.filePath);
+      return false;
     }
   }
 }

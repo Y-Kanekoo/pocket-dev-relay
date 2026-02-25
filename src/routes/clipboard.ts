@@ -50,7 +50,11 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
     text,
     updatedAt: new Date().toISOString(),
   };
-  store.save(data);
+
+  if (!store.save(data)) {
+    res.status(500).json({ error: 'データの保存に失敗しました' });
+    return;
+  }
 
   const response: ClipboardResponse = {
     text: data.text,
@@ -63,7 +67,10 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
  * DELETE /api/clipboard - クリップボードをクリア
  */
 router.delete('/clipboard', authMiddleware, (_req: Request, res: Response) => {
-  store.save(null);
+  if (!store.save(null)) {
+    res.status(500).json({ error: 'データの保存に失敗しました' });
+    return;
+  }
   res.json({ ok: true });
 });
 

@@ -36,7 +36,7 @@ Pocket Dev Relay - スマホからPCのターミナルにアクセス
   -h, --host <host>        ホスト (デフォルト: 0.0.0.0)
   -w, --workspace <path>   ワークスペースパス (デフォルト: カレントディレクトリ)
   -t, --token <token>      認証トークン
-      --tunnel             トンネルを有効化（外部アクセス、cloudflared必要）
+      --tunnel             トンネルを有効化（要cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/）
   -v, --version            バージョン表示
       --help               ヘルプ表示
   `);
