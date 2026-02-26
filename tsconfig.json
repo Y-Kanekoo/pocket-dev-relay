@@ -1,36 +1,19 @@
 {
   "compilerOptions": {
-    // ターゲット設定
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-
-    // 厳格モード
     "strict": true,
     "noImplicitAny": true,
-
-    // 出力設定
     "outDir": "dist",
     "rootDir": "src",
-
-    // その他の推奨設定
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "declarationMap": true,
     "sourceMap": true
   },
-  "include": [
-    "src/server.ts",
-    "src/cli.ts",
-    "src/server/**/*",
-    "src/types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
 }

@@ -1,496 +1,331 @@
-# Pocket Dev Relay
+# pocket-dev-relay
 
-スマホからPCのターミナルにアクセスするリモート開発ツール。
-同じLAN内のPCでサーバーを起動し、スマホのブラウザからCodex CLI / Claude Code / シェルを操作できる。
+> Tailscale + mosh + tmux を統合管理するリモート開発CLIツール
+
+スマートフォンからPCへ安全かつ快適にリモート接続するための環境を、ワンコマンドで構築・管理します。
+
+```
+スマートフォン (Termux / Blink Shell)
+    ↓ mosh (UDP, roaming対応)
+Tailscale VPN (WireGuard)
+    ↓
+PC (tmux セッション)
+```
 
 ## 特徴
 
-- スマホブラウザからPCのターミナルを操作
-- Codex CLI / Claude Code / シェルの3モード
-- WebSocket自動再接続
-- 複数セッション管理（タブUI）
-- ファイルブラウザ（閲覧・編集）
-- ダーク/ライトモード
-- PWA対応（ホーム画面に追加可能）
-- セッションログ保存
-- HTTPS対応（オプション）
-- 認証機能（トークンベース）
+- **Tailscale** - WireGuardベースのVPNで安全な接続を実現。NATやファイアウォールの設定不要
+- **mosh** - UDP接続で回線切り替え(Wi-Fi ↔ モバイル)に強く、ローミング対応
+- **tmux** - セッション永続化により、接続が切れても作業状態が保持される
+- **ワンコマンド管理** - 全サービスの起動・停止・接続情報表示・QRコード生成をCLIから実行
 
-## クイックスタート
+## 必要条件
 
-### ソースから（開発用）
+| ツール | バージョン | 用途 |
+|--------|-----------|------|
+| Node.js | >= 20 | CLI実行環境 |
+| Tailscale | 最新推奨 | VPN接続 |
+| mosh / mosh-server | 最新推奨 | UDP接続 |
+| tmux | 最新推奨 | セッション管理 |
+
+## インストール
+
+### 依存ツールのインストール
+
+付属のスクリプトで依存ツール (Tailscale, mosh, tmux) を一括インストールできます。
 
 ```bash
-git clone https://github.com/your-username/pocket-dev-relay.git
-cd pocket-dev-relay
+# 依存ツールのインストール
+./scripts/install-deps.sh
+```
+
+Linux (Debian/Ubuntu) と macOS (Homebrew) に対応しています。
+
+### CLIのセットアップ
+
+```bash
+# パッケージのインストール
 npm install
-cp .env.example .env
-# .env を編集して AUTH_TOKEN と WORKSPACE_ROOT を設定
-npm run dev
+
+# TypeScriptのビルド
+npm run build
+
+# グローバルコマンドとして登録（"pdr" コマンドが使えるようになる）
+npm link
 ```
 
-サーバーが起動すると、LAN上のアクセスURLがコンソールに表示される。
-スマホから同じWi-Fiに接続し、表示されたURLを開く。
+`npm link` を実行すると、`pocket-dev-relay` および短縮エイリアスの `pdr` がシステム全体で利用可能になります。
 
-### Docker
+## 使い方
+
+### 基本的なワークフロー
 
 ```bash
-# .env ファイルを作成
-echo "AUTH_TOKEN=your-secret-token" > .env
-echo "WORKSPACE_PATH=/path/to/your/project" >> .env
+# 1. 初期セットアップ（設定ファイルの生成・ツールの確認）
+pdr setup
 
-# 起動
-docker compose up -d
+# 2. 全サービスを起動（Tailscale, mosh-server, tmux）
+pdr start
+
+# 3. 接続情報の表示（QRコード付き）
+pdr connect
+
+# 4. ステータス確認
+pdr status
+
+# 5. 全サービスを停止
+pdr stop
 ```
 
-`docker-compose.yml` はリポジトリに含まれている。
-`WORKSPACE_PATH` にホスト側のプロジェクトディレクトリを指定すると、コンテナ内の `/workspace` にマウントされる。
+### 個別操作
+
+```bash
+# Tailscale 操作
+pdr tailscale up       # Tailscale を起動
+pdr tailscale down     # Tailscale を停止
+pdr tailscale ip       # Tailscale の IP アドレスを表示
+pdr tailscale status   # Tailscale のステータスを表示
+
+# mosh 操作
+pdr mosh start         # mosh-server を起動
+pdr mosh stop          # mosh-server を停止
+pdr mosh command       # クライアント用の接続コマンドを表示
+pdr mosh command <ip>  # 指定IPでの接続コマンドを表示
+pdr mosh status        # mosh のステータスを表示
+
+# tmux 操作
+pdr tmux new [name]    # 新しいセッションを作成
+pdr tmux layout dev    # "dev" レイアウトでセッションを作成
+pdr tmux layout split  # "split" レイアウトでセッションを作成
+pdr tmux list          # セッション一覧を表示
+pdr tmux attach [name] # セッションへのアタッチコマンドを表示
+pdr tmux kill <name>   # セッションを終了
+pdr tmux status        # tmux のステータスを表示
+```
+
+## コマンド一覧
+
+| コマンド | 説明 |
+|---------|------|
+| `pdr setup` | セットアップウィザードを実行（設定ファイル生成・ツール確認） |
+| `pdr start` | 全サービスを一括起動（Tailscale, mosh-server, tmux） |
+| `pdr stop` | 全サービスを一括停止 |
+| `pdr status` | 全コンポーネントのステータスを一括表示（デフォルトコマンド） |
+| `pdr connect` | 接続情報とQRコードを表示 |
+| `pdr tailscale up` | Tailscale を起動 |
+| `pdr tailscale down` | Tailscale を停止 |
+| `pdr tailscale ip` | Tailscale IP アドレスを表示 |
+| `pdr tailscale status` | Tailscale のステータスを表示 |
+| `pdr mosh start` | mosh-server を起動 |
+| `pdr mosh stop` | mosh-server を停止 |
+| `pdr mosh command [ip]` | クライアント用の接続コマンドを表示 |
+| `pdr mosh status` | mosh のステータスを表示 |
+| `pdr tmux new [name]` | 新しい tmux セッションを作成 |
+| `pdr tmux layout <name>` | 定義済みレイアウトでセッションを作成 |
+| `pdr tmux list` | tmux セッション一覧を表示 |
+| `pdr tmux attach [name]` | セッションへのアタッチコマンドを表示 |
+| `pdr tmux kill <name>` | 指定したセッションを終了 |
+| `pdr tmux status` | tmux のステータスを表示 |
+| `pdr config` | 設定ファイルのパスと現在の設定を表示 |
+| `pdr help` | ヘルプを表示 |
+| `pdr version` | バージョンを表示 |
 
 ## 設定
 
-### 環境変数
-
-`.env.example` をコピーして `.env` を作成し、必要な値を設定する。
-
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `PORT` | サーバーのリッスンポート | `4173` |
-| `WORKSPACE_ROOT` | ファイルブラウザ・ターミナルのルートディレクトリ | カレントディレクトリ |
-| `AUTH_TOKEN` | 認証トークン（空の場合は認証無効） | 空（認証無効） |
-| `ALLOW_CUSTOM_COMMANDS` | カスタムコマンドモードの許可 | `false` |
-| `ALLOW_FILE_WRITE` | ファイルブラウザでの書き込み許可 | `false` |
-| `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
-| `CODEX_CMD` | Codex CLIのコマンド名 | `codex` |
-| `CODEX_ARGS` | Codex CLIの追加引数 | 空 |
-| `CLAUDE_CMD` | Claude Codeのコマンド名 | `claude` |
-| `CLAUDE_ARGS` | Claude Codeの追加引数 | 空 |
-| `SHELL_CMD` | シェルのコマンド名 | `zsh`（環境変数`SHELL`のフォールバック） |
-| `SHELL_ARGS` | シェルの追加引数 | 空 |
-| `ENABLE_SESSION_LOGS` | セッションログの有効化 | `false` |
-| `LOG_DIR` | ログファイルの保存先 | `WORKSPACE_ROOT/logs` |
-| `ENABLE_HTTPS` | HTTPSモードの有効化 | `false` |
-| `SSL_KEY_PATH` | SSL秘密鍵のパス（HTTPS有効時に必須） | 空 |
-| `SSL_CERT_PATH` | SSL証明書のパス（HTTPS有効時に必須） | 空 |
-
-引数（`CODEX_ARGS`, `CLAUDE_ARGS`, `SHELL_ARGS`）はスペース区切りまたはJSON配列形式で指定できる。
-
-```bash
-# スペース区切り
-CODEX_ARGS=--model o3
-# JSON配列
-CODEX_ARGS=["--model", "o3"]
-```
-
-## API仕様
-
-### 認証
-
-`AUTH_TOKEN` が設定されている場合、`GET /` 以外の全APIリクエストにBearerトークンが必要。
-
-```
-Authorization: Bearer <AUTH_TOKEN>
-```
-
-WebSocket接続はクエリパラメータでトークンを渡す。
-
-```
-ws://host:port/ws?token=<AUTH_TOKEN>
-```
-
-### エンドポイント一覧
-
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/config` | アプリケーション設定を取得 |
-| GET | `/api/addresses` | アクセスURL一覧を取得 |
-| GET | `/api/files?path=<relative_path>` | ディレクトリ内のファイル一覧を取得 |
-| GET | `/api/file?path=<relative_path>` | ファイル内容を取得 |
-| POST | `/api/file` | ファイルに書き込み（`ALLOW_FILE_WRITE=true` が必要） |
-| GET | `/api/logs` | セッションログ一覧を取得（`ENABLE_SESSION_LOGS=true` が必要） |
-| GET | `/api/log/:fileName` | セッションログの内容を取得 |
-| GET | `/api/qr?text=<url>` | QRコードを生成（data URL形式） |
-
-#### GET /api/config
-
-レスポンス例:
+初回セットアップ時（`pdr setup`）に `~/.config/pocket-dev-relay/config.json` に設定ファイルが作成されます。
 
 ```json
 {
-  "workspaceRoot": "/Users/you/Projects/my-project",
-  "workspaceName": "my-project",
-  "modes": ["codex", "claude", "shell"],
-  "allowCustomCommands": false,
-  "fileWriteEnabled": false,
-  "authEnabled": true,
-  "maxFileSize": 1048576,
-  "sessionLogsEnabled": false
+  "tmux": {
+    "defaultSession": "dev",
+    "layouts": [
+      {
+        "name": "dev",
+        "description": "Editor + Terminal + Log",
+        "windows": [
+          { "name": "editor", "command": "$EDITOR ." },
+          { "name": "terminal" },
+          { "name": "log", "command": "tail -f /var/log/syslog 2>/dev/null || echo \"ready\"" }
+        ]
+      },
+      {
+        "name": "split",
+        "description": "Split pane layout",
+        "windows": [
+          {
+            "name": "main",
+            "panes": [
+              {},
+              { "split": "horizontal" },
+              { "split": "vertical" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "mosh": {
+    "ports": "60000:60010",
+    "server": "mosh-server"
+  },
+  "tailscale": {
+    "exitNode": false,
+    "acceptRoutes": true
+  }
 }
 ```
 
-#### GET /api/addresses
+### 設定項目の説明
 
-レスポンス例:
+| セクション | キー | 説明 | デフォルト値 |
+|-----------|------|------|-------------|
+| `tmux` | `defaultSession` | デフォルトで作成・接続するセッション名 | `"dev"` |
+| `tmux` | `layouts` | 定義済みのウィンドウレイアウト一覧 | `dev`, `split` の2つ |
+| `mosh` | `ports` | mosh-server が使用するUDPポート範囲 | `"60000:60010"` |
+| `mosh` | `server` | mosh-server の実行ファイルパス | `"mosh-server"` |
+| `tailscale` | `exitNode` | Exit Nodeとして機能するか | `false` |
+| `tailscale` | `acceptRoutes` | 他ノードが公開するルートを受け入れるか | `true` |
 
-```json
-{
-  "port": 4173,
-  "urls": [
-    { "type": "mdns", "name": "hostname.local", "host": "hostname.local:4173", "url": "http://hostname.local:4173" },
-    { "type": "lan", "name": "en0", "host": "192.168.1.10:4173", "url": "http://192.168.1.10:4173" }
-  ]
-}
-```
+### レイアウトのカスタマイズ
 
-#### GET /api/files
-
-クエリパラメータ `path` にワークスペースルートからの相対パスを指定する。省略時はルートを返す。
-
-レスポンス例:
+`layouts` 配列に独自のレイアウトを追加できます。各レイアウトは複数のウィンドウを持ち、各ウィンドウはペイン分割を定義できます。
 
 ```json
 {
-  "path": "src",
-  "items": [
-    { "name": "client", "type": "dir" },
-    { "name": "server.ts", "type": "file" }
-  ]
-}
-```
-
-#### GET /api/file
-
-クエリパラメータ `path` にファイルの相対パスを指定する。`MAX_FILE_SIZE` を超えるファイルはエラーになる。
-
-レスポンス例:
-
-```json
-{
-  "path": "src/server.ts",
-  "content": "import express from 'express';\n..."
-}
-```
-
-#### POST /api/file
-
-`ALLOW_FILE_WRITE=true` の場合のみ利用可能。
-
-リクエストボディ:
-
-```json
-{
-  "path": "src/example.ts",
-  "content": "console.log('hello');\n"
-}
-```
-
-レスポンス:
-
-```json
-{
-  "ok": true
-}
-```
-
-#### GET /api/logs
-
-`ENABLE_SESSION_LOGS=true` の場合のみ利用可能。
-
-レスポンス例:
-
-```json
-{
-  "logs": [
+  "name": "web",
+  "description": "Web development layout",
+  "windows": [
+    { "name": "editor", "command": "vim ." },
+    { "name": "server", "command": "npm run dev" },
     {
-      "id": "abc123",
-      "fileName": "session-2025-01-01T00-00-00-shell-abc123.log",
-      "mode": "shell",
-      "label": "Shell",
-      "cwd": ".",
-      "startedAt": "2025-01-01T00:00:00.000Z",
-      "endedAt": "2025-01-01T00:30:00.000Z",
-      "exitCode": 0
+      "name": "tools",
+      "panes": [
+        { "command": "git status" },
+        { "split": "horizontal", "command": "npm test -- --watch" }
+      ]
     }
   ]
 }
 ```
 
-#### GET /api/log/:fileName
+## アーキテクチャ
 
-ログファイルの内容をテキストとして返す。ファイル名は `session-` で始まり `.log` で終わる必要がある。
+pocket-dev-relay は3つのレイヤーを統合管理します。
 
-レスポンス例:
-
-```json
-{
-  "fileName": "session-2025-01-01T00-00-00-shell-abc123.log",
-  "content": "=== セッション開始 ===\n..."
-}
+```
+┌─────────────────────────────────────────────┐
+│           Session Layer (tmux)              │
+│  セッション永続化・ウィンドウ/ペイン管理      │
+│  切断してもプロセスが生き続ける               │
+├─────────────────────────────────────────────┤
+│         Transport Layer (mosh)              │
+│  UDP接続・ローミング対応・遅延予測表示         │
+│  Wi-Fi ↔ モバイル回線の切り替えに耐える       │
+├─────────────────────────────────────────────┤
+│         Network Layer (Tailscale)           │
+│  WireGuard VPN・NAT越え・ゼロコンフィグ       │
+│  どこからでもプライベートIPで接続可能          │
+└─────────────────────────────────────────────┘
 ```
 
-#### GET /api/qr
+### 各レイヤーの役割
 
-クエリパラメータ `text` に任意の文字列を渡すと、QRコードのdata URLを返す。
+| レイヤー | ツール | プロトコル | 役割 |
+|---------|--------|-----------|------|
+| Network | Tailscale | WireGuard (UDP) | 安全なVPNトンネルの確立。NAT越え、ファイアウォール透過 |
+| Transport | mosh | SSP over UDP | 接続の維持。回線切り替え時の自動再接続、ローカルエコー |
+| Session | tmux | - | セッションの永続化。切断してもプロセスが維持される |
 
-レスポンス例:
+### なぜこの組み合わせか
 
-```json
-{
-  "dataUrl": "data:image/png;base64,..."
-}
-```
+| 問題 | 解決策 |
+|------|--------|
+| 外出先からPCに接続できない | Tailscale がNAT越えを自動処理 |
+| Wi-Fiからモバイル回線に切り替えると接続が切れる | mosh がUDPベースで接続を維持 |
+| 接続が切れると作業中のプロセスが消える | tmux がセッションを永続化 |
+| 3つのツールを個別に管理するのが面倒 | pdr がワンコマンドで統合管理 |
 
-### WebSocketメッセージ
+## スマートフォンからの接続方法
 
-WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
+### 事前準備（PCとスマートフォン両方で必要）
 
-#### クライアント → サーバー
+1. **Tailscale アカウントの作成**
+   - [tailscale.com](https://tailscale.com) でアカウントを作成
 
-**start** - セッション開始
+2. **PCでの準備**
+   ```bash
+   # 依存ツールをインストール
+   ./scripts/install-deps.sh
 
-```json
-{
-  "type": "start",
-  "mode": "codex",
-  "cwd": "src",
-  "command": "custom command here",
-  "sessionId": "optional-id"
-}
-```
+   # CLIをセットアップ
+   npm install && npm run build && npm link
 
-- `mode`: `"codex"` | `"claude"` | `"shell"` | `"custom"`
-- `cwd`: 作業ディレクトリ（相対パス、省略時はワークスペースルート）
-- `command`: カスタムコマンド（`mode` が `"custom"` の場合のみ）
+   # 初期セットアップ
+   pdr setup
 
-**input** - ターミナル入力
+   # 全サービスを起動
+   pdr start
+   ```
 
-```json
-{
-  "type": "input",
-  "data": "ls -la\r"
-}
-```
+### スマートフォン側の設定
 
-**resize** - ターミナルサイズ変更
+3. **Tailscale アプリをインストール**
+   - iOS: App Store から「Tailscale」をインストール
+   - Android: Google Play Store から「Tailscale」をインストール
+   - PCと同じアカウントでログインし、同じ Tailnet に参加
 
-```json
-{
-  "type": "resize",
-  "cols": 120,
-  "rows": 40
-}
-```
+4. **ターミナルアプリをインストール**
+   - **Android**: [Termux](https://termux.dev) (推奨)
+     ```bash
+     pkg install mosh
+     ```
+   - **iOS**: [Blink Shell](https://blink.sh) (推奨、mosh内蔵)
 
-**stop** - セッション停止
+### 接続
 
-```json
-{
-  "type": "stop"
-}
-```
+5. **接続情報を取得**
+   ```bash
+   # PCで実行
+   pdr connect
+   ```
+   接続コマンドとQRコードが表示されます。
 
-#### サーバー → クライアント
+6. **スマートフォンから接続**
 
-**data** - ターミナル出力
+   QRコードをスキャンするか、表示されたコマンドをターミナルアプリで実行します。
 
-```json
-{
-  "type": "data",
-  "data": "total 42\ndrwxr-xr-x ..."
-}
-```
+   ```bash
+   # 表示される接続コマンドの例
+   mosh user@100.x.x.x -- tmux attach-session -t dev
+   ```
 
-**started** - セッション開始完了
+   これで、スマートフォンからPCのtmuxセッションに接続され、作業を開始できます。
 
-```json
-{
-  "type": "started",
-  "sessionId": "abc123",
-  "mode": "shell",
-  "cwd": ".",
-  "label": "Shell"
-}
-```
+### 接続のヒント
 
-**exit** - プロセス終了
-
-```json
-{
-  "type": "exit",
-  "exitCode": 0,
-  "signal": null
-}
-```
-
-**stopped** - 手動停止
-
-```json
-{
-  "type": "stopped",
-  "reason": "client-stop"
-}
-```
-
-**error** - エラー
-
-```json
-{
-  "type": "error",
-  "message": "session-already-running"
-}
-```
+- **回線切り替え**: Wi-Fiとモバイル回線を切り替えても、moshが自動的に接続を復元します
+- **アプリ切り替え**: スマートフォンで他のアプリに切り替えても、戻れば作業を再開できます
+- **セッション永続化**: tmuxのおかげで、ターミナルアプリを完全に終了しても、再接続すれば作業の続きから再開できます
 
 ## 開発
 
-### 前提条件
-
-- Node.js 20以上
-- npm
-- node-ptyのビルドに必要なツール（Python 3、make、C++コンパイラ）
-
-macOSではXcode Command Line Toolsがインストールされていれば問題ない。
-
 ```bash
-xcode-select --install
-```
-
-### セットアップ
-
-```bash
-git clone https://github.com/your-username/pocket-dev-relay.git
-cd pocket-dev-relay
-npm install
-cp .env.example .env
-```
-
-### スクリプト一覧
-
-| コマンド | 説明 |
-|----------|------|
-| `npm run build` | サーバーとクライアントをビルド |
-| `npm run build:server` | サーバーのみビルド（esbuild） |
-| `npm run build:client` | クライアントのみビルド（esbuild） |
-| `npm run dev` | ビルド後にサーバーを起動 |
-| `npm start` | ビルド済みのサーバーを起動 |
-| `npm run start:awake` | macOSスリープ防止付きで起動（caffeinate） |
-| `npm run watch` | サーバーとクライアントのファイル監視ビルド |
-| `npm run watch:server` | サーバーのファイル監視ビルド |
-| `npm run watch:client` | クライアントのファイル監視ビルド |
-| `npm run lint` | ESLintを実行 |
-| `npm run format` | Prettierでフォーマット |
-| `npm run typecheck` | TypeScriptの型チェック |
-| `npm test` | テストをウォッチモードで実行（vitest） |
-| `npm run test:ui` | テストUIを起動（vitest --ui） |
-| `npm run test:run` | テストを1回実行 |
-
-### プロジェクト構造
-
-```
-pocket-dev-relay/
-├── public/                    # 静的ファイル（フロントエンド）
-│   ├── index.html             # メインHTML
-│   ├── styles.css             # スタイルシート
-│   ├── app.js                 # ビルド済みクライアントJS
-│   ├── manifest.json          # PWAマニフェスト
-│   ├── sw.js                  # Service Worker
-│   └── icon.svg               # アプリアイコン
-├── src/
-│   ├── server.ts              # サーバーエントリポイント
-│   ├── config.ts              # 設定値管理（環境変数）
-│   ├── types/
-│   │   └── index.ts           # 共通型定義
-│   ├── routes/
-│   │   ├── api.ts             # /api/config, /api/addresses, /api/qr
-│   │   ├── files.ts           # /api/files, /api/file
-│   │   └── logs.ts            # /api/logs, /api/log/:fileName
-│   ├── services/
-│   │   ├── pty.ts             # PTY操作・コマンドプリセット
-│   │   ├── session.ts         # セッション管理
-│   │   └── websocket.ts       # WebSocketハンドラ
-│   ├── middleware/
-│   │   ├── auth.ts            # 認証ミドルウェア
-│   │   └── errorHandler.ts    # エラーハンドリング
-│   ├── errors/
-│   │   └── AppError.ts        # カスタムエラークラス
-│   ├── utils/
-│   │   ├── network.ts         # ネットワークユーティリティ
-│   │   └── path.ts            # パスユーティリティ
-│   └── client/
-│       ├── app.ts             # クライアントエントリポイント
-│       ├── components/
-│       │   ├── fileBrowser.ts # ファイルブラウザ
-│       │   ├── session.ts     # セッション管理UI
-│       │   ├── settings.ts    # 設定パネル
-│       │   ├── terminal.ts    # ターミナルUI
-│       │   └── toast.ts       # トースト通知
-│       ├── services/
-│       │   ├── api.ts         # APIクライアント
-│       │   ├── errorHandler.ts# エラーハンドリング
-│       │   └── websocket.ts   # WebSocket接続管理
-│       └── state/
-│           └── sessionStore.ts# セッション状態管理
-├── tests/
-│   ├── client/
-│   │   ├── services/
-│   │   │   └── api.test.ts    # APIクライアントテスト
-│   │   └── utils.test.ts      # クライアントユーティリティテスト
-│   └── server/
-│       ├── auth.test.ts       # 認証テスト
-│       ├── session.test.ts    # セッションテスト
-│       └── utils.test.ts      # サーバーユーティリティテスト
-├── Dockerfile                 # Dockerイメージ定義
-├── docker-compose.yml         # Docker Compose設定
-├── package.json
-├── tsconfig.json              # TypeScript設定（サーバー）
-├── tsconfig.client.json       # TypeScript設定（クライアント）
-├── tsconfig.test.json         # TypeScript設定（テスト）
-├── vitest.config.ts           # Vitestテスト設定
-├── .env.example               # 環境変数テンプレート
-├── .eslintrc.json             # ESLint設定
-└── .prettierrc                # Prettier設定
-```
-
-### テスト
-
-テストフレームワークにはVitestを使用している。
-
-```bash
-# テストを1回実行
-npm run test:run
-
-# ウォッチモードで実行
+# テストの実行
 npm test
 
-# UIモードで実行
-npm run test:ui
+# 型チェック
+npm run typecheck
+
+# リンター
+npm run lint
+
+# フォーマッター
+npm run format
+
+# テストカバレッジ
+npm run test:coverage
 ```
-
-### ビルド
-
-esbuildでサーバーとクライアントをバンドルする。
-
-```bash
-# 全体ビルド
-npm run build
-
-# ファイル監視ビルド（開発用）
-npm run watch
-```
-
-## セキュリティに関する注意
-
-- `AUTH_TOKEN` を必ず設定すること。未設定の場合、認証なしで全APIにアクセスできる
-- 信頼できるLAN内での使用を想定している。インターネットに公開しないこと
-- 外出先からアクセスする場合はTailscale等のVPN経由が安全
-- `ALLOW_CUSTOM_COMMANDS` と `ALLOW_FILE_WRITE` はデフォルトで無効。必要な場合のみ有効にすること
-- HTTPS を有効にする場合は、信頼できる証明書を使用すること
-
-## ヒント
-
-- スマホは同じWi-Fiに接続する。QRコードから開くのが簡単
-- mDNS（`hostname.local`）が使える場合はIPアドレス不要で接続できる
-- macOSでスリープを防止するには `npm run start:awake` を使用する
-- サーバーはPC上で動作するため、PCは起動したままにすること
 
 ## ライセンス
 
-MIT
+MIT License - 詳細は [LICENSE](./LICENSE) ファイルを参照してください。
