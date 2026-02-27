@@ -263,10 +263,13 @@ describe('sendErrorNotification', () => {
     const mockWs = { id: 'test-ws' };
     sendErrorNotification(mockWs, 'session-ws', 'Error: test');
 
-    expect(mockSend).toHaveBeenCalledWith(mockWs, expect.objectContaining({
-      type: 'notification',
-      level: 'error',
-    }));
+    expect(mockSend).toHaveBeenCalledWith(
+      mockWs,
+      expect.objectContaining({
+        type: 'notification',
+        level: 'error',
+      }),
+    );
   });
 });
 

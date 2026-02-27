@@ -165,7 +165,10 @@ function cleanup(): void {
 /** トンネル切断時の自動再起動 */
 function handleRestart(localPort: number): void {
   if (retryCount >= MAX_RETRIES) {
-    logger.error('トンネルの再起動回数が上限（%d回）に達しました。手動で再起動してください。', MAX_RETRIES);
+    logger.error(
+      'トンネルの再起動回数が上限（%d回）に達しました。手動で再起動してください。',
+      MAX_RETRIES,
+    );
     return;
   }
 

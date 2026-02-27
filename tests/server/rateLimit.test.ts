@@ -11,7 +11,11 @@ vi.mock('../../src/config.js', () => ({
   APP_VERSION: '0.0.0-test',
 }));
 
-import { createRateLimiter, createAuthRateLimiter, createWebSocketRateLimiter } from '../../src/middleware/rateLimit.js';
+import {
+  createRateLimiter,
+  createAuthRateLimiter,
+  createWebSocketRateLimiter,
+} from '../../src/middleware/rateLimit.js';
 
 describe('レート制限ミドルウェア', () => {
   it('createRateLimiter がミドルウェア関数を返すこと', () => {

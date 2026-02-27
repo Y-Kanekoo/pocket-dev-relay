@@ -43,14 +43,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   'invalid-filename': 'ファイル名が不正です。',
 
   // セッション関連
-  'session-already-running': 'セッションは既に実行中です。新しいセッションを開始するには、現在のセッションを停止してください。',
+  'session-already-running':
+    'セッションは既に実行中です。新しいセッションを開始するには、現在のセッションを停止してください。',
   'failed-to-start': 'セッションの開始に失敗しました。もう一度お試しください。',
   'session-timeout': 'セッションがタイムアウトしました。',
   'unknown-mode': '不明なモードです。',
   'missing-command': 'コマンドが指定されていません。',
 
   // SSH関連
-  'ssh-disabled': 'SSH機能は無効になっています。サーバー設定で ENABLE_SSH=true を設定してください。',
+  'ssh-disabled':
+    'SSH機能は無効になっています。サーバー設定で ENABLE_SSH=true を設定してください。',
   'ssh-host-required': 'ホスト名を入力してください。',
   'ssh-username-required': 'ユーザー名を入力してください。',
   'ssh-password-required': 'パスワードを入力してください。',

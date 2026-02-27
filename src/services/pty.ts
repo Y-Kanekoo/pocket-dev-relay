@@ -113,12 +113,26 @@ export interface SpawnConfig {
 
 /** 実行を拒否する危険なコマンド */
 const BLOCKED_COMMANDS: ReadonlySet<string> = new Set([
-  'rm', 'rmdir', 'mkfs', 'dd', 'format',
-  'shutdown', 'reboot', 'halt', 'poweroff',
-  'chmod', 'chown', 'chgrp',
-  'su', 'sudo',
-  'passwd', 'useradd', 'userdel', 'usermod',
-  'iptables', 'ip6tables',
+  'rm',
+  'rmdir',
+  'mkfs',
+  'dd',
+  'format',
+  'shutdown',
+  'reboot',
+  'halt',
+  'poweroff',
+  'chmod',
+  'chown',
+  'chgrp',
+  'su',
+  'sudo',
+  'passwd',
+  'useradd',
+  'userdel',
+  'usermod',
+  'iptables',
+  'ip6tables',
 ]);
 
 /**

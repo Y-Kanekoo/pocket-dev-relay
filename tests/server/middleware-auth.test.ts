@@ -15,7 +15,6 @@ vi.mock('../../src/config.js', () => ({
 }));
 
 describe('middleware/auth.ts', () => {
-
   describe('AUTH_TOKEN未設定時', () => {
     let mod: typeof import('../../src/middleware/auth.js');
 

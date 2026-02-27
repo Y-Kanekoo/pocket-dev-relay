@@ -6,11 +6,7 @@
 
 import { Router, Request, Response } from 'express';
 import { nanoid } from 'nanoid';
-import {
-  Snippet,
-  SnippetsResponse,
-  SnippetExecuteResponse,
-} from '../types/index.js';
+import { Snippet, SnippetsResponse, SnippetExecuteResponse } from '../types/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ValidationError, NotFoundError } from '../errors/AppError.js';

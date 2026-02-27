@@ -138,14 +138,8 @@ function makeRequest(
 }
 
 // エラーハンドラ（AppErrorを処理）
-const errorMiddleware = (
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  const statusCode =
-    (err as unknown as { statusCode?: number }).statusCode || 500;
+const errorMiddleware = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  const statusCode = (err as unknown as { statusCode?: number }).statusCode || 500;
   res.status(statusCode).json({ error: err.message });
 };
 
@@ -463,24 +457,14 @@ describe('API ルーター', () => {
     });
 
     it('テキストからQRコードを正常に生成できること', async () => {
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/qr?text=http://localhost:4173',
-      );
+      const result = await makeRequest(app, 'GET', '/api/qr?text=http://localhost:4173');
       expect(result.statusCode).toBe(200);
       expect(result.body).toHaveProperty('dataUrl');
-      expect((result.body as { dataUrl: string }).dataUrl).toContain(
-        'data:image/png;base64',
-      );
+      expect((result.body as { dataUrl: string }).dataUrl).toContain('data:image/png;base64');
     });
 
     it('QRコード生成結果がdata URLの形式であること', async () => {
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/qr?text=http://example.com',
-      );
+      const result = await makeRequest(app, 'GET', '/api/qr?text=http://example.com');
       expect(result.statusCode).toBe(200);
       const dataUrl = (result.body as { dataUrl: string }).dataUrl;
       expect(dataUrl).toMatch(/^data:image\/png;base64,/);

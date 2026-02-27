@@ -13,13 +13,24 @@ import { nanoid } from 'nanoid';
 import { Client as SSHClient, ClientChannel } from 'ssh2';
 
 import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
-import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR, LOG_MAX_AGE_DAYS, LOG_MAX_SIZE_MB } from '../config.js';
+import {
+  ROOT_DIR,
+  ENABLE_SESSION_LOGS,
+  LOG_DIR,
+  LOG_MAX_AGE_DAYS,
+  LOG_MAX_SIZE_MB,
+} from '../config.js';
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { stripAnsi } from '../utils/text.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
-import { detectError, sendErrorNotification, sendExitNotification, clearNotificationState } from './notifier.js';
+import {
+  detectError,
+  sendErrorNotification,
+  sendExitNotification,
+  clearNotificationState,
+} from './notifier.js';
 
 // ============================================================
 // 型定義（サーバー内部用）
@@ -103,7 +114,7 @@ async function rotateOldLogs(): Promise<void> {
     let deletedCount = 0;
 
     for (const info of fileInfos) {
-      const isOld = (now - info.mtime) > maxAgeMs;
+      const isOld = now - info.mtime > maxAgeMs;
       const isOverSize = totalSize > maxSizeBytes;
 
       if (isOld || isOverSize) {
@@ -157,17 +168,41 @@ export function send(ws: WebSocket, payload: ServerMessage): void {
 
 /** PTYに渡す環境変数の許可リスト */
 const ENV_ALLOWLIST: ReadonlySet<string> = new Set([
-  'HOME', 'USER', 'LOGNAME', 'SHELL', 'LANG', 'LC_ALL', 'LC_CTYPE',
-  'PATH', 'TERM', 'COLORTERM', 'EDITOR', 'VISUAL', 'PAGER',
-  'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR',
-  'TMPDIR', 'TMP', 'TEMP',
-  'HOSTNAME', 'PWD', 'OLDPWD', 'SHLVL',
-  'SSH_AUTH_SOCK', 'GPG_AGENT_INFO',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'SHELL',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'PATH',
+  'TERM',
+  'COLORTERM',
+  'EDITOR',
+  'VISUAL',
+  'PAGER',
+  'XDG_CONFIG_HOME',
+  'XDG_DATA_HOME',
+  'XDG_CACHE_HOME',
+  'XDG_RUNTIME_DIR',
+  'TMPDIR',
+  'TMP',
+  'TEMP',
+  'HOSTNAME',
+  'PWD',
+  'OLDPWD',
+  'SHLVL',
+  'SSH_AUTH_SOCK',
+  'GPG_AGENT_INFO',
   // Node.js関連
   // NODE_OPTIONS は --require で任意コード実行可能なため除外
-  'NODE_ENV', 'NODE_PATH',
+  'NODE_ENV',
+  'NODE_PATH',
   // Git関連
-  'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL',
+  'GIT_AUTHOR_NAME',
+  'GIT_AUTHOR_EMAIL',
+  'GIT_COMMITTER_NAME',
+  'GIT_COMMITTER_EMAIL',
 ]);
 
 /**
@@ -306,7 +341,10 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
  * @param ws WebSocket
  * @returns セッション情報
  */
-export async function startSSHSession(config: SessionConfig, ws: WebSocket): Promise<SessionInternal> {
+export async function startSSHSession(
+  config: SessionConfig,
+  ws: WebSocket,
+): Promise<SessionInternal> {
   if (!isSSHEnabled()) {
     throw new Error('ssh-disabled');
   }

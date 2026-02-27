@@ -12,7 +12,9 @@ import logger from '../services/logger.js';
 
 // AUTH_TOKEN未設定時の警告
 if (!AUTH_TOKEN) {
-  logger.warn('AUTH_TOKEN が未設定です。認証なしでアクセス可能な状態です。本番環境では必ず設定してください。');
+  logger.warn(
+    'AUTH_TOKEN が未設定です。認証なしでアクセス可能な状態です。本番環境では必ず設定してください。',
+  );
 }
 
 /**

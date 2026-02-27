@@ -34,13 +34,11 @@ vi.mock('fs/promises', () => ({
 // multerのモック
 vi.mock('multer', () => {
   // multer().single()が返すミドルウェアのモック
-  const mockMiddleware = vi.fn(
-    (req: Request, _res: Response, next: NextFunction) => {
-      // テストで req.file を設定可能にする
-      // beforeEachで req.file が設定されていなければ何もしない
-      next();
-    },
-  );
+  const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+    // テストで req.file を設定可能にする
+    // beforeEachで req.file が設定されていなければ何もしない
+    next();
+  });
 
   const mockMulterInstance = {
     single: vi.fn(() => mockMiddleware),
@@ -140,14 +138,8 @@ function makeRequest(
 }
 
 // エラーハンドラ（AppErrorを処理）
-const errorMiddleware = (
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  const statusCode =
-    (err as unknown as { statusCode?: number }).statusCode || 500;
+const errorMiddleware = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  const statusCode = (err as unknown as { statusCode?: number }).statusCode || 500;
   res.status(statusCode).json({ error: err.message });
 };
 
@@ -183,9 +175,7 @@ describe('ファイル API', () => {
         },
       }));
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (_req: Request, _res: Response, next: NextFunction) => next(),
-        );
+        const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));
@@ -215,9 +205,7 @@ describe('ファイル API', () => {
       expect(result.body).toHaveProperty('path');
       expect(result.body).toHaveProperty('items');
 
-      const items = (
-        result.body as { items: Array<{ name: string; type: string }> }
-      ).items;
+      const items = (result.body as { items: Array<{ name: string; type: string }> }).items;
       expect(Array.isArray(items)).toBe(true);
       expect(items.length).toBe(4);
 
@@ -237,25 +225,15 @@ describe('ファイル API', () => {
     });
 
     it('パストラバーサル攻撃（../）を拒否すること', async () => {
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/files?path=../../etc',
-      );
+      const result = await makeRequest(app, 'GET', '/api/files?path=../../etc');
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
     });
 
     it('存在しないディレクトリで404を返すこと', async () => {
-      mockStat.mockRejectedValue(
-        Object.assign(new Error('ENOENT'), { code: 'ENOENT' }),
-      );
+      mockStat.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
 
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/files?path=nonexistent',
-      );
+      const result = await makeRequest(app, 'GET', '/api/files?path=nonexistent');
       expect(result.statusCode).toBe(404);
       expect(result.body).toHaveProperty('error');
     });
@@ -265,11 +243,7 @@ describe('ファイル API', () => {
         isDirectory: () => false,
       });
 
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/files?path=file.txt',
-      );
+      const result = await makeRequest(app, 'GET', '/api/files?path=file.txt');
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
     });
@@ -306,9 +280,7 @@ describe('ファイル API', () => {
         },
       }));
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (_req: Request, _res: Response, next: NextFunction) => next(),
-        );
+        const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));
@@ -329,36 +301,22 @@ describe('ファイル API', () => {
       });
       mockReadFile.mockResolvedValue('ファイルの内容です');
 
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/file?path=test.txt',
-      );
+      const result = await makeRequest(app, 'GET', '/api/file?path=test.txt');
       expect(result.statusCode).toBe(200);
       expect(result.body).toHaveProperty('content', 'ファイルの内容です');
       expect(result.body).toHaveProperty('path');
     });
 
     it('存在しないファイルで404を返すこと', async () => {
-      mockStat.mockRejectedValue(
-        Object.assign(new Error('ENOENT'), { code: 'ENOENT' }),
-      );
+      mockStat.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
 
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/file?path=nonexistent.txt',
-      );
+      const result = await makeRequest(app, 'GET', '/api/file?path=nonexistent.txt');
       expect(result.statusCode).toBe(404);
       expect(result.body).toHaveProperty('error');
     });
 
     it('パストラバーサル攻撃（../）を拒否すること', async () => {
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/file?path=../../etc/passwd',
-      );
+      const result = await makeRequest(app, 'GET', '/api/file?path=../../etc/passwd');
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
     });
@@ -380,11 +338,7 @@ describe('ファイル API', () => {
         size: 2000000, // 2MB（上限1MB）
       });
 
-      const result = await makeRequest(
-        app,
-        'GET',
-        '/api/file?path=large-file.bin',
-      );
+      const result = await makeRequest(app, 'GET', '/api/file?path=large-file.bin');
       expect(result.statusCode).toBe(413);
       expect(result.body).toHaveProperty('error');
     });
@@ -421,9 +375,7 @@ describe('ファイル API', () => {
         },
       }));
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (_req: Request, _res: Response, next: NextFunction) => next(),
-        );
+        const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));
@@ -498,9 +450,7 @@ describe('ファイル API', () => {
         },
       }));
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (_req: Request, _res: Response, next: NextFunction) => next(),
-        );
+        const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));
@@ -559,13 +509,11 @@ describe('ファイル API', () => {
 
       // multerをモックして、req.fileをテストで制御可能にする
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (req: Request, _res: Response, next: NextFunction) => {
-            // req.file が既にセットされていない場合はnullのまま
-            // テスト側で req.file をセットする代わりに、beforeEachの後でappにミドルウェアを追加する
-            next();
-          },
-        );
+        const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+          // req.file が既にセットされていない場合はnullのまま
+          // テスト側で req.file をセットする代わりに、beforeEachの後でappにミドルウェアを追加する
+          next();
+        });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));
@@ -614,9 +562,7 @@ describe('ファイル API', () => {
         },
       }));
       vi.doMock('multer', () => {
-        const mockMiddleware = vi.fn(
-          (_req: Request, _res: Response, next: NextFunction) => next(),
-        );
+        const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
         const multerFn = vi.fn(() => mockMulterInstance);
         multerFn.diskStorage = vi.fn(() => ({}));

@@ -102,12 +102,26 @@ describe('PTYサービス', () => {
 
   describe('ブロックコマンド検出', () => {
     const blockedCommands = [
-      'rm', 'rmdir', 'mkfs', 'dd', 'format',
-      'shutdown', 'reboot', 'halt', 'poweroff',
-      'chmod', 'chown', 'chgrp',
-      'su', 'sudo',
-      'passwd', 'useradd', 'userdel', 'usermod',
-      'iptables', 'ip6tables',
+      'rm',
+      'rmdir',
+      'mkfs',
+      'dd',
+      'format',
+      'shutdown',
+      'reboot',
+      'halt',
+      'poweroff',
+      'chmod',
+      'chown',
+      'chgrp',
+      'su',
+      'sudo',
+      'passwd',
+      'useradd',
+      'userdel',
+      'usermod',
+      'iptables',
+      'ip6tables',
     ];
 
     blockedCommands.forEach((cmd) => {

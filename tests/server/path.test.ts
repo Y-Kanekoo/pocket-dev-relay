@@ -11,11 +11,7 @@ vi.mock('../../src/config.js', () => ({
 }));
 
 import { resolvePath, convertFsError } from '../../src/utils/path.js';
-import {
-  AppError,
-  InvalidPathError,
-  NotFoundError,
-} from '../../src/errors/AppError.js';
+import { AppError, InvalidPathError, NotFoundError } from '../../src/errors/AppError.js';
 
 // ============================================================
 // resolvePath のテスト

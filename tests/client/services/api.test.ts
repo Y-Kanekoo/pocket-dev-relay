@@ -151,11 +151,7 @@ describe('isFileTooLarge', () => {
 /**
  * WebSocket URLを生成
  */
-function getWsUrl(
-  protocol: string,
-  host: string,
-  token?: string
-): string {
+function getWsUrl(protocol: string, host: string, token?: string): string {
   const wsProtocol = protocol === 'https:' ? 'wss' : 'ws';
   const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
   return `${wsProtocol}://${host}/ws${tokenParam}`;
@@ -210,12 +206,8 @@ function getErrorMessage(response: ApiErrorResponse): string {
 describe('getErrorMessage', () => {
   it('既知のエラーコードをメッセージに変換する', () => {
     expect(getErrorMessage({ error: 'unauthorized' })).toBe('認証が必要です');
-    expect(getErrorMessage({ error: 'not-found' })).toBe(
-      'ファイルが見つかりません'
-    );
-    expect(getErrorMessage({ error: 'file-too-large' })).toBe(
-      'ファイルサイズが大きすぎます'
-    );
+    expect(getErrorMessage({ error: 'not-found' })).toBe('ファイルが見つかりません');
+    expect(getErrorMessage({ error: 'file-too-large' })).toBe('ファイルサイズが大きすぎます');
   });
 
   it('未知のエラーコードはそのまま返す', () => {

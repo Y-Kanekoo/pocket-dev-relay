@@ -86,10 +86,20 @@ app.use(securityHeaders);
 // ミドルウェア
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-// 必要なクライアントライブラリのみ公開（node_modules全体の公開を防止）
+// 必要なクライアントライブラリの必要なファイルのみ公開
 const nodeModulesDir = path.join(__dirname, '..', 'node_modules');
-app.use('/vendor/@xterm/xterm', express.static(path.join(nodeModulesDir, '@xterm', 'xterm')));
-app.use('/vendor/@xterm/addon-fit', express.static(path.join(nodeModulesDir, '@xterm', 'addon-fit')));
+app.use(
+  '/vendor/@xterm/xterm/css',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'css')),
+);
+app.use(
+  '/vendor/@xterm/xterm/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'lib')),
+);
+app.use(
+  '/vendor/@xterm/addon-fit/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'addon-fit', 'lib')),
+);
 
 // ヘルスチェック（認証・レート制限の前に配置）
 app.use(healthRouter);
@@ -111,13 +121,17 @@ app.use(errorHandler);
 
 // 本番環境ではAUTH_TOKENの設定を必須とする
 if (process.env.NODE_ENV === 'production' && !AUTH_TOKEN) {
-  logger.error('本番環境では AUTH_TOKEN の設定が必須です。環境変数 AUTH_TOKEN を設定してください。');
+  logger.error(
+    '本番環境では AUTH_TOKEN の設定が必須です。環境変数 AUTH_TOKEN を設定してください。',
+  );
   process.exit(1);
 }
 
 // トンネルモードではAUTH_TOKENの設定を必須とする（インターネット公開のため）
 if (ENABLE_TUNNEL && !AUTH_TOKEN) {
-  logger.error('トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。');
+  logger.error(
+    'トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。',
+  );
   process.exit(1);
 }
 
@@ -145,7 +159,9 @@ server.listen(PORT, '0.0.0.0', async () => {
       // QRコードをターミナルに表示
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const QRCode = require('qrcode') as { toString: (text: string, opts: { type: string; small: boolean }) => Promise<string> };
+        const QRCode = require('qrcode') as {
+          toString: (text: string, opts: { type: string; small: boolean }) => Promise<string>;
+        };
         const qrText = await QRCode.toString(tunnelInfo.url, { type: 'terminal', small: true });
         console.log(qrText);
         logger.info('スマホでQRコードを読み取ってアクセスしてください');

@@ -46,9 +46,7 @@ describe('joinPath', () => {
   });
 
   it('ネストしたパスを結合できる', () => {
-    expect(joinPath('src/components', 'Button.tsx')).toBe(
-      'src/components/Button.tsx'
-    );
+    expect(joinPath('src/components', 'Button.tsx')).toBe('src/components/Button.tsx');
   });
 });
 
@@ -205,11 +203,7 @@ describe('pickBestUrl', () => {
 /**
  * 再接続の遅延時間を計算（クライアント側のロジックを再現）
  */
-function getReconnectDelay(
-  attempts: number,
-  baseDelay: number,
-  maxDelay: number
-): number {
+function getReconnectDelay(attempts: number, baseDelay: number, maxDelay: number): number {
   return Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
 }
 

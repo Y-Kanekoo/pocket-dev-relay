@@ -60,7 +60,9 @@ describe('errorHandler', () => {
     errorHandler(err, req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(422);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json).toHaveBeenCalledWith({
+    expect(
+      (res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json,
+    ).toHaveBeenCalledWith({
       error: 'CUSTOM_ERROR',
       message: 'カスタムエラーメッセージ',
     });
@@ -73,7 +75,9 @@ describe('errorHandler', () => {
     errorHandler(err, req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json).toHaveBeenCalledWith({
+    expect(
+      (res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json,
+    ).toHaveBeenCalledWith({
       error: 'VALIDATION_ERROR',
       message: '入力値が不正です',
       details,
@@ -128,7 +132,9 @@ describe('notFoundHandler', () => {
     notFoundHandler(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect((res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json).toHaveBeenCalledWith({
+    expect(
+      (res.status as ReturnType<typeof vi.fn>).mock.results[0].value.json,
+    ).toHaveBeenCalledWith({
       error: 'NOT_FOUND',
       message: 'エンドポイント GET /api/not-exist は存在しません',
     });

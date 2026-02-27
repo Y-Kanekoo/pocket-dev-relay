@@ -52,7 +52,9 @@ describe('セキュリティヘッダーミドルウェア', () => {
     // script-src から 'unsafe-inline' が除去されていることを確認
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
-    expect(csp).toContain("connect-src 'self' ws: wss:");
+    expect(csp).toContain("connect-src 'self'");
+    expect(csp).not.toContain('ws:');
+    expect(csp).not.toContain('wss:');
   });
 
   it('style-srcにunsafe-inlineが含まれること（xterm.jsが動的インラインスタイルを生成するため）', () => {
@@ -99,6 +101,20 @@ describe('セキュリティヘッダーミドルウェア', () => {
     securityHeaders(req, res, next);
 
     expect(headers.get('X-XSS-Protection')).toBe('1; mode=block');
+  });
+
+  it('Referrer-Policyが設定されること', () => {
+    const { req, res, next, headers } = createMocks();
+    securityHeaders(req, res, next);
+
+    expect(headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
+  });
+
+  it('Permissions-Policyが設定されること', () => {
+    const { req, res, next, headers } = createMocks();
+    securityHeaders(req, res, next);
+
+    expect(headers.get('Permissions-Policy')).toBe('camera=(), microphone=(), geolocation=()');
   });
 
   it('next()が呼び出されること', () => {

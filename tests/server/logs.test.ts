@@ -228,7 +228,9 @@ describe('ログ API', () => {
     });
 
     it('GET /api/log/:fileName でファイル未存在時は404を返すこと', async () => {
-      mockReadFile.mockRejectedValue(Object.assign(new Error('ファイルが見つかりません'), { code: 'ENOENT' }));
+      mockReadFile.mockRejectedValue(
+        Object.assign(new Error('ファイルが見つかりません'), { code: 'ENOENT' }),
+      );
 
       const result = await makeRequest(app, 'GET', '/api/log/session-999.log');
       expect(result.statusCode).toBe(404);
