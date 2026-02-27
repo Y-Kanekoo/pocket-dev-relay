@@ -9,7 +9,8 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { ClientMessage } from '../types/index.js';
 import { AUTH_TOKEN, SESSION_TIMEOUT } from '../config.js';
 import { authorizeWebSocket, authorizeToken } from '../middleware/auth.js';
-import { sessions, send, startSession, startSSHSession, stopSession } from './session.js';
+import { sessions, startSession, startSSHSession, stopSession } from './session.js';
+import { send } from '../utils/ws.js';
 import { resizeSSHChannel } from './ssh.js';
 import logger from './logger.js';
 
@@ -168,7 +169,7 @@ function handleAuthenticated(ws: WebSocket): void {
     } else if (payload.type === 'resize') {
       const cols = Number(payload.cols);
       const rows = Number(payload.rows);
-      if (Number.isInteger(cols) && Number.isInteger(rows)) {
+      if (Number.isInteger(cols) && Number.isInteger(rows) && cols > 0 && cols <= 500 && rows > 0 && rows <= 500) {
         // SSHモードとPTYモードでリサイズ処理を切り替え
         if (session.sshChannel) {
           resizeSSHChannel(session.sshChannel, cols, rows);

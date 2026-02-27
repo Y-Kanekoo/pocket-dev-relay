@@ -5,10 +5,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// session.ts のモック（send関数を含む）
-vi.mock('../../src/services/session.js', () => ({
+// ws.ts のモック（send関数を含む）
+vi.mock('../../src/utils/ws.js', () => ({
   send: vi.fn(),
-  sessions: new Map(),
 }));
 
 describe('detectError', () => {
@@ -16,10 +15,9 @@ describe('detectError', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    // session.jsを再度モック
-    vi.doMock('../../src/services/session.js', () => ({
+    // ws.jsを再度モック
+    vi.doMock('../../src/utils/ws.js', () => ({
       send: vi.fn(),
-      sessions: new Map(),
     }));
     const mod = await import('../../src/services/notifier.js');
     detectError = mod.detectError;
@@ -174,9 +172,8 @@ describe('sendErrorNotification', () => {
   beforeEach(async () => {
     vi.resetModules();
     mockSend = vi.fn();
-    vi.doMock('../../src/services/session.js', () => ({
+    vi.doMock('../../src/utils/ws.js', () => ({
       send: mockSend,
-      sessions: new Map(),
     }));
     const mod = await import('../../src/services/notifier.js');
     sendErrorNotification = mod.sendErrorNotification;
@@ -290,9 +287,8 @@ describe('sendExitNotification', () => {
   beforeEach(async () => {
     vi.resetModules();
     mockSend = vi.fn();
-    vi.doMock('../../src/services/session.js', () => ({
+    vi.doMock('../../src/utils/ws.js', () => ({
       send: mockSend,
-      sessions: new Map(),
     }));
     const mod = await import('../../src/services/notifier.js');
     sendExitNotification = mod.sendExitNotification;
@@ -373,9 +369,8 @@ describe('clearNotificationState', () => {
   beforeEach(async () => {
     vi.resetModules();
     mockSend = vi.fn();
-    vi.doMock('../../src/services/session.js', () => ({
+    vi.doMock('../../src/utils/ws.js', () => ({
       send: mockSend,
-      sessions: new Map(),
     }));
     const mod = await import('../../src/services/notifier.js');
     sendErrorNotification = mod.sendErrorNotification;

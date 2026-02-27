@@ -5,7 +5,7 @@
 
 import WebSocket from 'ws';
 import { NotificationMessage, ServerMessage } from '../types/index.js';
-import { send } from './session.js';
+import { send } from '../utils/ws.js';
 import { stripAnsi } from '../utils/text.js';
 
 // ============================================================

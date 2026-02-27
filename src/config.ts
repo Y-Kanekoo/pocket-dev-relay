@@ -212,6 +212,15 @@ export const SESSION_TIMEOUT: number = validateInt(
   Number.MAX_SAFE_INTEGER,
 );
 
+/** 最大同時セッション数（デフォルト: 10） */
+export const MAX_SESSIONS: number = validateInt(
+  'MAX_SESSIONS',
+  process.env.MAX_SESSIONS,
+  10,
+  1,
+  100,
+);
+
 // ============================================================
 // SSH設定
 // ============================================================

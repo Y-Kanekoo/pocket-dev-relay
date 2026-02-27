@@ -193,3 +193,12 @@ function gracefulShutdown(signal: string): void {
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error({ err: reason }, '未処理のPromise拒否を検出しました');
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error({ err: error }, '未キャッチの例外を検出しました');
+  gracefulShutdown('uncaughtException');
+});

@@ -12,17 +12,19 @@ import { nanoid } from 'nanoid';
 
 import { Client as SSHClient, ClientChannel } from 'ssh2';
 
-import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
+import { SessionMode, SessionConfig, SessionLogMeta } from '../types/index.js';
 import {
   ROOT_DIR,
   ENABLE_SESSION_LOGS,
   LOG_DIR,
   LOG_MAX_AGE_DAYS,
   LOG_MAX_SIZE_MB,
+  MAX_SESSIONS,
 } from '../config.js';
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { stripAnsi } from '../utils/text.js';
+import { send } from '../utils/ws.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import {
@@ -146,21 +148,7 @@ function generateLogFileName(sessionId: string, mode: SessionMode): string {
 }
 
 // stripAnsi は utils/text.ts からインポート
-
-// ============================================================
-// WebSocket通信
-// ============================================================
-
-/**
- * WebSocketにメッセージを送信
- * @param ws WebSocket
- * @param payload 送信するメッセージ
- */
-export function send(ws: WebSocket, payload: ServerMessage): void {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(payload));
-  }
-}
+// send は utils/ws.ts からインポート（循環依存の解消）
 
 // ============================================================
 // PTY環境変数フィルタ
@@ -240,6 +228,11 @@ function resolveCwd(requested: string | undefined): string {
  * @returns セッション情報
  */
 export async function startSession(config: SessionConfig, ws: WebSocket): Promise<SessionInternal> {
+  // セッション数の上限チェック
+  if (sessions.size >= MAX_SESSIONS) {
+    throw new Error('max-sessions-reached');
+  }
+
   const { mode, cwd, customCommand } = config;
   const spawnConfig = spawnForMode(mode, customCommand);
   const sessionId = nanoid(10);
@@ -345,6 +338,11 @@ export async function startSSHSession(
   config: SessionConfig,
   ws: WebSocket,
 ): Promise<SessionInternal> {
+  // セッション数の上限チェック
+  if (sessions.size >= MAX_SESSIONS) {
+    throw new Error('max-sessions-reached');
+  }
+
   if (!isSSHEnabled()) {
     throw new Error('ssh-disabled');
   }

@@ -3,7 +3,7 @@
  * /api/files, /api/file, /api/upload エンドポイント
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
@@ -180,20 +180,14 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddleware,
-  upload.single('file'),
-  asyncHandler(async (req: Request, res: Response) => {
+  (req: Request, res: Response, next: NextFunction) => {
     if (!ALLOW_FILE_WRITE) {
-      // アップロードされたファイルを削除
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch {
-          // 削除失敗は無視
-        }
-      }
       throw new FeatureDisabledError('ファイルアップロード');
     }
-
+    next();
+  },
+  upload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) {
       throw new ValidationError('ファイルが選択されていません');
     }

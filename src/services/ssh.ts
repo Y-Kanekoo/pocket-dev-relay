@@ -127,7 +127,14 @@ export function createSSHSession(config: SSHConnectionConfig): Promise<SSHSessio
         );
         return;
       }
-      // hostVerifierは設定しない（ssh2のデフォルトの検証を使用）
+      // known_hostsに登録されたホスト鍵と照合する
+      connectConfig.hostVerifier = (key: Buffer) => {
+        const receivedKey = key.toString('base64');
+        return hostKey.some((knownKey) => {
+          const parts = knownKey.split(' ');
+          return parts.length >= 2 && parts[1] === receivedKey;
+        });
+      };
     } else {
       // 検証をスキップ（開発用途）
       connectConfig.hostVerifier = () => true;
