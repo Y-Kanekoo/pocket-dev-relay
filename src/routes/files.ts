@@ -3,7 +3,7 @@
  * /api/files, /api/file, /api/upload エンドポイント
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
@@ -148,11 +148,19 @@ router.post(
  * アップロード先をリクエストのuploadPathパラメータで制御
  */
 const storage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (
+    _req: Request,
+    _file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void,
+  ) => {
     // 一時的にROOT_DIRに保存（実際のパスはリクエスト処理時に移動）
     cb(null, ROOT_DIR);
   },
-  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void,
+  ) => {
     // オリジナルファイル名を使用
     cb(null, file.originalname);
   },
@@ -172,20 +180,14 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddleware,
-  upload.single('file'),
-  asyncHandler(async (req: Request, res: Response) => {
+  (req: Request, res: Response, next: NextFunction) => {
     if (!ALLOW_FILE_WRITE) {
-      // アップロードされたファイルを削除
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch {
-          // 削除失敗は無視
-        }
-      }
       throw new FeatureDisabledError('ファイルアップロード');
     }
-
+    next();
+  },
+  upload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) {
       throw new ValidationError('ファイルが選択されていません');
     }

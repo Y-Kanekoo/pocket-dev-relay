@@ -15,6 +15,7 @@ const { values } = parseArgs({
     host: { type: 'string', short: 'h', default: '0.0.0.0' },
     workspace: { type: 'string', short: 'w' },
     token: { type: 'string', short: 't' },
+    tunnel: { type: 'boolean', default: false },
     help: { type: 'boolean', default: false },
     version: { type: 'boolean', short: 'v', default: false },
   },
@@ -35,6 +36,7 @@ Pocket Dev Relay - スマホからPCのターミナルにアクセス
   -h, --host <host>        ホスト (デフォルト: 0.0.0.0)
   -w, --workspace <path>   ワークスペースパス (デフォルト: カレントディレクトリ)
   -t, --token <token>      認証トークン
+      --tunnel             トンネルを有効化（要cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/）
   -v, --version            バージョン表示
       --help               ヘルプ表示
   `);
@@ -55,6 +57,7 @@ if (values.port) process.env.PORT = values.port;
 if (values.host) process.env.HOST = values.host;
 if (values.workspace) process.env.WORKSPACE_ROOT = values.workspace;
 if (values.token) process.env.AUTH_TOKEN = values.token;
+if (values.tunnel) process.env.ENABLE_TUNNEL = 'true';
 
 // サーバー起動
 import('./server.js');

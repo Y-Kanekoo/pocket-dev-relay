@@ -27,10 +27,11 @@ export default defineConfig({
         'src/utils/network.ts',
       ],
       thresholds: {
-        statements: 50,
-        branches: 40,
-        functions: 50,
-        lines: 50,
+        // カバレッジ閾値ロードマップ: 35% → 40% → 50% → 60% → 70%
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
       },
     },
   },

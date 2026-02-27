@@ -44,11 +44,14 @@ export function errorHandler(
   }
 
   // 予期しないエラーのログ出力
-  logger.error({
-    err,
-    url: req.url,
-    method: req.method,
-  }, '予期しないエラーが発生しました');
+  logger.error(
+    {
+      err,
+      url: req.url,
+      method: req.method,
+    },
+    '予期しないエラーが発生しました',
+  );
 
   // 本番環境では詳細を隠す
   const isProduction = process.env.NODE_ENV === 'production';

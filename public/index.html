@@ -360,35 +360,7 @@
     <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>
     <script src="/app.js"></script>
 
-    <!-- Service Worker 登録 -->
-    <script>
-      // Service Worker をサポートしているか確認して登録
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', async () => {
-          try {
-            const registration = await navigator.serviceWorker.register('/sw.js', {
-              scope: '/'
-            });
-
-            console.log('[PWA] Service Worker 登録成功:', registration.scope);
-
-            // 更新があった場合の処理
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              console.log('[PWA] 新しい Service Worker を検出');
-
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // 新しいバージョンが利用可能
-                  console.log('[PWA] 新しいバージョンが利用可能です');
-                }
-              });
-            });
-          } catch (error) {
-            console.error('[PWA] Service Worker 登録失敗:', error);
-          }
-        });
-      }
-    </script>
+    <!-- Service Worker 登録（CSP script-src 'unsafe-inline' 除去のため外部ファイル化） -->
+    <script src="/sw-register.js"></script>
   </body>
 </html>

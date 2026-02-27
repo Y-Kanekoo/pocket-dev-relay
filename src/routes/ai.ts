@@ -41,7 +41,8 @@ router.post(
     if (!aiProvider) {
       res.status(503).json({
         error: 'AI_NOT_AVAILABLE',
-        message: 'AI機能が有効になっていません。ANTHROPIC_API_KEY または OPENAI_API_KEY を設定してください。',
+        message:
+          'AI機能が有効になっていません。ANTHROPIC_API_KEY または OPENAI_API_KEY を設定してください。',
       });
       return;
     }

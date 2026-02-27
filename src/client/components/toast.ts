@@ -42,10 +42,16 @@ export function showToast(
     info: 'i',
   };
 
-  toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || icons.info}</span>
-    <span class="toast-message">${message}</span>
-  `;
+  // XSS対策: DOM APIでspan要素を作成し、textContentでテキストを設定
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'toast-icon';
+  iconSpan.textContent = icons[type] || icons.info;
+
+  const messageSpan = document.createElement('span');
+  messageSpan.className = 'toast-message';
+  messageSpan.textContent = message;
+
+  toast.append(iconSpan, messageSpan);
 
   toastContainer.appendChild(toast);
 

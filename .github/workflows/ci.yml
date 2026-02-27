@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,9 +16,9 @@ jobs:
       matrix:
         node-version: [20, 22]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -30,8 +33,16 @@ jobs:
       - name: 型チェック
         run: npm run typecheck
 
-      - name: テスト実行
-        run: npm run test:run
+      - name: テスト実行（カバレッジレポート付き）
+        run: npx vitest run --coverage
+
+      - name: カバレッジレポートをアップロード
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: coverage-report-node${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 30
 
       - name: ビルド
         run: npm run build
@@ -39,9 +50,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: 'npm'
@@ -57,14 +68,14 @@ jobs:
         run: npx eslint . --ext .ts,.js
 
       - name: Prettier（フォーマットチェック）
-        run: npx prettier --check "src/**/*.ts"
+        run: npx prettier --check "src/**/*.ts" "tests/**/*.ts"
 
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: 'npm'
@@ -75,5 +86,5 @@ jobs:
       - name: 依存パッケージをインストール
         run: npm ci
 
-      - name: npm audit（脆弱性チェック）
-        run: npm audit --audit-level=high || true
+      - name: セキュリティ監査
+        run: npm audit --audit-level=high

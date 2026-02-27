@@ -10,7 +10,31 @@ import type { Express, Request, Response, NextFunction } from 'express';
 // 認証をスキップするためAUTH_TOKENを空にモック
 vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
+  LOG_LEVEL: 'silent',
+  APP_VERSION: '0.0.0-test',
+  DATA_DIR: '/tmp/test-pocket-dev-relay',
 }));
+
+// JsonStoreをメモリベースのモックに差し替え
+vi.mock('../../src/utils/store.js', () => {
+  class MockJsonStore<T> {
+    private data: T;
+    constructor(_filename: string, defaultValue: T) {
+      this.data = structuredClone(defaultValue);
+    }
+    initDir(): void {
+      // テストでは何もしない
+    }
+    load(): T {
+      return this.data;
+    }
+    save(data: T): boolean {
+      this.data = data;
+      return true;
+    }
+  }
+  return { JsonStore: MockJsonStore };
+});
 
 // session.ts のモック
 vi.mock('../../src/services/session.js', () => ({
@@ -24,7 +48,29 @@ describe('スニペット API', () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
       AUTH_TOKEN: '',
+      LOG_LEVEL: 'silent',
+      APP_VERSION: '0.0.0-test',
+      DATA_DIR: '/tmp/test-pocket-dev-relay',
     }));
+    vi.doMock('../../src/utils/store.js', () => {
+      class MockJsonStore<T> {
+        private data: T;
+        constructor(_filename: string, defaultValue: T) {
+          this.data = structuredClone(defaultValue);
+        }
+        initDir(): void {
+          // テストでは何もしない
+        }
+        load(): T {
+          return this.data;
+        }
+        save(data: T): boolean {
+          this.data = data;
+          return true;
+        }
+      }
+      return { JsonStore: MockJsonStore };
+    });
     vi.doMock('../../src/services/session.js', () => ({
       sessions: new Map(),
     }));
@@ -117,7 +163,9 @@ describe('スニペット API', () => {
     const result = await makeRequest('GET', '/api/snippets');
 
     expect(result.body).toHaveProperty('snippets');
-    const snippets = (result.body as { snippets: Array<{ id: string; label: string; command: string }> }).snippets;
+    const snippets = (
+      result.body as { snippets: Array<{ id: string; label: string; command: string }> }
+    ).snippets;
     expect(Array.isArray(snippets)).toBe(true);
     expect(snippets.length).toBeGreaterThanOrEqual(4); // デフォルト4つ
 
@@ -143,9 +191,11 @@ describe('スニペット API', () => {
   it('DELETE /api/snippets/:id でスニペットを削除できること', async () => {
     // まずGETでスニペット一覧を取得してIDを把握
     const getResult = await makeRequest('GET', '/api/snippets');
-    const snippets = (getResult.body as {
-      snippets: Array<{ id: string; label: string }>;
-    }).snippets;
+    const snippets = (
+      getResult.body as {
+        snippets: Array<{ id: string; label: string }>;
+      }
+    ).snippets;
     const targetId = snippets[0].id;
     const initialCount = snippets.length;
 
@@ -155,18 +205,22 @@ describe('スニペット API', () => {
 
     // 削除後にGETでスニペット数が減っていることを確認
     const getResult2 = await makeRequest('GET', '/api/snippets');
-    const snippets2 = (getResult2.body as {
-      snippets: Array<{ id: string }>;
-    }).snippets;
+    const snippets2 = (
+      getResult2.body as {
+        snippets: Array<{ id: string }>;
+      }
+    ).snippets;
     expect(snippets2.length).toBe(initialCount - 1);
   });
 
   it('POST /api/snippets/:id/execute でアクティブセッションがない場合はメッセージを返すこと', async () => {
     // まずスニペット一覧を取得してIDを把握
     const getResult = await makeRequest('GET', '/api/snippets');
-    const snippets = (getResult.body as {
-      snippets: Array<{ id: string }>;
-    }).snippets;
+    const snippets = (
+      getResult.body as {
+        snippets: Array<{ id: string }>;
+      }
+    ).snippets;
     const targetId = snippets[0].id;
 
     // executeを呼び出す

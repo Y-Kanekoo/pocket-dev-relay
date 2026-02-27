@@ -180,3 +180,9 @@ describe('authorizeWebSocket', () => {
     expect(authorizeWebSocket(req, authToken)).toBe(false);
   });
 });
+
+// ============================================================
+// authorizeToken のテスト
+// ============================================================
+// authorizeToken は src/middleware/auth.ts に本番実装が統一されたため、
+// テストは tests/server/middleware-auth.test.ts を参照のこと。

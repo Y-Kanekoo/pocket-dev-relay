@@ -1,15 +1,21 @@
 # Pocket Dev Relay
 
-スマホからPCのターミナルにアクセスするリモート開発ツール。
-同じLAN内のPCでサーバーを起動し、スマホのブラウザからCodex CLI / Claude Code / シェルを操作できる。
+外出先からスマホで自宅PCのターミナルを操作するリモート開発ツール。
+自宅PCでサーバーを起動し、スマホのブラウザからCodex CLI / Claude Code / シェルを操作できる。
+cloudflaredトンネル統合により、VPN不要でインターネット経由のアクセスが可能。
 
 ## 特徴
 
-- スマホブラウザからPCのターミナルを操作
+- 外出先からスマホでPCのターミナルを操作
+- cloudflaredトンネルによるインターネット経由アクセス（HTTPS自動付与）
 - Codex CLI / Claude Code / シェルの3モード
 - WebSocket自動再接続
 - 複数セッション管理（タブUI）
-- ファイルブラウザ（閲覧・編集）
+- ファイルブラウザ（閲覧・編集・アップロード）
+- クリップボード共有（PC ⇔ スマホ）
+- コマンドスニペット（ワンタップ実行）
+- AI解析（ターミナル出力のエラー解析・要約）
+- SSH中継接続
 - ダーク/ライトモード
 - PWA対応（ホーム画面に追加可能）
 - セッションログ保存
@@ -18,7 +24,34 @@
 
 ## クイックスタート
 
-### ソースから（開発用）
+### 外出先からアクセスする（推奨）
+
+cloudflaredを使えば、VPN不要でインターネット経由のアクセスが可能。
+
+```bash
+# 1. cloudflared をインストール（初回のみ）
+brew install cloudflared   # macOS
+# Linux: curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && chmod +x /usr/local/bin/cloudflared
+
+# 2. セットアップ
+git clone https://github.com/your-username/pocket-dev-relay.git
+cd pocket-dev-relay
+npm install
+cp .env.example .env
+# .env を編集して AUTH_TOKEN と WORKSPACE_ROOT を設定
+
+# 3. トンネル付きで起動
+npx pocket-dev-relay --tunnel --token your-secret-token
+```
+
+起動するとコンソールにトンネルURL（`https://xxx.trycloudflare.com`）とQRコードが表示される。
+スマホでQRコードを読み取ればすぐにアクセスできる。
+
+> **注意**: `--tunnel` を使う場合、`--token`（または`AUTH_TOKEN`環境変数）は必須。インターネットに公開されるため認証なしでは起動できない。
+
+### LAN内で使う
+
+外部アクセスが不要な場合は、トンネルなしでも利用できる。
 
 ```bash
 git clone https://github.com/your-username/pocket-dev-relay.git
@@ -52,25 +85,86 @@ docker compose up -d
 
 `.env.example` をコピーして `.env` を作成し、必要な値を設定する。
 
+#### サーバー基本設定
+
 | 変数名 | 説明 | デフォルト値 |
 |--------|------|-------------|
 | `PORT` | サーバーのリッスンポート | `4173` |
 | `WORKSPACE_ROOT` | ファイルブラウザ・ターミナルのルートディレクトリ | カレントディレクトリ |
 | `AUTH_TOKEN` | 認証トークン（空の場合は認証無効） | 空（認証無効） |
 | `ALLOW_CUSTOM_COMMANDS` | カスタムコマンドモードの許可 | `false` |
-| `ALLOW_FILE_WRITE` | ファイルブラウザでの書き込み許可 | `false` |
+| `ALLOW_FILE_WRITE` | ファイルブラウザでの書き込み・アップロード許可 | `false` |
 | `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
+| `MAX_UPLOAD_SIZE` | アップロードファイルの最大サイズ（バイト） | `10485760`（10MB） |
+| `SESSION_TIMEOUT` | セッションタイムアウト（ミリ秒） | `3600000`（1時間） |
+| `TRUST_PROXY` | リバースプロキシ信頼設定（`true`/`false`/数値/IP） | `false` |
+| `DATA_DIR` | データ永続化ディレクトリ | `WORKSPACE_ROOT/.pocket-dev-relay` |
+
+#### コマンド設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
 | `CODEX_CMD` | Codex CLIのコマンド名 | `codex` |
 | `CODEX_ARGS` | Codex CLIの追加引数 | 空 |
 | `CLAUDE_CMD` | Claude Codeのコマンド名 | `claude` |
 | `CLAUDE_ARGS` | Claude Codeの追加引数 | 空 |
 | `SHELL_CMD` | シェルのコマンド名 | `zsh`（環境変数`SHELL`のフォールバック） |
 | `SHELL_ARGS` | シェルの追加引数 | 空 |
+
+#### SSH設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `ENABLE_SSH` | SSH中継接続機能の有効化 | `false` |
+| `SSH_DEFAULT_HOST` | SSHデフォルト接続先ホスト | 空 |
+| `SSH_DEFAULT_PORT` | SSHデフォルトポート | `22` |
+| `SSH_DEFAULT_USER` | SSHデフォルトユーザー名 | 空 |
+| `SSH_KEY_PATH` | SSH秘密鍵のパス | `~/.ssh/id_rsa` |
+| `SSH_STRICT_HOST_KEY` | SSHホスト鍵の厳格な検証 | `true` |
+| `SSH_REQUIRE_HTTPS_FOR_PASSWORD` | SSHパスワード認証にHTTPSを要求 | `true` |
+
+#### AI設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic APIキー（設定するとClaude使用） | 空 |
+| `OPENAI_API_KEY` | OpenAI APIキー（設定するとGPT使用） | 空 |
+| `AI_MODEL` | AIモデル名 | Claudeの場合 `claude-sonnet-4-5-20250929`、OpenAIの場合 `gpt-4o` |
+| `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数 | `100` |
+
+#### ログ設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `LOG_LEVEL` | ログレベル（`fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent`） | `info` |
 | `ENABLE_SESSION_LOGS` | セッションログの有効化 | `false` |
 | `LOG_DIR` | ログファイルの保存先 | `WORKSPACE_ROOT/logs` |
+| `LOG_MAX_AGE_DAYS` | ログ保持日数 | `30` |
+| `LOG_MAX_SIZE_MB` | ログ最大サイズ（MB） | `100` |
+
+#### レート制限
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `RATE_LIMIT_API` | API全体のレート制限（リクエスト数/分） | `100` |
+| `RATE_LIMIT_AUTH` | 認証失敗のレート制限（回数/分） | `5` |
+
+#### HTTPS設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
 | `ENABLE_HTTPS` | HTTPSモードの有効化 | `false` |
 | `SSL_KEY_PATH` | SSL秘密鍵のパス（HTTPS有効時に必須） | 空 |
 | `SSL_CERT_PATH` | SSL証明書のパス（HTTPS有効時に必須） | 空 |
+
+#### トンネル設定
+
+| 変数名 | 説明 | デフォルト値 |
+|--------|------|-------------|
+| `ENABLE_TUNNEL` | cloudflaredトンネルの有効化（`AUTH_TOKEN`必須） | `false` |
+| `TUNNEL_PROVIDER` | トンネルプロバイダー | `cloudflared` |
+| `CLOUDFLARED_PATH` | cloudflaredバイナリのパス（PATHにない場合に指定） | 空（PATHから検索） |
+| `TUNNEL_TIMEOUT` | トンネル起動タイムアウト（ミリ秒） | `30000` |
 
 引数（`CODEX_ARGS`, `CLAUDE_ARGS`, `SHELL_ARGS`）はスペース区切りまたはJSON配列形式で指定できる。
 
@@ -79,6 +173,20 @@ docker compose up -d
 CODEX_ARGS=--model o3
 # JSON配列
 CODEX_ARGS=["--model", "o3"]
+```
+
+### CLIオプション
+
+`npx pocket-dev-relay` で起動時に以下のオプションが使える。環境変数より優先される。
+
+```
+-p, --port <port>        ポート番号 (デフォルト: 4173)
+-h, --host <host>        ホスト (デフォルト: 0.0.0.0)
+-w, --workspace <path>   ワークスペースパス (デフォルト: カレントディレクトリ)
+-t, --token <token>      認証トークン
+    --tunnel             トンネルを有効化（外部アクセス、cloudflared必要）
+-v, --version            バージョン表示
+    --help               ヘルプ表示
 ```
 
 ## API仕様
@@ -99,16 +207,59 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### エンドポイント一覧
 
+#### ヘルスチェック
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/api/health` | サーバーの稼働状態を確認（認証不要） |
+
+#### 設定
+
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/api/config` | アプリケーション設定を取得 |
 | GET | `/api/addresses` | アクセスURL一覧を取得 |
+| GET | `/api/qr?text=<url>` | QRコードを生成（data URL形式） |
+
+#### ファイル操作
+
+| メソッド | パス | 説明 |
+|----------|------|------|
 | GET | `/api/files?path=<relative_path>` | ディレクトリ内のファイル一覧を取得 |
 | GET | `/api/file?path=<relative_path>` | ファイル内容を取得 |
 | POST | `/api/file` | ファイルに書き込み（`ALLOW_FILE_WRITE=true` が必要） |
+| POST | `/api/upload` | ファイルをアップロード（`ALLOW_FILE_WRITE=true` が必要） |
+
+#### クリップボード
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/api/clipboard` | クリップボード内容を取得 |
+| POST | `/api/clipboard` | クリップボードにテキストを設定 |
+| DELETE | `/api/clipboard` | クリップボードをクリア |
+
+#### コマンドスニペット
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/api/snippets` | スニペット一覧を取得 |
+| POST | `/api/snippets` | スニペットを追加 |
+| DELETE | `/api/snippets/:id` | スニペットを削除 |
+| POST | `/api/snippets/:id/execute` | スニペットをアクティブセッションで実行 |
+
+#### AI解析
+
+| メソッド | パス | 説明 |
+|----------|------|------|
+| GET | `/api/ai/status` | AI機能のステータスを取得 |
+| POST | `/api/ai/analyze` | ターミナル出力をAIで解析 |
+
+#### ログ
+
+| メソッド | パス | 説明 |
+|----------|------|------|
 | GET | `/api/logs` | セッションログ一覧を取得（`ENABLE_SESSION_LOGS=true` が必要） |
 | GET | `/api/log/:fileName` | セッションログの内容を取得 |
-| GET | `/api/qr?text=<url>` | QRコードを生成（data URL形式） |
 
 #### GET /api/config
 
@@ -135,11 +286,14 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 {
   "port": 4173,
   "urls": [
+    { "type": "tunnel", "name": "cloudflared", "host": "abc-def-123.trycloudflare.com", "url": "https://abc-def-123.trycloudflare.com" },
     { "type": "mdns", "name": "hostname.local", "host": "hostname.local:4173", "url": "http://hostname.local:4173" },
     { "type": "lan", "name": "en0", "host": "192.168.1.10:4173", "url": "http://192.168.1.10:4173" }
   ]
 }
 ```
+
+トンネルが有効な場合、`tunnel` タイプのURLが先頭に追加される。
 
 #### GET /api/files
 
@@ -346,11 +500,15 @@ WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
 - Node.js 20以上
 - npm
 - node-ptyのビルドに必要なツール（Python 3、make、C++コンパイラ）
+- cloudflared（`--tunnel` を使う場合のみ）
 
 macOSではXcode Command Line Toolsがインストールされていれば問題ない。
 
 ```bash
 xcode-select --install
+
+# cloudflared（外部アクセス機能を使う場合）
+brew install cloudflared
 ```
 
 ### セットアップ
@@ -400,11 +558,16 @@ pocket-dev-relay/
 │   │   └── index.ts           # 共通型定義
 │   ├── routes/
 │   │   ├── api.ts             # /api/config, /api/addresses, /api/qr
-│   │   ├── files.ts           # /api/files, /api/file
+│   │   ├── files.ts           # /api/files, /api/file, /api/upload
+│   │   ├── clipboard.ts       # /api/clipboard
+│   │   ├── snippets.ts        # /api/snippets, /api/snippets/:id/execute
+│   │   ├── ai.ts              # /api/ai/status, /api/ai/analyze
+│   │   ├── health.ts          # /api/health
 │   │   └── logs.ts            # /api/logs, /api/log/:fileName
 │   ├── services/
 │   │   ├── pty.ts             # PTY操作・コマンドプリセット
 │   │   ├── session.ts         # セッション管理
+│   │   ├── tunnel.ts          # cloudflaredトンネル管理
 │   │   └── websocket.ts       # WebSocketハンドラ
 │   ├── middleware/
 │   │   ├── auth.ts            # 認証ミドルウェア
@@ -412,6 +575,7 @@ pocket-dev-relay/
 │   ├── errors/
 │   │   └── AppError.ts        # カスタムエラークラス
 │   ├── utils/
+│   │   ├── binary.ts          # 外部バイナリ検出
 │   │   ├── network.ts         # ネットワークユーティリティ
 │   │   └── path.ts            # パスユーティリティ
 │   └── client/
@@ -479,17 +643,20 @@ npm run watch
 ## セキュリティに関する注意
 
 - `AUTH_TOKEN` を必ず設定すること。未設定の場合、認証なしで全APIにアクセスできる
-- 信頼できるLAN内での使用を想定している。インターネットに公開しないこと
-- 外出先からアクセスする場合はTailscale等のVPN経由が安全
+- `--tunnel` を使う場合は `AUTH_TOKEN` が必須（未設定では起動拒否される）
+- トンネルURLはランダム生成されるが、URLを知っている人は誰でもアクセスを試みるため、強力なトークンを設定すること
 - `ALLOW_CUSTOM_COMMANDS` と `ALLOW_FILE_WRITE` はデフォルトで無効。必要な場合のみ有効にすること
-- HTTPS を有効にする場合は、信頼できる証明書を使用すること
+- HTTPS を手動で有効にする場合は、信頼できる証明書を使用すること（トンネル経由の場合はCloudflareが自動的にHTTPSを付与する）
+- トンネルを使わずLAN内のみで使う場合は、Tailscale等のVPN経由も安全な選択肢
 
 ## ヒント
 
-- スマホは同じWi-Fiに接続する。QRコードから開くのが簡単
-- mDNS（`hostname.local`）が使える場合はIPアドレス不要で接続できる
+- `--tunnel` を使えばQRコードがターミナルに表示される。スマホで読み取るだけでアクセス可能
+- トンネルURLは起動のたびに変わる（Quick Tunnelのため）。固定URLが必要な場合はCloudflareアカウントでNamed Tunnelを設定する
+- LAN内で使う場合はmDNS（`hostname.local`）が使えればIPアドレス不要で接続できる
 - macOSでスリープを防止するには `npm run start:awake` を使用する
 - サーバーはPC上で動作するため、PCは起動したままにすること
+- トンネルが途中で切断された場合は自動再接続を3回まで試行する
 
 ## ライセンス
 

@@ -1,5 +1,8 @@
 /**
  * サーバー側ユーティリティ関数
+ *
+ * splitArgs, parseArgs, resolvePath, generateLogFileName 等の独自関数を含む。
+ * stripAnsi は src/utils/text.ts を正として再エクスポートしている。
  */
 
 import path from 'path';
@@ -16,18 +19,11 @@ export interface InterfaceEntry {
 }
 
 // ============================================================
-// ANSIエスケープシーケンス処理
+// ANSIエスケープシーケンス処理（再エクスポート）
 // ============================================================
 
-/**
- * ANSIエスケープシーケンスを除去
- * @param str 入力文字列
- * @returns ANSI除去後の文字列
- */
-export function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
-}
+/** stripAnsi は utils/text.ts に一元化。後方互換のため再エクスポート */
+export { stripAnsi } from '../utils/text.js';
 
 // ============================================================
 // 引数パーサー

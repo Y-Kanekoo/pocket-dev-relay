@@ -10,7 +10,31 @@ import type { Express } from 'express';
 // 認証をスキップするためAUTH_TOKENを空にモック
 vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
+  LOG_LEVEL: 'silent',
+  APP_VERSION: '0.0.0-test',
+  DATA_DIR: '/tmp/test-pocket-dev-relay',
 }));
+
+// JsonStoreをメモリベースのモックに差し替え
+vi.mock('../../src/utils/store.js', () => {
+  class MockJsonStore<T> {
+    private data: T;
+    constructor(_filename: string, defaultValue: T) {
+      this.data = defaultValue;
+    }
+    initDir(): void {
+      // テストでは何もしない
+    }
+    load(): T {
+      return this.data;
+    }
+    save(data: T): boolean {
+      this.data = data;
+      return true;
+    }
+  }
+  return { JsonStore: MockJsonStore };
+});
 
 describe('クリップボード API', () => {
   let app: Express;
@@ -19,7 +43,29 @@ describe('クリップボード API', () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
       AUTH_TOKEN: '',
+      LOG_LEVEL: 'silent',
+      APP_VERSION: '0.0.0-test',
+      DATA_DIR: '/tmp/test-pocket-dev-relay',
     }));
+    vi.doMock('../../src/utils/store.js', () => {
+      class MockJsonStore<T> {
+        private data: T;
+        constructor(_filename: string, defaultValue: T) {
+          this.data = defaultValue;
+        }
+        initDir(): void {
+          // テストでは何もしない
+        }
+        load(): T {
+          return this.data;
+        }
+        save(data: T): boolean {
+          this.data = data;
+          return true;
+        }
+      }
+      return { JsonStore: MockJsonStore };
+    });
 
     const clipboardMod = await import('../../src/routes/clipboard.js');
     app = express();

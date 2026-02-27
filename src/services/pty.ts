@@ -111,6 +111,44 @@ export interface SpawnConfig {
   label: string;
 }
 
+/** 実行を拒否する危険なコマンド */
+const BLOCKED_COMMANDS: ReadonlySet<string> = new Set([
+  'rm',
+  'rmdir',
+  'mkfs',
+  'dd',
+  'format',
+  'shutdown',
+  'reboot',
+  'halt',
+  'poweroff',
+  'chmod',
+  'chown',
+  'chgrp',
+  'su',
+  'sudo',
+  'passwd',
+  'useradd',
+  'userdel',
+  'usermod',
+  'iptables',
+  'ip6tables',
+]);
+
+/**
+ * シェルメタ文字を含むかチェック
+ * ブロック対象:
+ *   ; | & ` — パイプライン・コマンド連結・バッククォート置換
+ *   $ — 変数展開 ($VAR), コマンド置換 $(cmd), 算術展開 $((expr))
+ *   ( ) { } — サブシェル・ブレース展開
+ *   > < — リダイレクト（>> << 含む）
+ *   \n \r — 改行によるコマンド注入（実際の改行文字およびエスケープリテラル）
+ */
+function containsShellMetaChars(input: string): boolean {
+  // 実際の改行文字 + エスケープされたリテラル表現（\\n, \\r）も検出
+  return /[;|&`$(){}<>\n\r]|\\n|\\r/.test(input);
+}
+
 /**
  * モードに応じたスポーン設定を取得
  * @param mode セッションモード
@@ -122,10 +160,17 @@ export function spawnForMode(mode: SessionMode, customCommand: string | undefine
     if (!ALLOW_CUSTOM_COMMANDS) {
       throw new Error('custom-commands-disabled');
     }
+    if (containsShellMetaChars(customCommand || '')) {
+      throw new Error('shell-metachar-detected');
+    }
     const parts = splitArgs(customCommand || '');
     const command = parts.shift();
     if (!command) {
       throw new Error('missing-command');
+    }
+    const baseCommand = command.split('/').pop() || command;
+    if (BLOCKED_COMMANDS.has(baseCommand)) {
+      throw new Error('blocked-command');
     }
     return { command, args: parts, label: 'Custom' };
   }

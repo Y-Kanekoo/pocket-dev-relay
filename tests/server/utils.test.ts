@@ -56,25 +56,15 @@ describe('splitArgs', () => {
   });
 
   it('ダブルクォートで囲まれた引数を処理する', () => {
-    expect(splitArgs('--name "John Doe" --age 30')).toEqual([
-      '--name',
-      'John Doe',
-      '--age',
-      '30',
-    ]);
+    expect(splitArgs('--name "John Doe" --age 30')).toEqual(['--name', 'John Doe', '--age', '30']);
   });
 
   it('シングルクォートで囲まれた引数を処理する', () => {
-    expect(splitArgs("--message 'Hello World'")).toEqual([
-      '--message',
-      'Hello World',
-    ]);
+    expect(splitArgs("--message 'Hello World'")).toEqual(['--message', 'Hello World']);
   });
 
   it('エスケープされた空白を処理する', () => {
-    expect(splitArgs('path/to/file\\ name.txt')).toEqual([
-      'path/to/file name.txt',
-    ]);
+    expect(splitArgs('path/to/file\\ name.txt')).toEqual(['path/to/file name.txt']);
   });
 
   it('クォート内のエスケープ文字を処理する', () => {
@@ -149,14 +139,12 @@ describe('resolvePath', () => {
   });
 
   it('親ディレクトリへのトラバーサルを検出してエラーを投げる', () => {
-    expect(() => resolvePath(rootDir, '../etc/passwd')).toThrow(
-      'Path outside workspace root'
-    );
+    expect(() => resolvePath(rootDir, '../etc/passwd')).toThrow('Path outside workspace root');
   });
 
   it('複雑なトラバーサルを検出してエラーを投げる', () => {
     expect(() => resolvePath(rootDir, 'src/../../etc/passwd')).toThrow(
-      'Path outside workspace root'
+      'Path outside workspace root',
     );
   });
 
@@ -175,16 +163,12 @@ describe('generateLogFileName', () => {
   it('正しい形式のファイル名を生成する', () => {
     const fileName = generateLogFileName('abc123', 'shell');
     // session-YYYY-MM-DDTHH-MM-SS-shell-abc123.log の形式
-    expect(fileName).toMatch(
-      /^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-shell-abc123\.log$/
-    );
+    expect(fileName).toMatch(/^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-shell-abc123\.log$/);
   });
 
   it('異なるモードで正しいファイル名を生成する', () => {
     const fileName = generateLogFileName('xyz789', 'codex');
-    expect(fileName).toMatch(
-      /^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-codex-xyz789\.log$/
-    );
+    expect(fileName).toMatch(/^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-codex-xyz789\.log$/);
   });
 
   it('セッションIDが含まれる', () => {

@@ -42,6 +42,9 @@ let sessionAddBtn: HTMLButtonElement | null = null;
 // コールバック関数
 let onSessionChange: (() => void) | null = null;
 
+/** リサイズデバウンス用タイマー */
+let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+
 // ==================================================
 // セッション管理
 // ==================================================
@@ -104,6 +107,7 @@ export function createSession(): ClientSessionInfo | null {
   const tabElement = document.createElement('div');
   tabElement.className = 'session-tab';
   tabElement.dataset.sessionId = sessionId;
+  // 安全性: タブラベルはアプリケーション制御のテキストのみ（ユーザー入力なし）
   tabElement.innerHTML = `
     <span class="session-tab-label">セッション ${sessionNum}</span>
     <button class="session-tab-close" title="セッションを閉じる">\u00d7</button>
@@ -253,6 +257,17 @@ export function fitActiveSession(): void {
   }
 }
 
+/** デバウンス付きリサイズハンドラ（100ms） */
+function handleResize(): void {
+  if (resizeTimer) {
+    clearTimeout(resizeTimer);
+  }
+  resizeTimer = setTimeout(() => {
+    fitActiveSession();
+    resizeTimer = null;
+  }, 100);
+}
+
 /**
  * アクティブセッションのターミナルをクリア
  */
@@ -293,8 +308,8 @@ export function initTerminal(
     }
   });
 
-  // ウィンドウリサイズ時の処理
-  window.addEventListener('resize', fitActiveSession);
+  // ウィンドウリサイズ時の処理（デバウンス付き）
+  window.addEventListener('resize', handleResize);
 }
 
 /**

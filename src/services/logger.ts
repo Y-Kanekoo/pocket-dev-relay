@@ -3,8 +3,7 @@
  * pinoを使用してJSON形式のログを出力
  */
 import pino from 'pino';
-
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+import { LOG_LEVEL } from '../config.js';
 const IS_DEVELOPMENT = process.env.NODE_ENV !== 'production';
 
 const logger = pino({

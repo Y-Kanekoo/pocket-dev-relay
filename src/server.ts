@@ -12,15 +12,19 @@ import { WebSocketServer } from 'ws';
 
 import {
   PORT,
+  AUTH_TOKEN,
   ENABLE_HTTPS,
   SSL_KEY_PATH,
   SSL_CERT_PATH,
   ENABLE_SESSION_LOGS,
   LOG_DIR,
+  ENABLE_TUNNEL,
+  TRUST_PROXY,
 } from './config.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
+import { startTunnel, stopTunnel } from './services/tunnel.js';
 import { setupWebSocketHandlers } from './services/websocket.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
@@ -35,6 +39,9 @@ import aiRouter from './routes/ai.js';
 
 // Expressアプリケーション
 const app = express();
+
+// リバースプロキシ経由のX-Forwarded-For信頼設定
+app.set('trust proxy', TRUST_PROXY);
 
 // HTTPSまたはHTTPサーバーを作成
 let server: http.Server | https.Server;
@@ -79,7 +86,20 @@ app.use(securityHeaders);
 // ミドルウェア
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/vendor', express.static(path.join(__dirname, '..', 'node_modules')));
+// 必要なクライアントライブラリの必要なファイルのみ公開
+const nodeModulesDir = path.join(__dirname, '..', 'node_modules');
+app.use(
+  '/vendor/@xterm/xterm/css',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'css')),
+);
+app.use(
+  '/vendor/@xterm/xterm/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'lib')),
+);
+app.use(
+  '/vendor/@xterm/addon-fit/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'addon-fit', 'lib')),
+);
 
 // ヘルスチェック（認証・レート制限の前に配置）
 app.use(healthRouter);
@@ -99,6 +119,22 @@ app.use('/api', aiRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// 本番環境ではAUTH_TOKENの設定を必須とする
+if (process.env.NODE_ENV === 'production' && !AUTH_TOKEN) {
+  logger.error(
+    '本番環境では AUTH_TOKEN の設定が必須です。環境変数 AUTH_TOKEN を設定してください。',
+  );
+  process.exit(1);
+}
+
+// トンネルモードではAUTH_TOKENの設定を必須とする（インターネット公開のため）
+if (ENABLE_TUNNEL && !AUTH_TOKEN) {
+  logger.error(
+    'トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。',
+  );
+  process.exit(1);
+}
+
 // サーバー起動
 server.listen(PORT, '0.0.0.0', async () => {
   if (ENABLE_SESSION_LOGS) {
@@ -114,10 +150,55 @@ server.listen(PORT, '0.0.0.0', async () => {
     .forEach((entry) => {
       logger.info('LAN (%s): %s', entry.name, entry.url);
     });
+
+  // トンネル起動（AUTH_TOKENが設定されている場合のみ）
+  if (ENABLE_TUNNEL && AUTH_TOKEN) {
+    try {
+      const tunnelInfo = await startTunnel(PORT);
+      logger.info('外部アクセス: %s', tunnelInfo.url);
+      // QRコードをターミナルに表示
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const QRCode = require('qrcode') as {
+          toString: (text: string, opts: { type: string; small: boolean }) => Promise<string>;
+        };
+        const qrText = await QRCode.toString(tunnelInfo.url, { type: 'terminal', small: true });
+        console.log(qrText);
+        logger.info('スマホでQRコードを読み取ってアクセスしてください');
+      } catch {
+        // QRコード表示に失敗してもサーバーは継続
+        logger.info('QRコードの表示をスキップしました');
+      }
+    } catch (err) {
+      logger.warn({ err }, 'トンネルの起動に失敗しました。LANアクセスのみ利用可能です。');
+    }
+  }
 });
 
-// シグナルハンドラ
-process.on('SIGINT', () => {
+/** グレースフルシャットダウン */
+function gracefulShutdown(signal: string): void {
+  logger.info({ signal }, 'シャットダウン開始');
+  stopTunnel();
   cleanupAllSessions();
-  process.exit(0);
+  server.close(() => {
+    logger.info('サーバーを停止しました');
+    process.exit(0);
+  });
+  // 10秒以内にクローズできなければ強制終了
+  setTimeout(() => {
+    logger.warn('強制終了します');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error({ err: reason }, '未処理のPromise拒否を検出しました');
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error({ err: error }, '未キャッチの例外を検出しました');
+  gracefulShutdown('uncaughtException');
 });

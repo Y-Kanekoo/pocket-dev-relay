@@ -218,6 +218,8 @@ function displayAnswer(text: string): void {
   if (!elements.aiAnswer) return;
 
   // 簡易的なマークダウン → HTML変換
+  // 安全性: convertMarkdownToHtmlは内部で先にescapeHtmlを実行し、
+  // すべてのユーザー入力をエスケープ済みのため、innerHTML使用は安全
   const html = convertMarkdownToHtml(text);
   elements.aiAnswer.innerHTML = html;
   elements.aiAnswer.style.display = 'block';
@@ -256,9 +258,7 @@ function convertMarkdownToHtml(text: string): string {
 
   // 改行をbrに変換（pre内部は除外）
   const parts = html.split(/(<pre[\s\S]*?<\/pre>)/);
-  html = parts
-    .map((part, i) => (i % 2 === 0 ? part.replace(/\n/g, '<br>') : part))
-    .join('');
+  html = parts.map((part, i) => (i % 2 === 0 ? part.replace(/\n/g, '<br>') : part)).join('');
 
   return html;
 }

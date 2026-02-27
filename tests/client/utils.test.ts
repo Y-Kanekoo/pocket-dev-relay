@@ -2,6 +2,10 @@
  * クライアント側ユーティリティのテスト
  * 注: クライアントコードはブラウザ環境で動作するため、
  * ここではピュアな関数のテストのみ行う
+ *
+ * TODO: 現在テスト内でクライアントロジックを再実装しているため、
+ * 実コードとの乖離リスクがある。クライアント側のピュア関数を
+ * 共有ユーティリティモジュールに切り出し、直接importすることを推奨する。
  */
 
 import { describe, it, expect } from 'vitest';
@@ -42,9 +46,7 @@ describe('joinPath', () => {
   });
 
   it('ネストしたパスを結合できる', () => {
-    expect(joinPath('src/components', 'Button.tsx')).toBe(
-      'src/components/Button.tsx'
-    );
+    expect(joinPath('src/components', 'Button.tsx')).toBe('src/components/Button.tsx');
   });
 });
 
@@ -201,11 +203,7 @@ describe('pickBestUrl', () => {
 /**
  * 再接続の遅延時間を計算（クライアント側のロジックを再現）
  */
-function getReconnectDelay(
-  attempts: number,
-  baseDelay: number,
-  maxDelay: number
-): number {
+function getReconnectDelay(attempts: number, baseDelay: number, maxDelay: number): number {
   return Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
 }
 
