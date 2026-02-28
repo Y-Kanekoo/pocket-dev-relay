@@ -5,6 +5,8 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * 1'  # 毎週月曜 UTC 0:00 (JST 9:00)
 
 permissions:
   contents: read
