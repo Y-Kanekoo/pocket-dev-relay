@@ -73,25 +73,38 @@ export const MAX_FILE_SIZE: number = validateInt(
  */
 export const TRUST_PROXY: string | number | boolean = (() => {
   const val = process.env.TRUST_PROXY || 'false';
-  if (val === 'true') return true;
-  if (val === 'false') return false;
-  const num = parseInt(val, 10);
-  if (!isNaN(num) && String(num) === val) {
-    // 0以上の整数のみ許可。負数や不正な数値はfalseにフォールバック
-    if (!Number.isInteger(num) || num < 0) {
-      console.warn(
-        `設定値バリデーション: TRUST_PROXY の値 "${val}" は不正な数値です（0以上の整数が必要）。デフォルト値 false を使用します。`,
-      );
-      return false;
+  let result: string | number | boolean;
+  if (val === 'true') {
+    result = true;
+  } else if (val === 'false') {
+    result = false;
+  } else {
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && String(num) === val) {
+      // 0以上の整数のみ許可。負数や不正な数値はfalseにフォールバック
+      if (!Number.isInteger(num) || num < 0) {
+        console.warn(
+          `設定値バリデーション: TRUST_PROXY の値 "${val}" は不正な数値です（0以上の整数が必要）。デフォルト値 false を使用します。`,
+        );
+        result = false;
+      } else {
+        result = num;
+      }
+    } else {
+      // IPアドレスやサブネット指定などの文字列をそのまま返す
+      result = val;
     }
-    return num;
   }
-  // IPアドレスやサブネット指定などの文字列をそのまま返す
-  return val;
+  // ユーザーが明示的に設定した場合（デフォルト値'false'以外）のみログ出力
+  if (val !== 'false') {
+    console.info(`TRUST_PROXY: "${val}" → ${typeof result === 'string' ? `"${result}"` : result}`);
+  }
+  return result;
 })();
 
-/** ログレベル */
-export const LOG_LEVEL: string = process.env.LOG_LEVEL || 'info';
+/** ログレベル（NODE_ENVがproductionの場合はinfo、それ以外はdebug） */
+export const LOG_LEVEL: string =
+  process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 
 /** セッションログの有効化 */
 export const ENABLE_SESSION_LOGS: boolean = process.env.ENABLE_SESSION_LOGS === 'true';

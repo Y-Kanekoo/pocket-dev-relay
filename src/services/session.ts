@@ -482,8 +482,8 @@ export function stopSession(sessionId: string, reason: string): void {
   if (session.pty) {
     try {
       session.pty.kill();
-    } catch {
-      // killエラーは無視
+    } catch (err) {
+      logger.debug({ err, sessionId }, 'PTY終了処理失敗（無視）');
     }
   }
   // ログストリームを閉じる
@@ -521,8 +521,8 @@ export function cleanupAllSessions(): void {
       if (session.logStream) {
         session.logStream.end();
       }
-    } catch {
-      // クリーンアップエラーは無視
+    } catch (err) {
+      logger.debug({ err, sessionId: session.id }, 'セッションクリーンアップ失敗（無視）');
     }
   });
   sessions.clear();

@@ -12,6 +12,7 @@ import { FileItem, FileListResponse, FileContentResponse, UploadResponse } from 
 import { ROOT_DIR, ALLOW_FILE_WRITE, MAX_FILE_SIZE, MAX_UPLOAD_SIZE } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import logger from '../services/logger.js';
 import { resolvePath, convertFsError } from '../utils/path.js';
 import {
   FileTypeError,
@@ -203,8 +204,8 @@ router.post(
       // アップロードされたファイルを削除
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw convertFsError(error, 'パス');
     }
@@ -214,8 +215,8 @@ router.post(
     if (!safeFileName || safeFileName === '.' || safeFileName === '..') {
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw new InvalidPathError('不正なファイル名です');
     }
@@ -227,8 +228,8 @@ router.post(
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw new InvalidPathError();
     }

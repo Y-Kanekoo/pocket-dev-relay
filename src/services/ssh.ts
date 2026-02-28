@@ -9,6 +9,7 @@ import os from 'os';
 import path from 'path';
 
 import { SSHConnectionConfig } from '../types/index.js';
+import logger from './logger.js';
 import {
   ENABLE_HTTPS,
   ENABLE_SSH,
@@ -59,8 +60,8 @@ function loadKnownHosts(): Map<string, string[]> {
         }
       }
     }
-  } catch {
-    // known_hostsが読めない場合は空のマップを返す
+  } catch (err) {
+    logger.debug({ err }, 'known_hosts読み込み失敗（無視）');
   }
   return hosts;
 }
@@ -210,8 +211,8 @@ export function createSSHSession(config: SSHConnectionConfig): Promise<SSHSessio
 export function resizeSSHChannel(channel: ClientChannel, cols: number, rows: number): void {
   try {
     channel.setWindow(rows, cols, rows * 16, cols * 8);
-  } catch {
-    // リサイズエラーは無視
+  } catch (err) {
+    logger.debug({ err }, 'SSHリサイズ失敗（無視）');
   }
 }
 
@@ -222,7 +223,7 @@ export function resizeSSHChannel(channel: ClientChannel, cols: number, rows: num
 export function closeSSHConnection(client: SSHClient): void {
   try {
     client.end();
-  } catch {
-    // 終了エラーは無視
+  } catch (err) {
+    logger.debug({ err }, 'SSH接続終了失敗（無視）');
   }
 }

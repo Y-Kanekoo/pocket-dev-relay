@@ -112,6 +112,8 @@ docker compose up -d
 | `SHELL_CMD` | シェルのコマンド名 | `zsh`（環境変数`SHELL`のフォールバック） |
 | `SHELL_ARGS` | シェルの追加引数 | 空 |
 
+> **注意**: これらのコマンドはサーバーの `PATH` 上で実行可能である必要があります。
+
 #### SSH設定
 
 | 変数名 | 説明 | デフォルト値 |
@@ -132,6 +134,12 @@ docker compose up -d
 | `OPENAI_API_KEY` | OpenAI APIキー（設定するとGPT使用） | 空 |
 | `AI_MODEL` | AIモデル名 | Claudeの場合 `claude-sonnet-4-5-20250929`、OpenAIの場合 `gpt-4o` |
 | `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数 | `200` |
+
+##### AI機能の注意点
+
+- API呼び出しは30秒でタイムアウトする
+- エラー発生時、クライアントには詳細を表示せず汎用メッセージのみ返す（セキュリティ上の理由）
+- `AI_MAX_CONTEXT_LINES` でAIに送信するターミナル出力の行数を制限できる
 
 #### ログ設定
 
@@ -166,6 +174,8 @@ docker compose up -d
 | `TUNNEL_PROVIDER` | トンネルプロバイダー | `cloudflared` |
 | `CLOUDFLARED_PATH` | cloudflaredバイナリのパス（PATHにない場合に指定） | 空（PATHから検索） |
 | `TUNNEL_TIMEOUT` | トンネル起動タイムアウト（ミリ秒） | `30000` |
+
+> **注意**: `ENABLE_TUNNEL=true` を設定する場合、`AUTH_TOKEN` は必須です。インターネットに公開されるため、認証なしでは起動できません。
 
 引数（`CODEX_ARGS`, `CLAUDE_ARGS`, `SHELL_ARGS`）はスペース区切りまたはJSON配列形式で指定できる。
 
@@ -694,6 +704,11 @@ npm run build
 # ファイル監視ビルド（開発用）
 npm run watch
 ```
+
+## データの永続性に関する注意
+
+- クリップボード共有とコマンドスニペットはメモリに保持されるため、サーバーを再起動するとデータは消失する
+- セッションログは `ENABLE_SESSION_LOGS=true` の場合のみファイルに保存される
 
 ## セキュリティに関する注意
 
