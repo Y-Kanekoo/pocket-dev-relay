@@ -19,6 +19,7 @@ import {
   ENABLE_SESSION_LOGS,
   LOG_DIR,
   ENABLE_TUNNEL,
+  ENABLE_SSH,
   TRUST_PROXY,
 } from './config.js';
 import logger from './services/logger.js';
@@ -133,6 +134,13 @@ if (ENABLE_TUNNEL && !AUTH_TOKEN) {
     'トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。',
   );
   process.exit(1);
+}
+
+// SSHモードではAUTH_TOKENの設定を推奨（LAN内利用が主のためwarnに留める）
+if (ENABLE_SSH && !AUTH_TOKEN) {
+  logger.warn(
+    'SSH機能が有効ですが AUTH_TOKEN が未設定です。セキュリティのため AUTH_TOKEN の設定を推奨します。',
+  );
 }
 
 // サーバー起動

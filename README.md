@@ -97,6 +97,7 @@ docker compose up -d
 | `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
 | `MAX_UPLOAD_SIZE` | アップロードファイルの最大サイズ（バイト） | `10485760`（10MB） |
 | `SESSION_TIMEOUT` | セッションタイムアウト（ミリ秒） | `3600000`（1時間） |
+| `MAX_SESSIONS` | 最大同時セッション数 | `10` |
 | `TRUST_PROXY` | リバースプロキシ信頼設定（`true`/`false`/数値/IP） | `false` |
 | `DATA_DIR` | データ永続化ディレクトリ | `WORKSPACE_ROOT/.pocket-dev-relay` |
 
@@ -130,7 +131,7 @@ docker compose up -d
 | `ANTHROPIC_API_KEY` | Anthropic APIキー（設定するとClaude使用） | 空 |
 | `OPENAI_API_KEY` | OpenAI APIキー（設定するとGPT使用） | 空 |
 | `AI_MODEL` | AIモデル名 | Claudeの場合 `claude-sonnet-4-5-20250929`、OpenAIの場合 `gpt-4o` |
-| `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数 | `100` |
+| `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数 | `200` |
 
 #### ログ設定
 
@@ -199,11 +200,17 @@ CODEX_ARGS=["--model", "o3"]
 Authorization: Bearer <AUTH_TOKEN>
 ```
 
-WebSocket接続はクエリパラメータでトークンを渡す。
+WebSocket接続は以下の2つの方式で認証できる。
+
+**方式1: クエリパラメータ（後方互換）**
 
 ```
 ws://host:port/ws?token=<AUTH_TOKEN>
 ```
+
+**方式2: メッセージベース認証（推奨）**
+
+接続後に `auth` メッセージを送信する。詳細は「WebSocketメッセージ」セクションを参照。
 
 ### エンドポイント一覧
 
@@ -399,6 +406,17 @@ WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
 
 #### クライアント → サーバー
 
+**auth** - 認証（メッセージベース方式、推奨）
+
+接続後の最初のメッセージとして送信する。クエリパラメータ方式の代替。
+
+```json
+{
+  "type": "auth",
+  "token": "<AUTH_TOKEN>"
+}
+```
+
 **start** - セッション開始
 
 ```json
@@ -414,6 +432,31 @@ WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
 - `mode`: `"codex"` | `"claude"` | `"shell"` | `"custom"`
 - `cwd`: 作業ディレクトリ（相対パス、省略時はワークスペースルート）
 - `command`: カスタムコマンド（`mode` が `"custom"` の場合のみ）
+- `sshConfig`: SSH接続設定（SSHモード時のみ、下記参照）
+
+SSHモードで接続する場合、`sshConfig` フィールドを含める：
+
+```json
+{
+  "type": "start",
+  "mode": "shell",
+  "sshConfig": {
+    "host": "192.168.1.100",
+    "port": 22,
+    "username": "user",
+    "authMethod": "password",
+    "password": "your-password"
+  }
+}
+```
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `host` | `string` | 接続先ホスト |
+| `port` | `number` | SSHポート番号 |
+| `username` | `string` | SSHユーザー名 |
+| `authMethod` | `"password"` \| `"key"` | 認証方式 |
+| `password` | `string?` | パスワード（password認証時のみ） |
 
 **input** - ターミナル入力
 
@@ -443,6 +486,18 @@ WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
 ```
 
 #### サーバー → クライアント
+
+**auth_result** - 認証結果
+
+```json
+{
+  "type": "auth_result",
+  "ok": true,
+  "message": "認証成功"
+}
+```
+
+失敗時は `ok: false` で返る。認証失敗後は接続が切断される。
 
 **data** - ターミナル出力
 
