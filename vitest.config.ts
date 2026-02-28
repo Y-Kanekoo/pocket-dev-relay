@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'node',
     // テストファイルのパターン
     include: ['tests/**/*.test.ts'],
+    // グローバルセットアップ（MaxListeners対策など）
+    setupFiles: ['tests/setup.ts'],
+    // 各テスト後にモックを自動リストア（テスト間の干渉を防止）
+    restoreMocks: true,
     // カバレッジ設定
     coverage: {
       provider: 'v8',

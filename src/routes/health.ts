@@ -27,6 +27,7 @@ router.get('/api/health', (_req: Request, res: Response) => {
     memory: {
       rss: memUsage.rss,
       heapUsed: memUsage.heapUsed,
+      heapTotal: memUsage.heapTotal,
     },
   };
 

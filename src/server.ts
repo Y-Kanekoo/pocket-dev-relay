@@ -183,10 +183,22 @@ server.listen(PORT, '0.0.0.0', async () => {
   }
 });
 
+/** シャットダウン中フラグ（二重実行防止） */
+let isShuttingDown = false;
+
 /** グレースフルシャットダウン */
 function gracefulShutdown(signal: string): void {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   logger.info({ signal }, 'シャットダウン開始');
   stopTunnel();
+
+  // 新規WebSocket接続を停止
+  wss.close(() => {
+    logger.info('WebSocketサーバーを停止しました');
+  });
+
   cleanupAllSessions();
   server.close(() => {
     logger.info('サーバーを停止しました');

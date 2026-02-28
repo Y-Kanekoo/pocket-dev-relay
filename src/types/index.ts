@@ -388,6 +388,8 @@ export interface MemoryUsage {
   rss: number;
   /** 使用中のヒープサイズ（バイト） */
   heapUsed: number;
+  /** ヒープ合計サイズ（バイト） */
+  heapTotal: number;
 }
 
 /**
