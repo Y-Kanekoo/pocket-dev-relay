@@ -2,7 +2,7 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f4efe8" />
     <title>Pocket Dev Relay</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,7 +17,7 @@
   </head>
   <body>
     <div class="backdrop"></div>
-    <header class="top">
+    <header class="top" role="banner">
       <div class="brand">
         <div class="brand-mark">PDR</div>
         <div>
@@ -25,7 +25,7 @@
           <p>スマホからCodex/Claude CLIを操作できる開発コンソール。</p>
         </div>
       </div>
-      <div class="header-actions">
+      <div class="header-actions" role="navigation" aria-label="ヘッダーアクション">
         <button class="header-icon-btn" id="clipboard-btn" title="クリップボード共有">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="2" width="6" height="4" rx="1"/>
@@ -57,7 +57,7 @@
       </div>
     </header>
 
-    <main class="main">
+    <main class="main" role="main">
       <section class="panel controls">
         <div class="panel-header">
           <h2>セッション開始</h2>
@@ -87,11 +87,11 @@
         </div>
         <div class="input-row">
           <label for="cwd-input">作業ディレクトリ</label>
-          <input id="cwd-input" type="text" value="." placeholder="." />
+          <input id="cwd-input" type="text" value="." placeholder="." autocorrect="off" autocapitalize="off" spellcheck="false" />
         </div>
         <div class="input-row" id="custom-command-row">
           <label for="command-input">カスタムコマンド</label>
-          <input id="command-input" type="text" placeholder="tool --flag value" />
+          <input id="command-input" type="text" placeholder="tool --flag value" autocorrect="off" autocapitalize="off" spellcheck="false" />
         </div>
         <div class="control-actions">
           <button class="primary" id="start-btn">開始</button>
@@ -125,9 +125,9 @@
         </div>
       </section>
 
-      <div class="tabs" id="tabs">
-        <button class="tab active" data-tab="terminal">ターミナル</button>
-        <button class="tab" data-tab="files">ファイル</button>
+      <div class="tabs" id="tabs" role="tablist">
+        <button class="tab active" data-tab="terminal" role="tab" aria-selected="true">ターミナル</button>
+        <button class="tab" data-tab="files" role="tab" aria-selected="false">ファイル</button>
       </div>
 
       <div class="panels">
@@ -147,7 +147,7 @@
           </div>
           <!-- セッションタブUI -->
           <div class="session-tabs" id="session-tabs">
-            <div class="session-tab-list" id="session-tab-list">
+            <div class="session-tab-list" id="session-tab-list" role="tablist" aria-label="セッションタブ">
               <!-- セッションタブはJSで動的に追加される -->
             </div>
             <button class="session-add-btn" id="session-add-btn" title="新しいセッションを追加">+</button>
@@ -167,7 +167,7 @@
               <!-- プリセット質問ボタンはJSで動的に追加される -->
             </div>
             <div class="ai-input-row">
-              <textarea id="ai-question" class="ai-question" placeholder="質問を入力（空欄で自動解析）..." rows="2"></textarea>
+              <textarea id="ai-question" class="ai-question" placeholder="質問を入力（空欄で自動解析）..." rows="2" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
               <button class="primary ai-send-btn" id="ai-send-btn">送信</button>
             </div>
             <div class="ai-loading" id="ai-loading" style="display:none">
@@ -211,7 +211,7 @@
               <span id="file-name">ファイルを選ぶと内容を表示します。</span>
               <button class="ghost" id="save-file" disabled>保存</button>
             </div>
-            <textarea id="file-content" spellcheck="false" readonly></textarea>
+            <textarea id="file-content" spellcheck="false" autocorrect="off" autocapitalize="off" readonly></textarea>
             <div class="editor-status" id="file-status"></div>
           </div>
         </section>
@@ -258,23 +258,23 @@
     </footer>
 
     <div class="overlay hidden" id="auth-overlay">
-      <div class="auth-card">
-        <h3>アクセストークンが必要です</h3>
+      <div class="auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <h3 id="auth-title">アクセストークンが必要です</h3>
         <p>サーバーの環境変数で設定したトークンを入力してください。</p>
-        <input id="auth-input" type="password" placeholder="トークン" />
+        <input id="auth-input" type="password" placeholder="トークン" autocorrect="off" autocapitalize="off" />
         <button class="primary" id="auth-save">認証</button>
       </div>
     </div>
 
     <!-- クリップボードモーダル -->
     <div class="overlay hidden" id="clipboard-modal">
-      <div class="clipboard-card">
+      <div class="clipboard-card" role="dialog" aria-modal="true" aria-labelledby="clipboard-title">
         <div class="clipboard-header">
-          <h3>クリップボード共有</h3>
+          <h3 id="clipboard-title">クリップボード共有</h3>
           <button class="clipboard-close" id="clipboard-close" aria-label="閉じる">&times;</button>
         </div>
         <p class="clipboard-desc">PC⇔スマホ間でテキストを転送します。</p>
-        <textarea id="clipboard-text" class="clipboard-textarea" placeholder="テキストを入力..." rows="5"></textarea>
+        <textarea id="clipboard-text" class="clipboard-textarea" placeholder="テキストを入力..." rows="5" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
         <div class="clipboard-actions">
           <button class="ghost" id="clipboard-paste">ペースト</button>
           <button class="ghost" id="clipboard-copy">コピー</button>
@@ -298,10 +298,10 @@
       <div class="snippet-form">
         <h4>新規追加</h4>
         <div class="snippet-form-row">
-          <input id="snippet-label" type="text" placeholder="ラベル (例: npm start)" />
+          <input id="snippet-label" type="text" placeholder="ラベル (例: npm start)" autocorrect="off" autocapitalize="off" spellcheck="false" />
         </div>
         <div class="snippet-form-row">
-          <input id="snippet-command" type="text" placeholder="コマンド (例: npm start)" />
+          <input id="snippet-command" type="text" placeholder="コマンド (例: npm start)" autocorrect="off" autocapitalize="off" spellcheck="false" />
         </div>
         <button class="primary" id="snippet-add">追加</button>
       </div>
@@ -309,8 +309,8 @@
 
     <!-- SSH接続ダイアログ -->
     <div class="overlay hidden" id="ssh-overlay">
-      <div class="ssh-card">
-        <h3>SSH接続</h3>
+      <div class="ssh-card" role="dialog" aria-modal="true" aria-labelledby="ssh-title">
+        <h3 id="ssh-title">SSH接続</h3>
         <p class="ssh-desc">リモートサーバーにSSH接続します。</p>
         <div class="ssh-warning" id="ssh-https-warning" style="display: none;">
           HTTPS接続ではありません。パスワード認証を使用する場合はセキュリティに注意してください。
@@ -318,7 +318,7 @@
         <div class="ssh-form">
           <div class="input-row">
             <label for="ssh-host">ホスト名</label>
-            <input id="ssh-host" type="text" placeholder="192.168.1.100 or example.com" />
+            <input id="ssh-host" type="text" placeholder="192.168.1.100 or example.com" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
           <div class="input-row">
             <label for="ssh-port">ポート</label>
@@ -326,7 +326,7 @@
           </div>
           <div class="input-row">
             <label for="ssh-username">ユーザー名</label>
-            <input id="ssh-username" type="text" placeholder="user" />
+            <input id="ssh-username" type="text" placeholder="user" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
           <div class="input-row">
             <label>認証方式</label>
@@ -343,7 +343,7 @@
           </div>
           <div class="input-row" id="ssh-password-row" style="display: none;">
             <label for="ssh-password">パスワード</label>
-            <input id="ssh-password" type="password" placeholder="パスワード" />
+            <input id="ssh-password" type="password" placeholder="パスワード" autocorrect="off" autocapitalize="off" />
           </div>
         </div>
         <div class="ssh-actions">
@@ -354,7 +354,7 @@
     </div>
 
     <!-- トースト通知コンテナ -->
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
     <script src="/vendor/@xterm/xterm/lib/xterm.js"></script>
     <script src="/vendor/@xterm/addon-fit/lib/addon-fit.js"></script>

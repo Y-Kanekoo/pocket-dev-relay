@@ -20,6 +20,7 @@ function createMockElement(): Record<string, unknown> {
     append: vi.fn(),
     appendChild: vi.fn(),
     remove: vi.fn(),
+    setAttribute: vi.fn(),
   };
 }
 

@@ -34,6 +34,9 @@ export function showToast(
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+  // スクリーンリーダー向けにroleとaria-liveを設定
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
 
   const icons: Record<ToastType, string> = {
     success: '\u2713',

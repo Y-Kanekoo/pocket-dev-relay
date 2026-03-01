@@ -51,8 +51,11 @@ body {
   background: radial-gradient(circle at 12% 12%, #fbe8c2 0%, transparent 48%),
     radial-gradient(circle at 88% 6%, #d4f1e5 0%, transparent 46%),
     linear-gradient(135deg, #f4efe8 0%, #efe3d5 52%, #f7f1e9 100%);
-  min-height: 100vh;
-  padding: 24px clamp(16px, 3vw, 40px) 40px;
+  min-height: 100dvh;
+  /* セーフエリア対応: ノッチ・角丸・ホームバーの余白を確保 */
+  padding: 24px clamp(16px, 3vw, 40px) calc(40px + env(safe-area-inset-bottom));
+  padding-left: max(clamp(16px, 3vw, 40px), env(safe-area-inset-left));
+  padding-right: max(clamp(16px, 3vw, 40px), env(safe-area-inset-right));
 }
 
 /* ダークモード時のbody背景 */
@@ -656,7 +659,8 @@ button:disabled {
   border-radius: 0 16px 16px 16px;
   overflow: hidden;
   border: 1px solid rgba(15, 10, 5, 0.16);
-  height: clamp(320px, 45vh, 560px);
+  /* dvh: OSキーボード表示時にビューポート高さが動的に変わる */
+  height: clamp(320px, 45dvh, 560px);
   background: #14110d;
 }
 
@@ -830,7 +834,8 @@ button:disabled {
 /* トースト通知 */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  /* セーフエリア対応: ホームバーとの重なりを回避 */
+  bottom: calc(24px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -1051,7 +1056,7 @@ button:disabled {
   top: 0;
   right: -360px;
   width: min(360px, 85vw);
-  height: 100vh;
+  height: 100dvh;
   background: var(--card);
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 32px rgba(24, 17, 8, 0.15);

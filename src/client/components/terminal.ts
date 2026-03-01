@@ -104,10 +104,13 @@ export function createSession(): ClientSessionInfo | null {
     sendMessage(message);
   });
 
-  // タブ要素を作成
+  // タブ要素を作成（role="tab"とaria-selectedでアクセシビリティ対応）
   const tabElement = document.createElement('div');
   tabElement.className = 'session-tab';
   tabElement.dataset.sessionId = sessionId;
+  tabElement.setAttribute('role', 'tab');
+  tabElement.setAttribute('aria-selected', 'false');
+  tabElement.setAttribute('tabindex', '0');
   // 安全性: タブラベルはアプリケーション制御のテキストのみ（ユーザー入力なし）
   tabElement.innerHTML = `
     <span class="session-tab-label">セッション ${sessionNum}</span>
@@ -166,12 +169,14 @@ export function switchSession(sessionId: string): void {
     if (prevSession) {
       prevSession.element.classList.remove('active');
       prevSession.tabElement.classList.remove('active');
+      prevSession.tabElement.setAttribute('aria-selected', 'false');
     }
   }
 
   // 新しいセッションをアクティブに
   session.element.classList.add('active');
   session.tabElement.classList.add('active');
+  session.tabElement.setAttribute('aria-selected', 'true');
   sessionStore.setActiveSessionId(sessionId);
 
   // フィットとリサイズ
