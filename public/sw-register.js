@@ -73,7 +73,7 @@ function showUpdateNotification() {
   const reloadBtn = document.createElement('button');
   reloadBtn.textContent = '再読み込み';
   Object.assign(reloadBtn.style, {
-    background: '#0b8f7a',
+    background: '#077363',
     color: '#fff',
     border: 'none',
     padding: '6px 14px',

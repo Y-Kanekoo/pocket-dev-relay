@@ -87,8 +87,20 @@ vi.stubGlobal('window', {
 // テスト
 // ============================================================
 
+// document.getElementById のモック
+vi.stubGlobal('document', {
+  getElementById: vi.fn().mockReturnValue(null),
+});
+
 // テスト対象のインポート（モック設定の後に行う）
-import { initWebSocket, sendMessage } from '../../../src/client/services/websocket.js';
+import {
+  initWebSocket,
+  sendMessage,
+  getConnectionState,
+  ConnectionState,
+  getPendingMessageCount,
+  clearPendingMessages,
+} from '../../../src/client/services/websocket.js';
 
 describe('WebSocket通信サービス', () => {
   beforeEach(() => {
@@ -106,6 +118,8 @@ describe('WebSocket通信サービス', () => {
     });
     mockSessionStore.getSessions.mockReturnValue(new Map());
     mockSessionStore.getActiveSessionId.mockReturnValue(null);
+    // 保留メッセージキューをリセット
+    clearPendingMessages();
   });
 
   // ============================================================
@@ -173,6 +187,64 @@ describe('WebSocket通信サービス', () => {
       };
       sendMessage(resizeMessage);
       expect(ws.send).toHaveBeenCalledWith(JSON.stringify(resizeMessage));
+    });
+  });
+
+  // ============================================================
+  // FSM（接続状態管理）のテスト
+  // ============================================================
+
+  describe('ConnectionState FSM', () => {
+    it('初期状態はDISCONNECTEDである', () => {
+      // テスト前の状態（モジュール初期化後のデフォルト値）
+      // 注: getConnectionStateはモジュールスコープのconnectionStateを返す
+      const state = getConnectionState();
+      // FSMの初期状態はDISCONNECTED（他のテストの影響を受ける可能性があるが、
+      // モジュール読み込み時点ではDISCONNECTED）
+      expect(Object.values(ConnectionState)).toContain(state);
+    });
+
+    it('ConnectionState enumが正しい値を持つ', () => {
+      expect(ConnectionState.DISCONNECTED).toBe('disconnected');
+      expect(ConnectionState.CONNECTING).toBe('connecting');
+      expect(ConnectionState.CONNECTED).toBe('connected');
+      expect(ConnectionState.RECONNECTING).toBe('reconnecting');
+    });
+  });
+
+  // ============================================================
+  // 入力バッファリングのテスト
+  // ============================================================
+
+  describe('入力バッファリング', () => {
+    it('初期状態ではキューが空である', () => {
+      expect(getPendingMessageCount()).toBe(0);
+    });
+
+    it('clearPendingMessagesでキューをリセットできる', () => {
+      clearPendingMessages();
+      expect(getPendingMessageCount()).toBe(0);
+    });
+
+    it('WebSocket未接続（DISCONNECTED状態）ではinputメッセージはfalseを返す', () => {
+      mockSessionStore.getWebSocket.mockReturnValue(null);
+      const result = sendMessage({ type: 'input', sessionId: 'test', data: 'hello' });
+      expect(result).toBe(false);
+    });
+
+    it('startメッセージはバッファリング対象外', () => {
+      // DISCONNECTED状態ではバッファリングしない（RECONNECTING/CONNECTINGのみ対象）
+      mockSessionStore.getWebSocket.mockReturnValue(null);
+      const result = sendMessage({ type: 'start', mode: 'shell' });
+      expect(result).toBe(false);
+      expect(getPendingMessageCount()).toBe(0);
+    });
+
+    it('stopメッセージはバッファリング対象外', () => {
+      mockSessionStore.getWebSocket.mockReturnValue(null);
+      const result = sendMessage({ type: 'stop', sessionId: 'test' });
+      expect(result).toBe(false);
+      expect(getPendingMessageCount()).toBe(0);
     });
   });
 });

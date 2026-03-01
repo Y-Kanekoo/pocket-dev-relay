@@ -151,6 +151,177 @@ function generateLogFileName(sessionId: string, mode: SessionMode): string {
 // send は utils/ws.ts からインポート（循環依存の解消）
 
 // ============================================================
+// 共通ヘルパー関数
+// ============================================================
+
+/** セッションログ初期化のパラメータ */
+interface InitSessionLogParams {
+  sessionId: string;
+  mode: SessionMode;
+  label: string;
+  cwd: string;
+  header: string;
+}
+
+/** セッションログ初期化の結果 */
+interface SessionLogResult {
+  logStream: fsSync.WriteStream | null;
+  logFileName: string | null;
+}
+
+/**
+ * セッションログを初期化する
+ * ログファイルの作成、ヘッダー書き込み、メタデータ保存を共通化
+ * @param params ログ初期化パラメータ
+ * @returns ログストリームとファイル名
+ */
+function initSessionLog(params: InitSessionLogParams): SessionLogResult {
+  if (!ENABLE_SESSION_LOGS) {
+    return { logStream: null, logFileName: null };
+  }
+
+  const { sessionId, mode, label, cwd, header } = params;
+  const logFileName = generateLogFileName(sessionId, mode);
+  const logPath = path.join(LOG_DIR, logFileName);
+
+  try {
+    const logStream = fsSync.createWriteStream(logPath, { flags: 'a' });
+    logStream.write(header);
+    // メタデータを保存
+    sessionLogs.set(sessionId, {
+      id: sessionId,
+      fileName: logFileName,
+      mode,
+      label,
+      cwd,
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+    });
+    return { logStream, logFileName };
+  } catch (error) {
+    const err = error as Error;
+    logger.error({ err }, 'ログファイルの作成に失敗しました');
+    return { logStream: null, logFileName: null };
+  }
+}
+
+/**
+ * データイベントハンドラを作成する
+ * WebSocket送信、ログ書き込み、エラー検知の共通ロジック
+ * @param sessionId セッションID
+ * @param ws WebSocket接続
+ * @param logStream ログストリーム（null可）
+ * @param enableErrorDetection エラーパターン検知を有効にするか
+ * @returns データを受け取るコールバック関数
+ */
+function createDataHandler(
+  sessionId: string,
+  ws: WebSocket,
+  logStream: fsSync.WriteStream | null,
+  enableErrorDetection: boolean,
+): (data: string) => void {
+  return (data: string) => {
+    // バッファリングして一括送信
+    outputBuffer.write(sessionId, data, ws);
+    // ログに書き込み（ANSIコードを除去）
+    if (logStream) {
+      logStream.write(stripAnsi(data));
+    }
+    // エラーパターン検知 → 通知送信
+    if (enableErrorDetection) {
+      const errorLine = detectError(data);
+      if (errorLine) {
+        sendErrorNotification(ws, sessionId, errorLine);
+      }
+    }
+  };
+}
+
+/** セッション終了処理のパラメータ */
+interface FinalizeSessionParams {
+  sessionId: string;
+  ws: WebSocket;
+  logStream: fsSync.WriteStream | null;
+  label: string;
+  exitCode: number;
+  signal?: number;
+  footer: string;
+  /** exit通知を送信するかどうか（デフォルト: true） */
+  sendExitNotif?: boolean;
+}
+
+/**
+ * セッション終了時の共通クリーンアップ処理
+ * バッファ破棄、exit送信、通知、ログフッター書き込み、セッション削除
+ * @param params 終了処理パラメータ
+ */
+function finalizeSession(params: FinalizeSessionParams): void {
+  const {
+    sessionId,
+    ws,
+    logStream,
+    label,
+    exitCode,
+    signal,
+    footer,
+    sendExitNotif = true,
+  } = params;
+
+  // 出力バッファをフラッシュしてクリーンアップ
+  outputBuffer.destroy(sessionId);
+  send(ws, { type: 'exit', exitCode, signal: signal?.toString() });
+
+  // プロセス終了通知を送信
+  if (sendExitNotif) {
+    sendExitNotification(ws, sessionId, exitCode, signal, label);
+  }
+
+  // 通知状態をクリア
+  clearNotificationState(sessionId);
+
+  // ログを閉じる
+  closeSessionLog(sessionId, logStream, footer, { exitCode });
+
+  sessions.delete(sessionId);
+}
+
+/** ログ終了時のメタデータ更新オプション */
+interface LogCloseOptions {
+  exitCode?: number;
+  stopReason?: string;
+}
+
+/**
+ * セッションログストリームを閉じてメタデータを更新する
+ * @param sessionId セッションID
+ * @param logStream ログストリーム（null可）
+ * @param footer フッター文字列
+ * @param options メタデータ更新オプション
+ */
+function closeSessionLog(
+  sessionId: string,
+  logStream: fsSync.WriteStream | null,
+  footer: string,
+  options: LogCloseOptions = {},
+): void {
+  if (!logStream) return;
+
+  logStream.write(footer);
+  logStream.end();
+
+  const logMeta = sessionLogs.get(sessionId);
+  if (logMeta) {
+    logMeta.endedAt = new Date().toISOString();
+    if (options.exitCode !== undefined) {
+      logMeta.exitCode = options.exitCode;
+    }
+    if (options.stopReason !== undefined) {
+      logMeta.stopReason = options.stopReason;
+    }
+  }
+}
+
+// ============================================================
 // PTY環境変数フィルタ
 // ============================================================
 
@@ -237,6 +408,7 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   const spawnConfig = spawnForMode(mode, customCommand);
   const sessionId = nanoid(10);
   const startDir = resolveCwd(cwd || '.');
+  const cwdRelative = path.relative(ROOT_DIR, startDir) || '.';
 
   // 安全な環境変数のみPTYに渡す（機密情報の漏洩防止）
   const safeEnv = buildSafeEnv();
@@ -250,36 +422,19 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   });
 
   // ログファイルのセットアップ
-  let logStream: fsSync.WriteStream | null = null;
-  let logFileName: string | null = null;
-  if (ENABLE_SESSION_LOGS) {
-    logFileName = generateLogFileName(sessionId, mode);
-    const logPath = path.join(LOG_DIR, logFileName);
-    try {
-      logStream = fsSync.createWriteStream(logPath, { flags: 'a' });
-      // ログヘッダーを書き込み
-      const header = `=== セッション開始 ===\n日時: ${new Date().toISOString()}\nモード: ${spawnConfig.label}\nディレクトリ: ${startDir}\nコマンド: ${spawnConfig.command} ${spawnConfig.args.join(' ')}\n${'='.repeat(40)}\n\n`;
-      logStream.write(header);
-      // メタデータを保存
-      sessionLogs.set(sessionId, {
-        id: sessionId,
-        fileName: logFileName,
-        mode,
-        label: spawnConfig.label,
-        cwd: path.relative(ROOT_DIR, startDir) || '.',
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-      });
-    } catch (error) {
-      const err = error as Error;
-      logger.error({ err }, 'ログファイルの作成に失敗しました');
-    }
-  }
+  const header = `=== セッション開始 ===\n日時: ${new Date().toISOString()}\nモード: ${spawnConfig.label}\nディレクトリ: ${startDir}\nコマンド: ${spawnConfig.command} ${spawnConfig.args.join(' ')}\n${'='.repeat(40)}\n\n`;
+  const { logStream, logFileName } = initSessionLog({
+    sessionId,
+    mode,
+    label: spawnConfig.label,
+    cwd: cwdRelative,
+    header,
+  });
 
   const session: SessionInternal = {
     id: sessionId,
     mode,
-    cwd: path.relative(ROOT_DIR, startDir) || '.',
+    cwd: cwdRelative,
     label: spawnConfig.label,
     pty: ptyProcess,
     sshClient: null,
@@ -291,41 +446,21 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
 
   sessions.set(sessionId, session);
 
-  ptyProcess.onData((data: string) => {
-    // バッファリングして一括送信（16ms間隔 or 4KB超過でフラッシュ）
-    outputBuffer.write(sessionId, data, ws);
-    // ログに書き込み（ANSIコードを除去）
-    if (logStream) {
-      logStream.write(stripAnsi(data));
-    }
-    // エラーパターン検知 → 通知送信
-    const errorLine = detectError(data);
-    if (errorLine) {
-      sendErrorNotification(ws, sessionId, errorLine);
-    }
-  });
+  // データイベントハンドラ（共通関数を使用）
+  const handleData = createDataHandler(sessionId, ws, logStream, true);
+  ptyProcess.onData(handleData);
 
   ptyProcess.onExit(({ exitCode, signal }) => {
-    // 出力バッファをフラッシュしてクリーンアップ
-    outputBuffer.destroy(sessionId);
-    send(ws, { type: 'exit', exitCode, signal: signal?.toString() });
-    // プロセス終了通知を送信
-    sendExitNotification(ws, sessionId, exitCode, signal, spawnConfig.label);
-    // 通知状態をクリア
-    clearNotificationState(sessionId);
-    // ログを閉じる
-    if (logStream) {
-      const footer = `\n${'='.repeat(40)}\n=== セッション終了 ===\n日時: ${new Date().toISOString()}\n終了コード: ${exitCode}\nシグナル: ${signal || 'なし'}\n`;
-      logStream.write(footer);
-      logStream.end();
-      // メタデータを更新
-      const logMeta = sessionLogs.get(sessionId);
-      if (logMeta) {
-        logMeta.endedAt = new Date().toISOString();
-        logMeta.exitCode = exitCode;
-      }
-    }
-    sessions.delete(sessionId);
+    const footer = `\n${'='.repeat(40)}\n=== セッション終了 ===\n日時: ${new Date().toISOString()}\n終了コード: ${exitCode}\nシグナル: ${signal || 'なし'}\n`;
+    finalizeSession({
+      sessionId,
+      ws,
+      logStream,
+      label: spawnConfig.label,
+      exitCode,
+      signal,
+      footer,
+    });
   });
 
   return session;
@@ -362,29 +497,14 @@ export async function startSSHSession(
   const cwdDisplay = `${config.sshConfig.host}:${config.sshConfig.port}`;
 
   // ログファイルのセットアップ
-  let logStream: fsSync.WriteStream | null = null;
-  let logFileName: string | null = null;
-  if (ENABLE_SESSION_LOGS) {
-    logFileName = generateLogFileName(sessionId, 'ssh');
-    const logPath = path.join(LOG_DIR, logFileName);
-    try {
-      logStream = fsSync.createWriteStream(logPath, { flags: 'a' });
-      const header = `=== SSHセッション開始 ===\n日時: ${new Date().toISOString()}\n接続先: ${config.sshConfig.username}@${config.sshConfig.host}:${config.sshConfig.port}\n認証方式: ${config.sshConfig.authMethod}\n${'='.repeat(40)}\n\n`;
-      logStream.write(header);
-      sessionLogs.set(sessionId, {
-        id: sessionId,
-        fileName: logFileName,
-        mode: 'ssh',
-        label,
-        cwd: cwdDisplay,
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-      });
-    } catch (error) {
-      const err = error as Error;
-      logger.error({ err }, 'ログファイルの作成に失敗しました');
-    }
-  }
+  const header = `=== SSHセッション開始 ===\n日時: ${new Date().toISOString()}\n接続先: ${config.sshConfig.username}@${config.sshConfig.host}:${config.sshConfig.port}\n認証方式: ${config.sshConfig.authMethod}\n${'='.repeat(40)}\n\n`;
+  const { logStream, logFileName } = initSessionLog({
+    sessionId,
+    mode: 'ssh',
+    label,
+    cwd: cwdDisplay,
+    header,
+  });
 
   const session: SessionInternal = {
     id: sessionId,
@@ -401,27 +521,19 @@ export async function startSSHSession(
 
   sessions.set(sessionId, session);
 
+  // データイベントハンドラ（共通関数を使用）
+  const handleData = createDataHandler(sessionId, ws, logStream, true);
+  // stderrはエラー検知なし
+  const handleStderrData = createDataHandler(sessionId, ws, logStream, false);
+
   // SSHチャンネルからのデータをWebSocketに転送（バッファリング経由）
   sshChannel.on('data', (data: Buffer) => {
-    const str = data.toString('utf-8');
-    outputBuffer.write(sessionId, str, ws);
-    if (logStream) {
-      logStream.write(stripAnsi(str));
-    }
-    // エラーパターン検知
-    const errorLine = detectError(str);
-    if (errorLine) {
-      sendErrorNotification(ws, sessionId, errorLine);
-    }
+    handleData(data.toString('utf-8'));
   });
 
   // 標準エラー出力（バッファリング経由）
   sshChannel.stderr.on('data', (data: Buffer) => {
-    const str = data.toString('utf-8');
-    outputBuffer.write(sessionId, str, ws);
-    if (logStream) {
-      logStream.write(stripAnsi(str));
-    }
+    handleStderrData(data.toString('utf-8'));
   });
 
   // SSHチャンネルのエラーイベント
@@ -436,22 +548,15 @@ export async function startSSHSession(
 
   // チャンネルのクローズイベント
   sshChannel.on('close', () => {
-    // 出力バッファをフラッシュしてクリーンアップ
-    outputBuffer.destroy(sessionId);
-    send(ws, { type: 'exit', exitCode: 0 });
-    sendExitNotification(ws, sessionId, 0, undefined, label);
-    clearNotificationState(sessionId);
-    if (logStream) {
-      const footer = `\n${'='.repeat(40)}\n=== SSHセッション終了 ===\n日時: ${new Date().toISOString()}\n`;
-      logStream.write(footer);
-      logStream.end();
-      const logMeta = sessionLogs.get(sessionId);
-      if (logMeta) {
-        logMeta.endedAt = new Date().toISOString();
-        logMeta.exitCode = 0;
-      }
-    }
-    sessions.delete(sessionId);
+    const footer = `\n${'='.repeat(40)}\n=== SSHセッション終了 ===\n日時: ${new Date().toISOString()}\n`;
+    finalizeSession({
+      sessionId,
+      ws,
+      logStream,
+      label,
+      exitCode: 0,
+      footer,
+    });
     closeSSHConnection(sshClient);
   });
 
@@ -463,20 +568,17 @@ export async function startSSHSession(
   // SSH接続の切断
   sshClient.on('end', () => {
     if (sessions.has(sessionId)) {
-      // 出力バッファをフラッシュしてクリーンアップ
-      outputBuffer.destroy(sessionId);
-      send(ws, { type: 'exit', exitCode: 0 });
-      clearNotificationState(sessionId);
-      if (logStream) {
-        const footer = `\n${'='.repeat(40)}\n=== SSH接続切断 ===\n日時: ${new Date().toISOString()}\n`;
-        logStream.write(footer);
-        logStream.end();
-        const logMeta = sessionLogs.get(sessionId);
-        if (logMeta) {
-          logMeta.endedAt = new Date().toISOString();
-        }
-      }
-      sessions.delete(sessionId);
+      const footer = `\n${'='.repeat(40)}\n=== SSH接続切断 ===\n日時: ${new Date().toISOString()}\n`;
+      // 接続切断時はexit通知は不要（closeイベントで送信済みの場合がある）
+      finalizeSession({
+        sessionId,
+        ws,
+        logStream,
+        label,
+        exitCode: 0,
+        footer,
+        sendExitNotif: false,
+      });
     }
   });
 
@@ -506,18 +608,11 @@ export function stopSession(sessionId: string, reason: string): void {
       logger.debug({ err, sessionId }, 'PTY終了処理失敗（無視）');
     }
   }
+
   // ログストリームを閉じる
-  if (session.logStream) {
-    const footer = `\n${'='.repeat(40)}\n=== セッション停止 ===\n日時: ${new Date().toISOString()}\n理由: ${reason}\n`;
-    session.logStream.write(footer);
-    session.logStream.end();
-    // メタデータを更新
-    const logMeta = sessionLogs.get(sessionId);
-    if (logMeta) {
-      logMeta.endedAt = new Date().toISOString();
-      logMeta.stopReason = reason;
-    }
-  }
+  const footer = `\n${'='.repeat(40)}\n=== セッション停止 ===\n日時: ${new Date().toISOString()}\n理由: ${reason}\n`;
+  closeSessionLog(sessionId, session.logStream, footer, { stopReason: reason });
+
   sessions.delete(sessionId);
   if (session.ws) {
     send(session.ws, { type: 'stopped', reason });

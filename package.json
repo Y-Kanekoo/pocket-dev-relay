@@ -26,6 +26,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
+    "build:size": "npm run build && echo '=== バンドルサイズ ===' && ls -la dist/server.js dist/cli.js public/app.js | awk '{printf \"%-20s %s\\n\", $9, $5}'",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"

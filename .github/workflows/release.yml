@@ -13,5 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169f6a82e6e530 # v4
+        id: release
         with:
           release-type: node
+
+      # リリースが作成された場合、npm publishを実行
+      - name: ソースコードをチェックアウト
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Node.jsをセットアップ
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: ネイティブビルドツールをインストール
+        if: ${{ steps.release.outputs.release_created }}
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+
+      - name: パッケージをビルドしてnpmに公開
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm ci && npm run build && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
