@@ -210,17 +210,7 @@ CODEX_ARGS=["--model", "o3"]
 Authorization: Bearer <AUTH_TOKEN>
 ```
 
-WebSocket接続は以下の2つの方式で認証できる。
-
-**方式1: クエリパラメータ（後方互換）**
-
-```
-ws://host:port/ws?token=<AUTH_TOKEN>
-```
-
-**方式2: メッセージベース認証（推奨）**
-
-接続後に `auth` メッセージを送信する。詳細は「WebSocketメッセージ」セクションを参照。
+WebSocket接続はメッセージベース認証で認証する。接続後に `auth` メッセージを送信する。詳細は「WebSocketメッセージ」セクションを参照。
 
 ### エンドポイント一覧
 
@@ -412,13 +402,13 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### WebSocketメッセージ
 
-WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
+WebSocketエンドポイント: `ws://host:port/ws`
 
 #### クライアント → サーバー
 
-**auth** - 認証（メッセージベース方式、推奨）
+**auth** - 認証
 
-接続後の最初のメッセージとして送信する。クエリパラメータ方式の代替。
+接続後の最初のメッセージとして送信する。
 
 ```json
 {

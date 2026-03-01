@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import { Snippet, SnippetsResponse, SnippetExecuteResponse } from '../types/index.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { ValidationError, NotFoundError } from '../errors/AppError.js';
+import { ValidationError, NotFoundError, InternalServerError } from '../errors/AppError.js';
 import { sessions } from '../services/session.js';
 import { JsonStore } from '../utils/store.js';
 
@@ -59,8 +59,7 @@ router.post('/snippets', authMiddleware, (req: Request, res: Response) => {
   snippets.push(snippet);
 
   if (!store.save(snippets)) {
-    res.status(500).json({ error: 'データの保存に失敗しました' });
-    return;
+    throw new InternalServerError('データの保存に失敗しました');
   }
   res.json(snippet);
 });
@@ -80,8 +79,7 @@ router.delete('/snippets/:id', authMiddleware, (req: Request, res: Response) => 
   snippets.splice(index, 1);
 
   if (!store.save(snippets)) {
-    res.status(500).json({ error: 'データの保存に失敗しました' });
-    return;
+    throw new InternalServerError('データの保存に失敗しました');
   }
   res.json({ ok: true });
 });

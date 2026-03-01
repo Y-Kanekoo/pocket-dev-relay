@@ -12,7 +12,6 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import type http from 'http';
 
 // ============================================================
 // 認証関数
@@ -48,23 +47,3 @@ export function createAuthMiddleware(authToken: string) {
   };
 }
 
-/**
- * WebSocketリクエストからトークンを取得
- * @param req HTTPリクエスト
- * @returns トークン
- */
-export function getTokenFromRequest(req: http.IncomingMessage): string {
-  const url = new URL(req.url || '', 'http://localhost');
-  return url.searchParams.get('token') || '';
-}
-
-/**
- * WebSocket接続を認証
- * @param req HTTPリクエスト
- * @param authToken 認証トークン
- * @returns 認証結果
- */
-export function authorizeWebSocket(req: http.IncomingMessage, authToken: string): boolean {
-  if (!authToken) return true;
-  return getTokenFromRequest(req) === authToken;
-}

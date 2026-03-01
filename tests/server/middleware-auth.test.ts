@@ -5,7 +5,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-import type http from 'http';
 
 // デフォルトのconfig.jsモック（AUTH_TOKEN空 → 認証無効）
 vi.mock('../../src/config.js', () => ({
@@ -41,25 +40,11 @@ describe('middleware/auth.ts', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('authorizeWebSocket は常にtrueを返す', () => {
-      const req = { url: '/ws' } as http.IncomingMessage;
-      expect(mod.authorizeWebSocket(req)).toBe(true);
-    });
-
     it('authorizeToken は常にtrueを返す', () => {
       expect(mod.authorizeToken('anything')).toBe(true);
       expect(mod.authorizeToken('')).toBe(true);
     });
 
-    it('getTokenFromRequest はトークンを正しく取得する', () => {
-      const req = { url: '/ws?token=mytoken' } as http.IncomingMessage;
-      expect(mod.getTokenFromRequest(req)).toBe('mytoken');
-    });
-
-    it('getTokenFromRequest はトークンがない場合空文字を返す', () => {
-      const req = { url: '/ws' } as http.IncomingMessage;
-      expect(mod.getTokenFromRequest(req)).toBe('');
-    });
   });
 
   describe('AUTH_TOKEN設定時', () => {
@@ -118,21 +103,6 @@ describe('middleware/auth.ts', () => {
       expect(next).toHaveBeenCalledTimes(1);
       const err = next.mock.calls[0][0];
       expect(err).toBeDefined();
-    });
-
-    it('authorizeWebSocket は正しいトークンでtrueを返す', () => {
-      const req = { url: `/ws?token=${TEST_TOKEN}` } as http.IncomingMessage;
-      expect(mod.authorizeWebSocket(req)).toBe(true);
-    });
-
-    it('authorizeWebSocket は不正なトークンでfalseを返す', () => {
-      const req = { url: '/ws?token=wrong' } as http.IncomingMessage;
-      expect(mod.authorizeWebSocket(req)).toBe(false);
-    });
-
-    it('authorizeWebSocket はトークンなしでfalseを返す', () => {
-      const req = { url: '/ws' } as http.IncomingMessage;
-      expect(mod.authorizeWebSocket(req)).toBe(false);
     });
 
     it('authorizeToken は正しいトークンでtrueを返す', () => {

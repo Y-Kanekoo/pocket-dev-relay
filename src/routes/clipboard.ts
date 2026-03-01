@@ -7,7 +7,7 @@
 import { Router, Request, Response } from 'express';
 import { ClipboardData, ClipboardResponse } from '../types/index.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { ValidationError } from '../errors/AppError.js';
+import { ValidationError, InternalServerError } from '../errors/AppError.js';
 import { JsonStore } from '../utils/store.js';
 
 const router = Router();
@@ -52,8 +52,7 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
   };
 
   if (!store.save(data)) {
-    res.status(500).json({ error: 'データの保存に失敗しました' });
-    return;
+    throw new InternalServerError('データの保存に失敗しました');
   }
 
   const response: ClipboardResponse = {
@@ -68,8 +67,7 @@ router.post('/clipboard', authMiddleware, (req: Request, res: Response) => {
  */
 router.delete('/clipboard', authMiddleware, (_req: Request, res: Response) => {
   if (!store.save(null)) {
-    res.status(500).json({ error: 'データの保存に失敗しました' });
-    return;
+    throw new InternalServerError('データの保存に失敗しました');
   }
   res.json({ ok: true });
 });

@@ -3,12 +3,11 @@
  * WebSocket接続のハンドリングとセッションタイムアウト管理
  */
 
-import http from 'http';
 import WebSocket, { WebSocketServer } from 'ws';
 
 import { ClientMessage } from '../types/index.js';
-import { AUTH_TOKEN, SESSION_TIMEOUT } from '../config.js';
-import { authorizeWebSocket, authorizeToken } from '../middleware/auth.js';
+import { AUTH_TOKEN, SESSION_TIMEOUT, MAX_SESSION_LIFETIME } from '../config.js';
+import { authorizeToken } from '../middleware/auth.js';
 import { sessions, startSession, startSSHSession, stopSession } from './session.js';
 import { send } from '../utils/ws.js';
 import { resizeSSHChannel } from './ssh.js';
@@ -21,10 +20,14 @@ const TIMEOUT_WARNING_BEFORE_MS = 5 * 60 * 1000;
  * セッションタイムアウトのタイマー管理
  */
 interface SessionTimers {
-  /** タイムアウトタイマー */
+  /** 入力ベースのタイムアウトタイマー */
   timeoutTimer: ReturnType<typeof setTimeout> | null;
-  /** 警告タイマー */
+  /** 入力ベースの警告タイマー */
   warningTimer: ReturnType<typeof setTimeout> | null;
+  /** 絶対タイムアウトタイマー */
+  lifetimeTimer: ReturnType<typeof setTimeout> | null;
+  /** 絶対タイムアウト警告タイマー */
+  lifetimeWarningTimer: ReturnType<typeof setTimeout> | null;
 }
 
 /** セッションごとのタイマーマップ */
@@ -37,15 +40,23 @@ const sessionTimers = new Map<string, SessionTimers>();
  * @param ws WebSocket接続
  */
 function resetSessionTimeout(sessionId: string, ws: WebSocket): void {
-  // 既存のタイマーをクリア
-  clearSessionTimers(sessionId);
+  // 既存の入力ベースタイマーをクリア（絶対タイムアウトは保持）
+  const existing = sessionTimers.get(sessionId);
+  if (existing) {
+    if (existing.timeoutTimer) clearTimeout(existing.timeoutTimer);
+    if (existing.warningTimer) clearTimeout(existing.warningTimer);
+    existing.timeoutTimer = null;
+    existing.warningTimer = null;
+  }
 
   // タイムアウトが無効（0以下）の場合はタイマーを設定しない
   if (SESSION_TIMEOUT <= 0) return;
 
-  const timers: SessionTimers = {
+  const timers: SessionTimers = existing || {
     timeoutTimer: null,
     warningTimer: null,
+    lifetimeTimer: null,
+    lifetimeWarningTimer: null,
   };
 
   // 警告タイマー（タイムアウトの5分前に警告）
@@ -74,7 +85,7 @@ function resetSessionTimeout(sessionId: string, ws: WebSocket): void {
 }
 
 /**
- * セッションのタイマーをクリア
+ * セッションのタイマーをすべてクリア
  * @param sessionId セッションID
  */
 function clearSessionTimers(sessionId: string): void {
@@ -82,8 +93,46 @@ function clearSessionTimers(sessionId: string): void {
   if (timers) {
     if (timers.timeoutTimer) clearTimeout(timers.timeoutTimer);
     if (timers.warningTimer) clearTimeout(timers.warningTimer);
+    if (timers.lifetimeTimer) clearTimeout(timers.lifetimeTimer);
+    if (timers.lifetimeWarningTimer) clearTimeout(timers.lifetimeWarningTimer);
     sessionTimers.delete(sessionId);
   }
+}
+
+/**
+ * セッションの絶対タイムアウトタイマーを設定
+ * セッション開始時に一度だけ呼び出され、リセットされない
+ * @param sessionId セッションID
+ * @param ws WebSocket接続
+ */
+function setLifetimeTimeout(sessionId: string, ws: WebSocket): void {
+  // 絶対タイムアウトが無効（0以下）の場合はタイマーを設定しない
+  if (MAX_SESSION_LIFETIME <= 0) return;
+
+  const timers = sessionTimers.get(sessionId);
+  if (!timers) return;
+
+  // 絶対タイムアウト警告（5分前に警告）
+  const lifetimeWarningMs = MAX_SESSION_LIFETIME - TIMEOUT_WARNING_BEFORE_MS;
+  if (lifetimeWarningMs > 0) {
+    timers.lifetimeWarningTimer = setTimeout(() => {
+      const remainingSec = Math.floor(TIMEOUT_WARNING_BEFORE_MS / 1000);
+      send(ws, {
+        type: 'data',
+        data: `\r\n⚠ セッション絶対タイムアウト警告: ${remainingSec}秒後にセッションが自動切断されます。\r\n`,
+      });
+    }, lifetimeWarningMs);
+  }
+
+  // 絶対タイムアウトタイマー
+  timers.lifetimeTimer = setTimeout(() => {
+    send(ws, {
+      type: 'data',
+      data: '\r\n⚠ セッション絶対タイムアウト: 最大セッション時間に達したためセッションを切断します。\r\n',
+    });
+    stopSession(sessionId, 'session-lifetime-timeout');
+    clearSessionTimers(sessionId);
+  }, MAX_SESSION_LIFETIME);
 }
 
 /** WebSocket認証タイムアウト（5秒） */
@@ -144,6 +193,8 @@ function handleAuthenticated(ws: WebSocket): void {
           });
           // セッション開始時にタイムアウトタイマーを開始
           resetSessionTimeout(session.id, ws);
+          // セッション開始時に絶対タイムアウトタイマーを開始
+          setLifetimeTimeout(session.id, ws);
         } catch (error) {
           const err = error as Error;
           send(ws, { type: 'error', message: err.message || 'failed-to-start' });
@@ -164,7 +215,7 @@ function handleAuthenticated(ws: WebSocket): void {
       } else if (session.pty) {
         session.pty.write(payload.data);
       }
-      // 入力があるたびにタイムアウトをリセット
+      // 入力があるたびにタイムアウトをリセット（絶対タイムアウトはリセットしない）
       resetSessionTimeout(activeSessionId, ws);
     } else if (payload.type === 'resize') {
       const cols = Number(payload.cols);
@@ -181,6 +232,8 @@ function handleAuthenticated(ws: WebSocket): void {
       clearSessionTimers(activeSessionId);
       stopSession(activeSessionId, 'client-stop');
       activeSessionId = null;
+    } else {
+      logger.warn({ type: (payload as { type: string }).type }, '未知のメッセージタイプを受信しました');
     }
   });
 
@@ -197,14 +250,8 @@ function handleAuthenticated(ws: WebSocket): void {
  * @param wss WebSocketサーバー
  */
 export function setupWebSocketHandlers(wss: WebSocketServer): void {
-  wss.on('connection', (ws: WebSocket, req: http.IncomingMessage) => {
-    // 後方互換: URLクエリパラメータで認証
-    if (authorizeWebSocket(req)) {
-      handleAuthenticated(ws);
-      return;
-    }
-
-    // 防御的チェック: authorizeWebSocketの挙動が変更された場合の安全弁
+  wss.on('connection', (ws: WebSocket) => {
+    // AUTH_TOKEN未設定時は認証不要
     if (!AUTH_TOKEN) {
       handleAuthenticated(ws);
       return;

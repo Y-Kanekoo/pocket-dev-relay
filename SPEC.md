@@ -405,7 +405,7 @@ export default logger: pino.Logger
 
 #### middleware/auth.ts
 - `authMiddleware(req, res, next)` — Bearer token検証（AUTH_TOKEN空 → 認証スキップ）
-- `authorizeWebSocket(req)` — クエリパラメータ `?token=` で検証
+- `authorizeToken(token)` — WebSocketメッセージベース認証用のトークン検証
 
 #### middleware/errorHandler.ts
 - `errorHandler(err, req, res, next)` — AppError → JSON変換、500エラー時スタックトレース（開発のみ）

@@ -225,6 +225,15 @@ export const SESSION_TIMEOUT: number = validateInt(
   Number.MAX_SAFE_INTEGER,
 );
 
+/** セッション絶対タイムアウト（ミリ秒、デフォルト8時間、0=無効） */
+export const MAX_SESSION_LIFETIME: number = validateInt(
+  'MAX_SESSION_LIFETIME',
+  process.env.MAX_SESSION_LIFETIME,
+  28800000,
+  0,
+  Number.MAX_SAFE_INTEGER,
+);
+
 /** 最大同時セッション数（デフォルト: 10） */
 export const MAX_SESSIONS: number = validateInt(
   'MAX_SESSIONS',

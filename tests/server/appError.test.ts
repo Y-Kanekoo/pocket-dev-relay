@@ -13,6 +13,7 @@ import {
   FeatureDisabledError,
   FileTypeError,
   SessionError,
+  ServiceUnavailableError,
   InternalServerError,
 } from '../../src/errors/AppError.js';
 
@@ -238,6 +239,37 @@ describe('SessionError', () => {
   it('statusCodeが400である', () => {
     const error = new SessionError('SESSION_ERROR', 'エラー');
     expect(error.statusCode).toBe(400);
+  });
+});
+
+// ============================================================
+// ServiceUnavailableError のテスト
+// ============================================================
+
+describe('ServiceUnavailableError', () => {
+  it('サービス名を含むデフォルトメッセージで生成される', () => {
+    const error = new ServiceUnavailableError('AI機能');
+    expect(error.message).toBe('AI機能は現在利用できません');
+  });
+
+  it('カスタムメッセージを指定できる', () => {
+    const error = new ServiceUnavailableError('AI機能', 'APIキーが設定されていません');
+    expect(error.message).toBe('APIキーが設定されていません');
+  });
+
+  it('statusCodeが503である', () => {
+    const error = new ServiceUnavailableError('外部サービス');
+    expect(error.statusCode).toBe(503);
+  });
+
+  it('codeがSERVICE_UNAVAILABLEである', () => {
+    const error = new ServiceUnavailableError('テストサービス');
+    expect(error.code).toBe('SERVICE_UNAVAILABLE');
+  });
+
+  it('AppErrorのインスタンスである', () => {
+    const error = new ServiceUnavailableError('テスト');
+    expect(error).toBeInstanceOf(AppError);
   });
 });
 

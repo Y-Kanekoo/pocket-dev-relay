@@ -1,10 +1,9 @@
 /**
  * 認証ミドルウェア
- * HTTP APIとWebSocketの認証処理
+ * HTTP APIとWebSocketメッセージベース認証の処理
  */
 
 import { Request, Response, NextFunction } from 'express';
-import http from 'http';
 import crypto from 'crypto';
 import { AUTH_TOKEN } from '../config.js';
 import { AuthenticationError } from '../errors/AppError.js';
@@ -70,26 +69,3 @@ export function authorizeToken(token: string): boolean {
   return timingSafeCompare(token, AUTH_TOKEN);
 }
 
-/**
- * WebSocketリクエストからトークンを取得
- * 注意: URLクエリパラメータ経由のトークン送信はサーバーログに残る可能性がある。
- * 将来的には初回WebSocketメッセージでの認証に移行することを推奨。
- * @param req HTTPリクエスト
- * @returns トークン
- */
-export function getTokenFromRequest(req: http.IncomingMessage): string {
-  const url = new URL(req.url || '', 'http://localhost');
-  return url.searchParams.get('token') || '';
-}
-
-/**
- * WebSocket接続を認証
- * @param req HTTPリクエスト
- * @returns 認証結果
- */
-export function authorizeWebSocket(req: http.IncomingMessage): boolean {
-  if (!AUTH_TOKEN) return true;
-  const token = getTokenFromRequest(req);
-  if (!token) return false;
-  return timingSafeCompare(token, AUTH_TOKEN);
-}

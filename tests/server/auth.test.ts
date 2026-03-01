@@ -4,12 +4,9 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-import type http from 'http';
 import {
   isAuthorizedHeader,
   createAuthMiddleware,
-  getTokenFromRequest,
-  authorizeWebSocket,
 } from '../../src/server/auth.js';
 
 // ============================================================
@@ -104,80 +101,6 @@ describe('createAuthMiddleware', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(status).toHaveBeenCalledWith(401);
-  });
-});
-
-// ============================================================
-// getTokenFromRequest のテスト
-// ============================================================
-
-describe('getTokenFromRequest', () => {
-  it('URLからトークンを取得する', () => {
-    const req = {
-      url: '/ws?token=my-secret-token',
-    } as http.IncomingMessage;
-
-    expect(getTokenFromRequest(req)).toBe('my-secret-token');
-  });
-
-  it('トークンがない場合は空文字列を返す', () => {
-    const req = {
-      url: '/ws',
-    } as http.IncomingMessage;
-
-    expect(getTokenFromRequest(req)).toBe('');
-  });
-
-  it('URLがundefinedの場合は空文字列を返す', () => {
-    const req = {
-      url: undefined,
-    } as http.IncomingMessage;
-
-    expect(getTokenFromRequest(req)).toBe('');
-  });
-
-  it('複数のクエリパラメータがある場合でもトークンを取得できる', () => {
-    const req = {
-      url: '/ws?other=value&token=my-token&another=param',
-    } as http.IncomingMessage;
-
-    expect(getTokenFromRequest(req)).toBe('my-token');
-  });
-});
-
-// ============================================================
-// authorizeWebSocket のテスト
-// ============================================================
-
-describe('authorizeWebSocket', () => {
-  it('トークンが設定されていない場合は常にtrueを返す', () => {
-    const req = { url: '/ws' } as http.IncomingMessage;
-    expect(authorizeWebSocket(req, '')).toBe(true);
-  });
-
-  it('正しいトークンの場合はtrueを返す', () => {
-    const authToken = 'secret-token';
-    const req = {
-      url: `/ws?token=${authToken}`,
-    } as http.IncomingMessage;
-
-    expect(authorizeWebSocket(req, authToken)).toBe(true);
-  });
-
-  it('不正なトークンの場合はfalseを返す', () => {
-    const authToken = 'secret-token';
-    const req = {
-      url: '/ws?token=wrong-token',
-    } as http.IncomingMessage;
-
-    expect(authorizeWebSocket(req, authToken)).toBe(false);
-  });
-
-  it('トークンがない場合はfalseを返す', () => {
-    const authToken = 'secret-token';
-    const req = { url: '/ws' } as http.IncomingMessage;
-
-    expect(authorizeWebSocket(req, authToken)).toBe(false);
   });
 });
 

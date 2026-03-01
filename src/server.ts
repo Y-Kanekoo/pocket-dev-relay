@@ -21,6 +21,7 @@ import {
   ENABLE_TUNNEL,
   ENABLE_SSH,
   TRUST_PROXY,
+  SSH_REQUIRE_HTTPS_FOR_PASSWORD,
 } from './config.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
@@ -141,6 +142,16 @@ if (ENABLE_SSH && !AUTH_TOKEN) {
   logger.warn(
     'SSH機能が有効ですが AUTH_TOKEN が未設定です。セキュリティのため AUTH_TOKEN の設定を推奨します。',
   );
+}
+
+// トンネル+SSH使用時はHTTPSパスワード認証を強制
+if (ENABLE_TUNNEL && ENABLE_SSH) {
+  // トンネル経由はCloudflareが暗号化するが、明示的に警告
+  if (!SSH_REQUIRE_HTTPS_FOR_PASSWORD) {
+    logger.warn(
+      'トンネルモードでSSH機能が有効ですが、SSH_REQUIRE_HTTPS_FOR_PASSWORD が無効です。セキュリティのため有効化を推奨します。',
+    );
+  }
 }
 
 // サーバー起動

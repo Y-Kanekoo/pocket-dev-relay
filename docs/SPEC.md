@@ -27,23 +27,17 @@ Authorization: Bearer <AUTH_TOKEN>
 
 #### WebSocket認証
 
-2つの方式をサポート:
+メッセージベース方式で認証:
 
-1. **クエリパラメータ方式**（後方互換）
-   ```
-   ws://host:port/ws?token=<AUTH_TOKEN>
-   ```
-
-2. **メッセージベース方式**（推奨）
-   - 接続後5秒以内に認証メッセージを送信
-   - タイムアウト時は `4001` コードで切断
-   ```json
-   { "type": "auth", "token": "<AUTH_TOKEN>" }
-   ```
-   - 認証結果:
-   ```json
-   { "type": "auth_result", "ok": true }
-   ```
+- 接続後5秒以内に認証メッセージを送信
+- タイムアウト時は `4001` コードで切断
+```json
+{ "type": "auth", "token": "<AUTH_TOKEN>" }
+```
+- 認証結果:
+```json
+{ "type": "auth_result", "ok": true }
+```
 
 ---
 

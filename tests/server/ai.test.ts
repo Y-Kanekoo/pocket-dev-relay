@@ -96,8 +96,10 @@ function makeRequest(
 
 // エラーハンドラ（AppErrorを処理）
 const errorMiddleware = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  const statusCode = (err as unknown as { statusCode?: number }).statusCode || 500;
-  res.status(statusCode).json({ error: err.message });
+  const appErr = err as unknown as { statusCode?: number; code?: string };
+  const statusCode = appErr.statusCode || 500;
+  const errorCode = appErr.code || err.message;
+  res.status(statusCode).json({ error: errorCode, message: err.message });
 };
 
 describe('AI解析 API', () => {
@@ -136,7 +138,7 @@ describe('AI解析 API', () => {
         context: 'テストコンテキスト',
       });
       expect(result.statusCode).toBe(503);
-      expect(result.body).toHaveProperty('error', 'AI_NOT_AVAILABLE');
+      expect(result.body).toHaveProperty('error', 'SERVICE_UNAVAILABLE');
     });
   });
 

@@ -10,7 +10,7 @@ import type { AIAnalyzeRequest, AIAnalyzeResponse, AIStatusResponse } from '../t
 import { AI_MAX_CONTEXT_LINES } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { ValidationError } from '../errors/AppError.js';
+import { ValidationError, ServiceUnavailableError } from '../errors/AppError.js';
 import { createAIProvider, type AIProvider } from '../services/ai.js';
 
 const router = Router();
@@ -39,12 +39,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     // AI機能が無効の場合
     if (!aiProvider) {
-      res.status(503).json({
-        error: 'AI_NOT_AVAILABLE',
-        message:
-          'AI機能が有効になっていません。ANTHROPIC_API_KEY または OPENAI_API_KEY を設定してください。',
-      });
-      return;
+      throw new ServiceUnavailableError(
+        'AI機能',
+        'AI機能が有効になっていません。ANTHROPIC_API_KEY または OPENAI_API_KEY を設定してください。',
+      );
     }
 
     // リクエストボディの検証
