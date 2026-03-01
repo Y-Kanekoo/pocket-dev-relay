@@ -27,7 +27,7 @@ import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
 import { startTunnel, stopTunnel } from './services/tunnel.js';
-import { setupWebSocketHandlers } from './services/websocket.js';
+import { setupWebSocketHandlers, stopTimerCleanup } from './services/websocket.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
 import { securityHeaders } from './middleware/security.js';
@@ -203,6 +203,7 @@ function gracefulShutdown(signal: string): void {
   isShuttingDown = true;
 
   logger.info({ signal }, 'シャットダウン開始');
+  stopTimerCleanup();
   stopTunnel();
 
   // 新規WebSocket接続を停止

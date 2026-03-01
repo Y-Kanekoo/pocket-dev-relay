@@ -24,7 +24,7 @@ import {
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { stripAnsi } from '../utils/text.js';
-import { send } from '../utils/ws.js';
+import { send, outputBuffer } from '../utils/ws.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import {
@@ -292,7 +292,8 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   sessions.set(sessionId, session);
 
   ptyProcess.onData((data: string) => {
-    send(ws, { type: 'data', data });
+    // バッファリングして一括送信（16ms間隔 or 4KB超過でフラッシュ）
+    outputBuffer.write(sessionId, data, ws);
     // ログに書き込み（ANSIコードを除去）
     if (logStream) {
       logStream.write(stripAnsi(data));
@@ -305,6 +306,8 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
   });
 
   ptyProcess.onExit(({ exitCode, signal }) => {
+    // 出力バッファをフラッシュしてクリーンアップ
+    outputBuffer.destroy(sessionId);
     send(ws, { type: 'exit', exitCode, signal: signal?.toString() });
     // プロセス終了通知を送信
     sendExitNotification(ws, sessionId, exitCode, signal, spawnConfig.label);
@@ -398,10 +401,10 @@ export async function startSSHSession(
 
   sessions.set(sessionId, session);
 
-  // SSHチャンネルからのデータをWebSocketに転送
+  // SSHチャンネルからのデータをWebSocketに転送（バッファリング経由）
   sshChannel.on('data', (data: Buffer) => {
     const str = data.toString('utf-8');
-    send(ws, { type: 'data', data: str });
+    outputBuffer.write(sessionId, str, ws);
     if (logStream) {
       logStream.write(stripAnsi(str));
     }
@@ -412,10 +415,10 @@ export async function startSSHSession(
     }
   });
 
-  // 標準エラー出力
+  // 標準エラー出力（バッファリング経由）
   sshChannel.stderr.on('data', (data: Buffer) => {
     const str = data.toString('utf-8');
-    send(ws, { type: 'data', data: str });
+    outputBuffer.write(sessionId, str, ws);
     if (logStream) {
       logStream.write(stripAnsi(str));
     }
@@ -433,6 +436,8 @@ export async function startSSHSession(
 
   // チャンネルのクローズイベント
   sshChannel.on('close', () => {
+    // 出力バッファをフラッシュしてクリーンアップ
+    outputBuffer.destroy(sessionId);
     send(ws, { type: 'exit', exitCode: 0 });
     sendExitNotification(ws, sessionId, 0, undefined, label);
     clearNotificationState(sessionId);
@@ -458,6 +463,8 @@ export async function startSSHSession(
   // SSH接続の切断
   sshClient.on('end', () => {
     if (sessions.has(sessionId)) {
+      // 出力バッファをフラッシュしてクリーンアップ
+      outputBuffer.destroy(sessionId);
       send(ws, { type: 'exit', exitCode: 0 });
       clearNotificationState(sessionId);
       if (logStream) {
@@ -484,6 +491,9 @@ export async function startSSHSession(
 export function stopSession(sessionId: string, reason: string): void {
   const session = sessions.get(sessionId);
   if (!session) return;
+
+  // 出力バッファをフラッシュしてクリーンアップ
+  outputBuffer.destroy(sessionId);
 
   // PTYまたはSSH接続を終了
   if (session.sshClient) {
@@ -519,6 +529,8 @@ export function stopSession(sessionId: string, reason: string): void {
  * シグナルハンドラから呼び出される
  */
 export function cleanupAllSessions(): void {
+  // 全出力バッファをフラッシュしてクリーンアップ
+  outputBuffer.destroyAll();
   sessions.forEach((session) => {
     try {
       if (session.sshClient) {

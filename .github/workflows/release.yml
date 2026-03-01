@@ -2,38 +2,16 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  release:
+  release-please:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169f6a82e6e530 # v4
         with:
-          node-version: 22
-          cache: 'npm'
-
-      # node-ptyのビルドに必要なネイティブ依存
-      - name: ネイティブビルドツールをインストール
-        run: sudo apt-get update && sudo apt-get install -y build-essential python3
-
-      - name: 依存パッケージをインストール
-        run: npm ci
-
-      - name: 型チェック
-        run: npm run typecheck
-
-      - name: テスト実行
-        run: npm run test:run
-
-      - name: ビルド
-        run: npm run build
-
-      - name: GitHub Release作成
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
-        with:
-          generate_release_notes: true
+          release-type: node

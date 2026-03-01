@@ -33,6 +33,57 @@ interface SessionTimers {
 /** セッションごとのタイマーマップ */
 const sessionTimers = new Map<string, SessionTimers>();
 
+/** タイマークリーンアップの実行間隔（1分） */
+const TIMER_CLEANUP_INTERVAL_MS = 60 * 1000;
+
+/** タイマークリーンアップのインターバルID */
+let timerCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * sessionTimersの孤立エントリを定期クリーンアップ開始
+ * sessionsに存在しないセッションIDのタイマーを検出して削除する
+ */
+export function startTimerCleanup(): void {
+  // 既にクリーンアップが動作中なら何もしない
+  if (timerCleanupInterval) return;
+
+  timerCleanupInterval = setInterval(() => {
+    let cleanedCount = 0;
+
+    sessionTimers.forEach((timers, sessionId) => {
+      if (!sessions.has(sessionId)) {
+        // 孤立エントリを検出: タイマーをクリアして削除
+        if (timers.timeoutTimer) clearTimeout(timers.timeoutTimer);
+        if (timers.warningTimer) clearTimeout(timers.warningTimer);
+        if (timers.lifetimeTimer) clearTimeout(timers.lifetimeTimer);
+        if (timers.lifetimeWarningTimer) clearTimeout(timers.lifetimeWarningTimer);
+        sessionTimers.delete(sessionId);
+        cleanedCount++;
+      }
+    });
+
+    if (cleanedCount > 0) {
+      logger.debug(
+        { cleanedCount, remainingTimers: sessionTimers.size },
+        'sessionTimersの孤立エントリをクリーンアップしました',
+      );
+    }
+  }, TIMER_CLEANUP_INTERVAL_MS);
+
+  // unref() でプロセス終了を妨げないようにする
+  timerCleanupInterval.unref();
+}
+
+/**
+ * sessionTimersの定期クリーンアップを停止
+ */
+export function stopTimerCleanup(): void {
+  if (timerCleanupInterval) {
+    clearInterval(timerCleanupInterval);
+    timerCleanupInterval = null;
+  }
+}
+
 /**
  * セッションのタイムアウトタイマーをリセット
  * 入力があるたびに呼び出してタイマーをリスタート
@@ -250,6 +301,9 @@ function handleAuthenticated(ws: WebSocket): void {
  * @param wss WebSocketサーバー
  */
 export function setupWebSocketHandlers(wss: WebSocketServer): void {
+  // sessionTimersの孤立エントリ定期クリーンアップを開始
+  startTimerCleanup();
+
   wss.on('connection', (ws: WebSocket) => {
     // AUTH_TOKEN未設定時は認証不要
     if (!AUTH_TOKEN) {
