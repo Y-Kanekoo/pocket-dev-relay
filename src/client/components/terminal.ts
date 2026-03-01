@@ -80,6 +80,7 @@ export function createSession(): ClientSessionInfo | null {
     cursorBlink: true,
     fontSize: currentFontSize,
     fontFamily: '"JetBrains Mono", "Menlo", monospace',
+    scrollback: 5000,
     theme: {
       background: '#14110d',
       foreground: '#f5efe6',

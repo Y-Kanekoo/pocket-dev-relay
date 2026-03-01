@@ -421,6 +421,16 @@ export async function startSSHSession(
     }
   });
 
+  // SSHチャンネルのエラーイベント
+  sshChannel.on('error', (err: Error) => {
+    logger.warn({ err, sessionId: session.id }, 'SSHチャンネルエラー');
+  });
+
+  // 標準エラー出力のエラーイベント
+  sshChannel.stderr.on('error', (err: Error) => {
+    logger.warn({ err, sessionId: session.id }, 'SSHチャンネル標準エラー出力のエラー');
+  });
+
   // チャンネルのクローズイベント
   sshChannel.on('close', () => {
     send(ws, { type: 'exit', exitCode: 0 });
