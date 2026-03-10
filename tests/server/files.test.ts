@@ -247,6 +247,25 @@ describe('ファイル API', () => {
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
     });
+
+    it('pathパラメータ未指定時はデフォルトで"."を使用する', async () => {
+      mockStat.mockResolvedValue({
+        isDirectory: () => true,
+      });
+      mockReaddir.mockResolvedValue([]);
+
+      const result = await makeRequest(app, 'GET', '/api/files');
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toHaveProperty('path', '.');
+    });
+
+    it('権限エラー（EACCES）で500を返すこと', async () => {
+      mockStat.mockRejectedValue(Object.assign(new Error('EACCES'), { code: 'EACCES' }));
+
+      const result = await makeRequest(app, 'GET', '/api/files?path=restricted');
+      expect(result.statusCode).toBe(500);
+      expect(result.body).toHaveProperty('error');
+    });
   });
 
   describe('GET /api/file - ファイル内容取得', () => {
@@ -342,6 +361,28 @@ describe('ファイル API', () => {
       expect(result.statusCode).toBe(413);
       expect(result.body).toHaveProperty('error');
     });
+
+    it('pathパラメータ未指定時は空文字列をデフォルトとして使用する', async () => {
+      // 空文字列は resolvePath で ROOT_DIR に解決される
+      mockStat.mockResolvedValue({
+        isFile: () => true,
+        size: 10,
+      });
+      mockReadFile.mockResolvedValue('content');
+
+      const result = await makeRequest(app, 'GET', '/api/file');
+      // ROOT_DIR自体がファイルでない場合は通常エラーだが、
+      // モックでisFile: trueとしているのでcontent取得パスを通る
+      expect(result.statusCode).toBe(200);
+    });
+
+    it('権限エラー（EACCES）で500を返すこと', async () => {
+      mockStat.mockRejectedValue(Object.assign(new Error('EACCES'), { code: 'EACCES' }));
+
+      const result = await makeRequest(app, 'GET', '/api/file?path=restricted.txt');
+      expect(result.statusCode).toBe(500);
+      expect(result.body).toHaveProperty('error');
+    });
   });
 
   describe('POST /api/file - ファイル書き込み', () => {
@@ -420,6 +461,24 @@ describe('ファイル API', () => {
       });
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
+    });
+
+    it('contentが未定義の場合にバリデーションエラーを返すこと', async () => {
+      const result = await makeRequest(app, 'POST', '/api/file', {
+        path: 'test.txt',
+      });
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toHaveProperty('error');
+    });
+
+    it('pathパラメータ未指定時は空文字列をデフォルトとする', async () => {
+      const result = await makeRequest(app, 'POST', '/api/file', {
+        content: 'テスト内容',
+      });
+      // 空のパスはresolvePath内でROOT_DIRに解決される
+      // 書き込み自体は成功する
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toHaveProperty('ok', true);
     });
   });
 
@@ -532,6 +591,222 @@ describe('ファイル API', () => {
       const result = await makeRequest(app, 'POST', '/api/upload');
       expect(result.statusCode).toBe(400);
       expect(result.body).toHaveProperty('error');
+    });
+
+    it('正常なファイルアップロード（ソースとターゲットが異なる場合）', async () => {
+      // multerミドルウェアでreq.fileをセットするアプリを再構築
+      vi.resetModules();
+      mockMkdir = vi.fn().mockResolvedValue(undefined);
+      mockRename = vi.fn().mockResolvedValue(undefined);
+      mockUnlink = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock('../../src/config.js', () => ({
+        AUTH_TOKEN: '',
+        ROOT_DIR: '/tmp/test-workspace',
+        ALLOW_FILE_WRITE: true,
+        MAX_FILE_SIZE: 1048576,
+        MAX_UPLOAD_SIZE: 10485760,
+        LOG_LEVEL: 'silent',
+        APP_VERSION: '0.0.0-test',
+      }));
+      vi.doMock('fs/promises', () => ({
+        default: {
+          stat: vi.fn(),
+          readdir: vi.fn(),
+          readFile: vi.fn(),
+          writeFile: vi.fn(),
+          mkdir: mockMkdir,
+          unlink: mockUnlink,
+          rename: mockRename,
+        },
+      }));
+      vi.doMock('multer', () => {
+        const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+          // アップロードファイルをシミュレート
+          (req as unknown as { file: { originalname: string; path: string; size: number } }).file = {
+            originalname: 'test.txt',
+            path: '/tmp/test-workspace/test.txt',
+            size: 1024,
+          };
+          next();
+        });
+        const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
+        const multerFn = vi.fn(() => mockMulterInstance);
+        multerFn.diskStorage = vi.fn(() => ({}));
+        return { default: multerFn };
+      });
+
+      const filesMod = await import('../../src/routes/files.js');
+      const uploadApp = express();
+      uploadApp.use(express.json());
+      uploadApp.use('/api', filesMod.default);
+      uploadApp.use(errorMiddleware);
+
+      const result = await makeRequest(uploadApp, 'POST', '/api/upload');
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toHaveProperty('ok', true);
+      expect(result.body).toHaveProperty('fileName', 'test.txt');
+      expect(result.body).toHaveProperty('size', 1024);
+    });
+
+    it('ソースとターゲットが同一パスの場合はrenameをスキップする', async () => {
+      vi.resetModules();
+      mockMkdir = vi.fn().mockResolvedValue(undefined);
+      mockRename = vi.fn().mockResolvedValue(undefined);
+      mockUnlink = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock('../../src/config.js', () => ({
+        AUTH_TOKEN: '',
+        ROOT_DIR: '/tmp/test-workspace',
+        ALLOW_FILE_WRITE: true,
+        MAX_FILE_SIZE: 1048576,
+        MAX_UPLOAD_SIZE: 10485760,
+        LOG_LEVEL: 'silent',
+        APP_VERSION: '0.0.0-test',
+      }));
+      vi.doMock('fs/promises', () => ({
+        default: {
+          stat: vi.fn(),
+          readdir: vi.fn(),
+          readFile: vi.fn(),
+          writeFile: vi.fn(),
+          mkdir: mockMkdir,
+          unlink: mockUnlink,
+          rename: mockRename,
+        },
+      }));
+      vi.doMock('multer', () => {
+        const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+          // ソースパスがターゲットパスと同一になるケース
+          // uploadPath='.'でファイル名がそのままROOT_DIRに保存された場合
+          (req as unknown as { file: { originalname: string; path: string; size: number }; body: Record<string, string> }).file = {
+            originalname: 'upload.txt',
+            path: '/tmp/test-workspace/upload.txt',
+            size: 512,
+          };
+          next();
+        });
+        const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
+        const multerFn = vi.fn(() => mockMulterInstance);
+        multerFn.diskStorage = vi.fn(() => ({}));
+        return { default: multerFn };
+      });
+
+      const filesMod = await import('../../src/routes/files.js');
+      const uploadApp = express();
+      uploadApp.use(express.json());
+      uploadApp.use('/api', filesMod.default);
+      uploadApp.use(errorMiddleware);
+
+      const result = await makeRequest(uploadApp, 'POST', '/api/upload');
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toHaveProperty('ok', true);
+      // renameが呼ばれないことを確認（ソースとターゲットが同一のため）
+      expect(mockRename).not.toHaveBeenCalled();
+    });
+
+    it('不正なファイル名（..）の場合にInvalidPathErrorを返す', async () => {
+      vi.resetModules();
+      const localMockUnlink = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock('../../src/config.js', () => ({
+        AUTH_TOKEN: '',
+        ROOT_DIR: '/tmp/test-workspace',
+        ALLOW_FILE_WRITE: true,
+        MAX_FILE_SIZE: 1048576,
+        MAX_UPLOAD_SIZE: 10485760,
+        LOG_LEVEL: 'silent',
+        APP_VERSION: '0.0.0-test',
+      }));
+      vi.doMock('fs/promises', () => ({
+        default: {
+          stat: vi.fn(),
+          readdir: vi.fn(),
+          readFile: vi.fn(),
+          writeFile: vi.fn(),
+          mkdir: vi.fn().mockResolvedValue(undefined),
+          unlink: localMockUnlink,
+          rename: vi.fn().mockResolvedValue(undefined),
+        },
+      }));
+      vi.doMock('multer', () => {
+        const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+          (req as unknown as { file: { originalname: string; path: string; size: number } }).file = {
+            originalname: '..',
+            path: '/tmp/test-workspace/..',
+            size: 100,
+          };
+          next();
+        });
+        const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
+        const multerFn = vi.fn(() => mockMulterInstance);
+        multerFn.diskStorage = vi.fn(() => ({}));
+        return { default: multerFn };
+      });
+
+      const filesMod = await import('../../src/routes/files.js');
+      const uploadApp = express();
+      uploadApp.use(express.json());
+      uploadApp.use('/api', filesMod.default);
+      uploadApp.use(errorMiddleware);
+
+      const result = await makeRequest(uploadApp, 'POST', '/api/upload');
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toHaveProperty('error');
+    });
+
+    it('アップロード先パスのトラバーサルでファイルを削除する', async () => {
+      vi.resetModules();
+      const localMockUnlink = vi.fn().mockResolvedValue(undefined);
+
+      vi.doMock('../../src/config.js', () => ({
+        AUTH_TOKEN: '',
+        ROOT_DIR: '/tmp/test-workspace',
+        ALLOW_FILE_WRITE: true,
+        MAX_FILE_SIZE: 1048576,
+        MAX_UPLOAD_SIZE: 10485760,
+        LOG_LEVEL: 'silent',
+        APP_VERSION: '0.0.0-test',
+      }));
+      vi.doMock('fs/promises', () => ({
+        default: {
+          stat: vi.fn(),
+          readdir: vi.fn(),
+          readFile: vi.fn(),
+          writeFile: vi.fn(),
+          mkdir: vi.fn().mockResolvedValue(undefined),
+          unlink: localMockUnlink,
+          rename: vi.fn().mockResolvedValue(undefined),
+        },
+      }));
+      vi.doMock('multer', () => {
+        const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
+          (req as unknown as { file: { originalname: string; path: string; size: number }; body: Record<string, string> }).file = {
+            originalname: 'malicious.txt',
+            path: '/tmp/test-workspace/malicious.txt',
+            size: 100,
+          };
+          // uploadPathに不正パスを指定
+          req.body = { uploadPath: '../../etc' };
+          next();
+        });
+        const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
+        const multerFn = vi.fn(() => mockMulterInstance);
+        multerFn.diskStorage = vi.fn(() => ({}));
+        return { default: multerFn };
+      });
+
+      const filesMod = await import('../../src/routes/files.js');
+      const uploadApp = express();
+      uploadApp.use(express.json());
+      uploadApp.use('/api', filesMod.default);
+      uploadApp.use(errorMiddleware);
+
+      const result = await makeRequest(uploadApp, 'POST', '/api/upload');
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toHaveProperty('error');
+      // 一時ファイルが削除されることを確認
+      expect(localMockUnlink).toHaveBeenCalled();
     });
   });
 
