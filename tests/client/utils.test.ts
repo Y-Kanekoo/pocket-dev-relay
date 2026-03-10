@@ -1,36 +1,22 @@
 /**
  * クライアント側ユーティリティのテスト
- * 注: クライアントコードはブラウザ環境で動作するため、
- * ここではピュアな関数のテストのみ行う
  *
- * TODO: 現在テスト内でクライアントロジックを再実装しているため、
- * 実コードとの乖離リスクがある。クライアント側のピュア関数を
- * 共有ユーティリティモジュールに切り出し、直接importすることを推奨する。
+ * joinPath, parentPath → src/utils/filepath.ts の実コードを直接テスト
+ * pickBestUrl, labelForUrl → src/utils/url.ts の実コードを直接テスト
+ *
+ * getReconnectDelay, isValidFontSize, normalizeFontSize は
+ * sessionStore のメソッド/ローカル定数であり、DOM依存（localStorage）のため
+ * テスト環境では直接importできない。ロジック検証用に再実装。
  */
 
 import { describe, it, expect } from 'vitest';
+import { joinPath, parentPath } from '../../src/utils/filepath.js';
+import { pickBestUrl, labelForUrl } from '../../src/utils/url.js';
+import type { AccessUrl } from '../../src/types/index.js';
 
 // ============================================================
-// パスユーティリティのテスト（クライアント側ロジック）
+// パスユーティリティのテスト（実コードから直接import）
 // ============================================================
-
-/**
- * パスを結合（クライアント側のロジックを再現）
- */
-function joinPath(base: string, name: string): string {
-  if (!base || base === '.') return name;
-  return `${base}/${name}`;
-}
-
-/**
- * 親パスを取得（クライアント側のロジックを再現）
- */
-function parentPath(current: string): string {
-  if (!current || current === '.') return '.';
-  const parts = current.split('/').filter(Boolean);
-  parts.pop();
-  return parts.length ? parts.join('/') : '.';
-}
 
 describe('joinPath', () => {
   it('ベースパスとファイル名を結合する', () => {
@@ -73,27 +59,8 @@ describe('parentPath', () => {
 });
 
 // ============================================================
-// URLラベル生成のテスト
+// URLラベル生成のテスト（実コードから直接import）
 // ============================================================
-
-type UrlType = 'mdns' | 'lan' | 'local';
-
-interface AccessUrl {
-  type: UrlType;
-  name: string;
-  host: string;
-  url: string;
-}
-
-/**
- * URLエントリのラベルを取得（クライアント側のロジックを再現）
- */
-function labelForUrl(entry: AccessUrl): string {
-  if (entry.type === 'mdns') return `mDNS (${entry.host})`;
-  if (entry.type === 'lan') return `LAN (${entry.name})`;
-  if (entry.type === 'local') return 'このPC (localhost)';
-  return entry.host || entry.url || 'URL';
-}
 
 describe('labelForUrl', () => {
   it('mDNSタイプのラベルを生成する', () => {
@@ -125,18 +92,21 @@ describe('labelForUrl', () => {
     };
     expect(labelForUrl(entry)).toBe('このPC (localhost)');
   });
+
+  it('tunnelタイプのラベルを生成する', () => {
+    const entry: AccessUrl = {
+      type: 'tunnel',
+      name: 'cloudflare',
+      host: 'example.trycloudflare.com',
+      url: 'https://example.trycloudflare.com',
+    };
+    expect(labelForUrl(entry)).toBe('外部アクセス (cloudflare)');
+  });
 });
 
 // ============================================================
-// 最適URL選択のテスト
+// 最適URL選択のテスト（実コードから直接import）
 // ============================================================
-
-/**
- * 最適なURLを選択（クライアント側のロジックを再現）
- */
-function pickBestUrl(urls: AccessUrl[]): AccessUrl | undefined {
-  return urls.find((entry) => entry.type !== 'local') || urls[0];
-}
 
 describe('pickBestUrl', () => {
   it('localでないURLを優先する', () => {
@@ -176,6 +146,25 @@ describe('pickBestUrl', () => {
     expect(best).toBeUndefined();
   });
 
+  it('tunnelを最優先で選択する', () => {
+    const urls: AccessUrl[] = [
+      {
+        type: 'lan',
+        name: 'en0',
+        host: '192.168.1.100',
+        url: 'http://192.168.1.100:4173',
+      },
+      {
+        type: 'tunnel',
+        name: 'cloudflare',
+        host: 'example.trycloudflare.com',
+        url: 'https://example.trycloudflare.com',
+      },
+    ];
+    const best = pickBestUrl(urls);
+    expect(best?.type).toBe('tunnel');
+  });
+
   it('mDNSとLANがある場合は最初のものを返す', () => {
     const urls: AccessUrl[] = [
       {
@@ -201,7 +190,9 @@ describe('pickBestUrl', () => {
 // ============================================================
 
 /**
- * 再接続の遅延時間を計算（クライアント側のロジックを再現）
+ * 再接続の遅延時間を計算
+ * 注: 実コード (sessionStore.getReconnectDelay) は sessionStore のメソッドであり、
+ * localStorage依存のため直接importできない。ロジック検証用に再実装。
  */
 function getReconnectDelay(attempts: number, baseDelay: number, maxDelay: number): number {
   return Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
@@ -231,6 +222,11 @@ describe('getReconnectDelay', () => {
 // フォントサイズ検証のテスト
 // ============================================================
 
+/**
+ * フォントサイズ定数
+ * 注: 実コード (src/client/state/sessionStore.ts) はlocalStorage依存のため
+ * モジュールレベルでimportするとエラーになる。定数のみ再定義。
+ */
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
 const FONT_SIZE_DEFAULT = 13;

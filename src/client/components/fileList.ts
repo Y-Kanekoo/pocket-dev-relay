@@ -6,28 +6,8 @@
 import type { FileItem } from '../../types/index.js';
 import { fetchFileList } from '../services/api.js';
 import type { FileBrowserSharedState } from './fileBrowser.js';
-
-// ==================================================
-// パス操作ユーティリティ
-// ==================================================
-
-/**
- * パスを結合
- */
-export function joinPath(base: string, name: string): string {
-  if (!base || base === '.') return name;
-  return `${base}/${name}`;
-}
-
-/**
- * 親パスを取得
- */
-export function parentPath(current: string): string {
-  if (!current || current === '.') return '.';
-  const parts = current.split('/').filter(Boolean);
-  parts.pop();
-  return parts.length ? parts.join('/') : '.';
-}
+// joinPath, parentPath は src/utils/filepath.ts に一元化。再エクスポート
+export { joinPath, parentPath } from '../../utils/filepath.js';
 
 // ==================================================
 // ファイル一覧表示
