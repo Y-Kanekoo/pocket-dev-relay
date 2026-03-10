@@ -73,18 +73,16 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      # node-ptyのビルドに必要なネイティブ依存
-      - name: ネイティブビルドツールをインストール
-        run: sudo apt-get update && sudo apt-get install -y build-essential python3
-
+      # lint/formatにネイティブモジュールは不要なのでスクリプト実行をスキップ
       - name: 依存パッケージをインストール
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: ESLint
         run: npx eslint . --ext .ts,.js
 
+      # package-lock.jsonはPrettierチェック対象外
       - name: Prettier（フォーマットチェック）
-        run: npx prettier --check "src/**/*.ts" "tests/**/*.ts"
+        run: npx prettier --check "src/**/*.ts" "tests/**/*.ts" "public/*.css" "public/*.html" "docs/*.md" "*.md" "*.json" "!package-lock.json"
 
   security:
     runs-on: ubuntu-latest
@@ -96,19 +94,20 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: ネイティブビルドツールをインストール
-        run: sudo apt-get update && sudo apt-get install -y build-essential python3
-
+      # セキュリティ監査にネイティブモジュールは不要なのでスクリプト実行をスキップ
       - name: 依存パッケージをインストール
-        run: npm ci
+        run: npm ci --ignore-scripts
 
+      # 脆弱性検出時にCIを失敗させる
       - name: セキュリティ監査
+        continue-on-error: false
         run: npm audit --audit-level=high
 
+      # CRITICAL/HIGHの脆弱性検出時にCIを失敗させる
       - name: Trivyセキュリティスキャン
         uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
