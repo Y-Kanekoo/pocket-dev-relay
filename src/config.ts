@@ -45,6 +45,9 @@ function validateInt(
 /** サーバーポート */
 export const PORT: number = validateInt('PORT', process.env.PORT, 4173, 1, 65535);
 
+/** サーバーバインドアドレス */
+export const HOST: string = process.env.HOST || '0.0.0.0';
+
 /** ワークスペースルートディレクトリ */
 export const ROOT_DIR: string = path.resolve(process.env.WORKSPACE_ROOT || process.cwd());
 

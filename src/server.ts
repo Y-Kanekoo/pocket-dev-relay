@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 
 import {
   PORT,
+  HOST,
   AUTH_TOKEN,
   ENABLE_HTTPS,
   SSL_KEY_PATH,
@@ -32,12 +33,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
 import { securityHeaders } from './middleware/security.js';
 import healthRouter from './routes/health.js';
-import apiRouter from './routes/api.js';
-import filesRouter from './routes/files.js';
-import logsRouter from './routes/logs.js';
-import clipboardRouter from './routes/clipboard.js';
-import snippetsRouter from './routes/snippets.js';
-import aiRouter from './routes/ai.js';
+import combinedApiRouter from './routes/index.js';
 
 // Expressアプリケーション
 const app = express();
@@ -109,13 +105,8 @@ app.use(healthRouter);
 // APIレート制限
 app.use('/api', createRateLimiter());
 
-// ルーター
-app.use('/api', apiRouter);
-app.use('/api', filesRouter);
-app.use('/api', logsRouter);
-app.use('/api', clipboardRouter);
-app.use('/api', snippetsRouter);
-app.use('/api', aiRouter);
+// APIルーター（統合済み）
+app.use('/api', combinedApiRouter);
 
 // エラーハンドリング
 app.use(notFoundHandler);
@@ -155,7 +146,7 @@ if (ENABLE_TUNNEL && ENABLE_SSH) {
 }
 
 // サーバー起動
-server.listen(PORT, '0.0.0.0', async () => {
+server.listen(PORT, HOST, async () => {
   if (ENABLE_SESSION_LOGS) {
     await initLogDir();
     logger.info({ logDir: LOG_DIR }, 'セッションログ: 有効');
@@ -163,6 +154,7 @@ server.listen(PORT, '0.0.0.0', async () => {
 
   const protocol = ENABLE_HTTPS ? 'https' : 'http';
   logger.info('Pocket Dev Relay is running.');
+  logger.info('Host: %s, Port: %d', HOST, PORT);
   logger.info('Local: %s://localhost:%d', protocol, PORT);
   buildAccessUrls()
     .filter((entry) => entry.type === 'lan')
