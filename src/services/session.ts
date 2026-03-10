@@ -26,7 +26,7 @@ import { resolvePath } from '../utils/path.js';
 import { stripAnsi } from '../utils/text.js';
 import { send, outputBuffer } from '../utils/ws.js';
 import { spawnForMode } from './pty.js';
-import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
+import { createSSHSession, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import {
   detectError,
   sendErrorNotification,

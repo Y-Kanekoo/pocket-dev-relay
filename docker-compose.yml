@@ -7,7 +7,7 @@ services:
       # ホスト側のワークスペースをコンテナにマウント
       - "${WORKSPACE_PATH:-.}:/workspace"
     environment:
-      - AUTH_TOKEN=${AUTH_TOKEN:-pdr-local}
+      - AUTH_TOKEN=${AUTH_TOKEN:?AUTH_TOKEN環境変数を設定してください}
       - WORKSPACE_ROOT=/workspace
       - PORT=4173
     healthcheck:
@@ -21,4 +21,4 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 512M
+          memory: 1G
