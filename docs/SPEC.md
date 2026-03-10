@@ -503,6 +503,54 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 | `custom` | カスタムコマンド | PTY (node-pty) |
 | `ssh` | SSH中継接続 | ssh2ライブラリ |
 
+### コマンドプリセット
+
+各モードで実行されるコマンドは、プリセット定義または環境変数で決定される。
+
+#### モード別コマンド仕様
+
+| モード | デフォルトコマンド | コマンド環境変数 | 引数環境変数 |
+|--------|------------------|----------------|------------|
+| `codex` | `codex` | `CODEX_CMD` | `CODEX_ARGS` |
+| `claude` | `claude` | `CLAUDE_CMD` | `CLAUDE_ARGS` |
+| `shell` | `SHELL_CMD` または `$SHELL` または `zsh` | `SHELL_CMD` | `SHELL_ARGS` |
+| `custom` | ユーザー指定 | — | — |
+| `ssh` | — （ssh2ライブラリで接続） | — | — |
+
+- `custom` モード: `ALLOW_CUSTOM_COMMANDS=true` が必要。クライアントが `start` メッセージの `command` フィールドで指定したコマンドを実行する
+- `ssh` モード: PTYプリセットを使用せず、ssh2ライブラリで直接接続する
+
+#### 引数のパース
+
+環境変数で指定する引数（`CODEX_ARGS`, `CLAUDE_ARGS`, `SHELL_ARGS`）は以下の形式を受け付ける:
+
+- **JSON配列**: `CODEX_ARGS='["--model", "gpt-4o"]'`
+- **スペース区切り**: `CODEX_ARGS='--model gpt-4o'`
+- クォート（シングル・ダブル）およびバックスラッシュエスケープに対応
+
+#### customモードのセキュリティ制約
+
+- `ALLOW_CUSTOM_COMMANDS=true` が必要（デフォルト: `false`）
+- シェルメタ文字（`; | & ` $ ( ) { } < > \n \r`）を含むコマンドは拒否
+- 危険なコマンド（`rm`, `sudo`, `chmod`, `shutdown` 等）はブロックリストで拒否
+
+#### PTY環境変数の許可リスト
+
+PTYプロセスに渡される環境変数は、以下の許可リストに含まれるもののみに制限される（機密情報の漏洩防止）。
+
+| カテゴリ | 環境変数 |
+|----------|---------|
+| ユーザー情報 | `HOME`, `USER`, `LOGNAME` |
+| シェル・ロケール | `SHELL`, `LANG`, `LC_ALL`, `LC_CTYPE` |
+| パス・ターミナル | `PATH`, `TERM`（常に `xterm-256color`）, `COLORTERM` |
+| エディタ・ツール | `EDITOR`, `VISUAL`, `PAGER` |
+| XDG | `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, `XDG_RUNTIME_DIR` |
+| 一時ディレクトリ | `TMPDIR`, `TMP`, `TEMP` |
+| シェル状態 | `HOSTNAME`, `PWD`, `OLDPWD`, `SHLVL` |
+| 認証・署名 | `SSH_AUTH_SOCK`, `GPG_AGENT_INFO` |
+| Node.js | `NODE_ENV`, `NODE_PATH`（`NODE_OPTIONS` は任意コード実行可能なため除外） |
+| Git | `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL` |
+
 ### ライフサイクル
 
 1. **開始**: クライアントが `start` メッセージを送信
@@ -515,10 +563,26 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### セッションタイムアウト
 
+セッションには2種類のタイムアウトがある。
+
+#### 入力タイムアウト（SESSION_TIMEOUT）
+
+ユーザーの最終入力からの経過時間に基づくタイムアウト。
+
 - デフォルト: 1時間（`SESSION_TIMEOUT=3600000`）
-- タイムアウト5分前に警告メッセージを送信
+- タイムアウト5分前に警告通知（`notification` メッセージ）を送信
 - `SESSION_TIMEOUT=0` でタイムアウト無効
 - `input` メッセージ受信のたびにタイマーをリセット
+
+#### 絶対タイムアウト（MAX_SESSION_LIFETIME）
+
+セッション開始からの経過時間に基づくタイムアウト。入力の有無に関わらず、セッションの最大存続時間を制限する。
+
+- デフォルト: 8時間（`MAX_SESSION_LIFETIME=28800000`）
+- タイムアウト5分前に警告通知（`notification` メッセージ）を送信
+- `MAX_SESSION_LIFETIME=0` で絶対タイムアウト無効
+- 入力によるリセットは行われない（セッション開始時刻からの絶対時間）
+- 入力タイムアウト（`SESSION_TIMEOUT`）とは独立して動作し、いずれか先に到達した方でセッションが終了する
 
 ### セッションログ
 
