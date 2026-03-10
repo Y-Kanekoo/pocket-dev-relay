@@ -10,6 +10,7 @@ pocket-dev-relay への貢献に感謝します。このドキュメントでは
 - [コーディング規約](#コーディング規約)
 - [コミットメッセージ規約](#コミットメッセージ規約)
 - [プルリクエスト手順](#プルリクエスト手順)
+- [リリース](#リリース)
 - [禁止事項](#禁止事項)
 
 ## 開発環境のセットアップ
@@ -175,6 +176,43 @@ npm run test:run
    - 変更の概要
    - 関連する Issue 番号（あれば `Closes #XX`）
    - テスト方法
+
+## リリース
+
+本プロジェクトでは [release-please](https://github.com/google-github-actions/release-please-action) によるリリース自動化を導入しています。
+
+### リリースの仕組み
+
+1. `main` ブランチにマージされたコミットメッセージを解析し、release-please がリリース PR を自動作成します。
+2. リリース PR がマージされると、GitHub Release の作成と npm パッケージの公開が自動的に実行されます。
+
+コミットメッセージが [コミットメッセージ規約](#コミットメッセージ規約) に従っていれば、バージョン番号やCHANGELOGは自動生成されます。
+
+### NPM_TOKEN シークレットの設定
+
+npm への自動公開には `NPM_TOKEN` シークレットの設定が必要です。リポジトリ管理者は以下の手順で設定してください。
+
+1. [npmjs.com](https://www.npmjs.com/) にログインし、**Access Tokens** ページから **Automation** タイプのトークンを生成します。
+2. GitHub リポジトリの **Settings > Secrets and variables > Actions** を開きます。
+3. **New repository secret** をクリックし、以下を設定します。
+   - **Name**: `NPM_TOKEN`
+   - **Secret**: 手順1で生成したトークン
+4. **Add secret** をクリックして保存します。
+
+> **注意**: トークンは **Automation** タイプを選択してください。Publish タイプでは 2FA が求められ、CI 環境で公開に失敗します。
+
+### npm publish の流れ
+
+`release.yml` ワークフローが以下の順序で自動実行します。
+
+1. release-please がリリースを作成
+2. ソースコードをチェックアウト
+3. Node.js 22 + ネイティブビルドツールをセットアップ
+4. `npm ci` で依存パッケージをインストール
+5. `npm run build` でビルド
+6. `npm publish` で npm レジストリに公開
+
+手動での `npm publish` は不要です。
 
 ## 禁止事項
 
