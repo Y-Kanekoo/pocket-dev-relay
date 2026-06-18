@@ -1,0 +1,13 @@
+# Default configuration for the autonomous improvement loop.
+# Consumed as reference; CLI flags on `python -m ptcgabc.cli improve` override.
+generations: 20
+population: 8
+games_vs_champion: 60     # head-to-head games each mutant plays vs the champion
+gauntlet_games: 40        # games vs each panel opponent for absolute progress
+promote_threshold: 0.53   # winrate vs champion required to crown a new champion
+mutation_scale: 0.25      # relative Gaussian step size on each weight
+max_turns: 200
+seed: 12345
+deck: decks/starter.csv
+out: leaderboard.json
+weights_out: champion.json
