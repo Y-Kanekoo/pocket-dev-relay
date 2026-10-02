@@ -72,8 +72,7 @@ export const OPENAI_API_KEY: string = process.env.OPENAI_API_KEY || '';
 
 /** AIモデル名（未指定時はプロバイダーに応じたデフォルト値） */
 export const AI_MODEL: string =
-  process.env.AI_MODEL ||
-  (process.env.ANTHROPIC_API_KEY ? 'claude-sonnet-4-5-20250929' : 'gpt-4o');
+  process.env.AI_MODEL || (process.env.ANTHROPIC_API_KEY ? 'claude-sonnet-4-5-20250929' : 'gpt-4o');
 
 /** AI解析に送信するターミナル出力の最大行数 */
 export const AI_MAX_CONTEXT_LINES: number = parseInt(process.env.AI_MAX_CONTEXT_LINES || '100', 10);
@@ -125,10 +124,12 @@ export const SSH_DEFAULT_PORT: number = parseInt(process.env.SSH_DEFAULT_PORT ||
 export const SSH_DEFAULT_USER: string = process.env.SSH_DEFAULT_USER || '';
 
 /** SSH秘密鍵パス */
-export const SSH_KEY_PATH: string = process.env.SSH_KEY_PATH || path.join(os.homedir(), '.ssh', 'id_rsa');
+export const SSH_KEY_PATH: string =
+  process.env.SSH_KEY_PATH || path.join(os.homedir(), '.ssh', 'id_rsa');
 
 /** SSHホスト鍵の厳格な検証（デフォルト: true） */
 export const SSH_STRICT_HOST_KEY: boolean = process.env.SSH_STRICT_HOST_KEY !== 'false';
 
 /** SSHパスワード認証にHTTPSを要求する（デフォルト: true） */
-export const SSH_REQUIRE_HTTPS_FOR_PASSWORD: boolean = process.env.SSH_REQUIRE_HTTPS_FOR_PASSWORD !== 'false';
+export const SSH_REQUIRE_HTTPS_FOR_PASSWORD: boolean =
+  process.env.SSH_REQUIRE_HTTPS_FOR_PASSWORD !== 'false';

@@ -21,7 +21,9 @@ describe('クリップボード API', () => {
       AUTH_TOKEN: 'route-test-token',
     }));
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     app = express();
     app.use(express.json());
     app.use('/api', clipboardMod.default);

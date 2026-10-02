@@ -148,11 +148,19 @@ router.post(
  * アップロード先をリクエストのuploadPathパラメータで制御
  */
 const storage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (
+    _req: Request,
+    _file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void,
+  ) => {
     // 一時的にROOT_DIRに保存（実際のパスはリクエスト処理時に移動）
     cb(null, ROOT_DIR);
   },
-  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void,
+  ) => {
     // オリジナルファイル名を使用
     cb(null, file.originalname);
   },
