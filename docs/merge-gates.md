@@ -80,10 +80,12 @@ duplicate starts and cleanup observable without starting real processes.
 
 The [upload route](../src/routes/files.ts) checks the write flag before multer,
 uses unique staging, then validates and commits the destination. Failure paths
-remove staged content. Compared with writing directly to the destination, this
-adds staging/cleanup work but lets tests prove that rejected attempts preserve
-existing files. It is not a filesystem transaction or proof of every filesystem
-boundary; broader operational acceptance remains in #115.
+attempt to remove staged content. The integration tests cover cleanup after
+mkdir/rename rejection and successful retry. Compared with writing directly to
+the destination, this adds staging/cleanup work but lets tests prove that the
+covered rejected attempts preserve existing files. Host-level cleanup failure
+remains a limitation; this is not a filesystem transaction or proof of every
+filesystem boundary. Broader operational acceptance remains in #115.
 
 ### Evidence, ownership and revision
 
