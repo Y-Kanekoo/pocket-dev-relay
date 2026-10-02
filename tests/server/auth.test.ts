@@ -17,9 +17,9 @@ import {
 // ============================================================
 
 describe('isAuthorizedHeader', () => {
-  it('トークンが設定されていない場合は常にtrueを返す', () => {
-    expect(isAuthorizedHeader(undefined, '')).toBe(true);
-    expect(isAuthorizedHeader('Bearer invalid', '')).toBe(true);
+  it('トークンが設定されていない場合はfalseを返す', () => {
+    expect(isAuthorizedHeader(undefined, '')).toBe(false);
+    expect(isAuthorizedHeader('Bearer invalid', '')).toBe(false);
   });
 
   it('正しいBearerトークンの場合はtrueを返す', () => {
@@ -48,15 +48,18 @@ describe('isAuthorizedHeader', () => {
 // ============================================================
 
 describe('createAuthMiddleware', () => {
-  it('トークンが設定されていない場合はnextを呼び出す', () => {
+  it('トークンが設定されていない場合は401を返す', () => {
     const middleware = createAuthMiddleware('');
     const req = { headers: {} } as Request;
-    const res = {} as Response;
+    const json = vi.fn();
+    const status = vi.fn().mockReturnValue({ json });
+    const res = { status } as unknown as Response;
     const next = vi.fn() as NextFunction;
 
     middleware(req, res, next);
 
-    expect(next).toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(401);
   });
 
   it('正しいトークンの場合はnextを呼び出す', () => {
@@ -150,9 +153,9 @@ describe('getTokenFromRequest', () => {
 // ============================================================
 
 describe('authorizeWebSocket', () => {
-  it('トークンが設定されていない場合は常にtrueを返す', () => {
+  it('トークンが設定されていない場合はfalseを返す', () => {
     const req = { url: '/ws' } as http.IncomingMessage;
-    expect(authorizeWebSocket(req, '')).toBe(true);
+    expect(authorizeWebSocket(req, '')).toBe(false);
   });
 
   it('正しいトークンの場合はtrueを返す', () => {

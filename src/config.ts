@@ -20,7 +20,7 @@ export const PORT: number = parseInt(process.env.PORT || '4173', 10);
 /** ワークスペースルートディレクトリ */
 export const ROOT_DIR: string = path.resolve(process.env.WORKSPACE_ROOT || process.cwd());
 
-/** 認証トークン（空の場合は認証無効） */
+/** 認証トークン（必須。起動時に検証し、不正な設定では認証を拒否） */
 export const AUTH_TOKEN: string = process.env.AUTH_TOKEN || '';
 
 /** カスタムコマンドの許可 */

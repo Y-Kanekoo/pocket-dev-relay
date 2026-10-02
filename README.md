@@ -35,8 +35,9 @@ npm run dev
 ### Docker
 
 ```bash
-# .env ファイルを作成
-echo "AUTH_TOKEN=your-secret-token" > .env
+# .env ファイルを作成し、自分で用意した認証トークンを設定
+cp .env.example .env
+# .env の AUTH_TOKEN を十分に長いランダムな値に変更
 echo "WORKSPACE_PATH=/path/to/your/project" >> .env
 
 # 起動
@@ -56,7 +57,7 @@ docker compose up -d
 |--------|------|-------------|
 | `PORT` | サーバーのリッスンポート | `4173` |
 | `WORKSPACE_ROOT` | ファイルブラウザ・ターミナルのルートディレクトリ | カレントディレクトリ |
-| `AUTH_TOKEN` | 認証トークン（空の場合は認証無効） | 空（認証無効） |
+| `AUTH_TOKEN` | 必須の認証トークン。未設定・空白のみ・既知のサンプル値では起動しない | なし |
 | `ALLOW_CUSTOM_COMMANDS` | カスタムコマンドモードの許可 | `false` |
 | `ALLOW_FILE_WRITE` | ファイルブラウザでの書き込み許可 | `false` |
 | `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
@@ -85,7 +86,7 @@ CODEX_ARGS=["--model", "o3"]
 
 ### 認証
 
-`AUTH_TOKEN` が設定されている場合、`GET /` 以外の全APIリクエストにBearerトークンが必要。
+`AUTH_TOKEN` は必須。`/api/health` を除くAPIリクエストにBearerトークンが必要。静的ファイルとヘルスチェックは認証不要。
 
 ```
 Authorization: Bearer <AUTH_TOKEN>
@@ -478,11 +479,26 @@ npm run watch
 
 ## セキュリティに関する注意
 
-- `AUTH_TOKEN` を必ず設定すること。未設定の場合、認証なしで全APIにアクセスできる
+- `AUTH_TOKEN` に十分に長いランダムな値を設定すること。未設定・空文字・空白のみ・`change-me`・`pdr-local` の場合は、待受ポートを開く前に起動を中止する
 - 信頼できるLAN内での使用を想定している。インターネットに公開しないこと
 - 外出先からアクセスする場合はTailscale等のVPN経由が安全
 - `ALLOW_CUSTOM_COMMANDS` と `ALLOW_FILE_WRITE` はデフォルトで無効。必要な場合のみ有効にすること
 - HTTPS を有効にする場合は、信頼できる証明書を使用すること
+
+### 既存環境からの移行
+
+従来の認証なし起動と、Docker Composeの共通トークンへのフォールバックは廃止した。
+`.env` または起動環境の `AUTH_TOKEN` に自分で用意した秘密の値を設定し、接続するブラウザにも同じ値を入力する。
+`change-me` と `pdr-local` は前後に空白を付けても使えない。その他の値は自動で切り詰めず、そのまま照合する。
+ローカル開発でも認証は必須。HostやOriginがlocalhostでも認証を省略しない。
+
+有効なトークンを設定済みの環境では、HTTPのBearerヘッダーとWebSocketのクエリパラメータは従来どおり使える。
+認証エラーや起動エラーにトークンの値は表示しない。値の自動生成・保存・変更は行わない。
+
+この変更だけでインターネットへの公開が安全になるわけではない。
+WebSocketのクエリトークンがアクセスログに残る可能性や、HTTP利用時の平文通信などは残るため、信頼できるネットワーク内で使うこと。
+
+設計上の判断、検証範囲、既存PRとの重複は[認証対策の設計記録](docs/auth-safety.md)を参照。
 
 ## ヒント
 
