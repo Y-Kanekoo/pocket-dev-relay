@@ -453,6 +453,7 @@ pocket-dev-relay/
 ### テスト
 
 テストフレームワークにはVitestを使用している。
+機能別の unit / 境界テストと実 HTTP / WebSocket 統合を分ける理由、mock の範囲、合否の根拠、未検証の実環境受入は [merge acceptance gates](docs/merge-gates.md) を参照する。実行コマンドは [package.json](package.json)、Node.js 20 / 22 の実行範囲は [CI](.github/workflows/ci.yml) を正本とする。
 
 ```bash
 # テストを1回実行

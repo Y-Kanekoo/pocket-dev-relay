@@ -1,5 +1,16 @@
 # 認証未設定時の起動拒否
 
+## 記録の状態と現在の入口
+
+2026-10-02 に状態を追記。この設計は [PR #113](https://github.com/Y-Kanekoo/pocket-dev-relay/pull/113)、
+merge commit [42c72fd4](https://github.com/Y-Kanekoo/pocket-dev-relay/commit/42c72fd48419bec9fdbd6cc1d1c18c03d059eee9) に実装済みです。
+以下の対象 SHA、テスト件数、「GitHub上のCIは未実行」はパッチ作成時点の記録として保存します。
+その後の統合テスト・CI と現在の受入条件は [merge-gates.md](merge-gates.md) を正本とし、
+[当該 merge の CI](https://github.com/Y-Kanekoo/pocket-dev-relay/actions/runs/36962449550) を参照してください。
+実装済みという状態は、実 PTY/SSH・Docker・HTTPS の受入や公開配置、製品構成の承認を意味しません。
+
+## パッチ作成時の対象
+
 対象はmainの`4abe21d78d4f934c149e5665d3a9d148e7d59c74`。既存のWeb版の安全対策として、認証設定がないまま特権APIやターミナルを利用できる経路を閉じる。
 
 ## 確認した問題
