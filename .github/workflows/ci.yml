@@ -30,8 +30,14 @@ jobs:
       - name: 型チェック
         run: npm run typecheck
 
-      - name: テスト実行
-        run: npm run test:run
+      - name: テストの型チェック
+        run: npm run typecheck:tests
+
+      - name: 機能別ユニット・境界テスト
+        run: npm run test:unit
+
+      - name: HTTP・WebSocket統合テスト
+        run: npm run test:integration
 
       - name: ビルド
         run: npm run build
@@ -54,10 +60,10 @@ jobs:
         run: npm ci
 
       - name: ESLint
-        run: npx eslint . --ext .ts,.js
+        run: npx eslint . --ext .ts,.js --max-warnings=0
 
       - name: Prettier（フォーマットチェック）
-        run: npx prettier --check "src/**/*.ts"
+        run: npx prettier --check "src/**/*.ts" "tests/integration/**/*.ts" "tests/server/websocket-lifecycle.test.ts"
 
   security:
     runs-on: ubuntu-latest
@@ -76,4 +82,4 @@ jobs:
         run: npm ci
 
       - name: npm audit（脆弱性チェック）
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high

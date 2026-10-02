@@ -96,8 +96,12 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
     }
 
     let activeSessionId: string | null = null;
+    let starting = false;
+    let closed = false;
+    let stopRequested = false;
 
     ws.on('message', (message: Buffer | string) => {
+      if (closed) return;
       let payload: ClientMessage;
       try {
         payload = JSON.parse(message.toString()) as ClientMessage;
@@ -106,11 +110,13 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
       }
 
       if (payload.type === 'start') {
-        if (activeSessionId) {
+        if (activeSessionId || starting) {
           send(ws, { type: 'error', message: 'session-already-running' });
           return;
         }
 
+        starting = true;
+        stopRequested = false;
         (async () => {
           try {
             let session;
@@ -134,6 +140,10 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
                 ws,
               );
             }
+            if (closed || stopRequested) {
+              stopSession(session.id, closed ? 'client-disconnect' : 'client-stop');
+              return;
+            }
             activeSessionId = session.id;
             send(ws, {
               type: 'started',
@@ -146,12 +156,18 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
             resetSessionTimeout(session.id, ws);
           } catch (error) {
             const err = error as Error;
-            send(ws, { type: 'error', message: err.message || 'failed-to-start' });
+            if (!closed) send(ws, { type: 'error', message: err.message || 'failed-to-start' });
+          } finally {
+            starting = false;
           }
         })();
         return;
       }
 
+      if (payload.type === 'stop' && starting) {
+        stopRequested = true;
+        return;
+      }
       if (!activeSessionId) return;
 
       const session = sessions.get(activeSessionId);
@@ -185,6 +201,7 @@ export function setupWebSocketHandlers(wss: WebSocketServer): void {
     });
 
     ws.on('close', () => {
+      closed = true;
       if (activeSessionId) {
         clearSessionTimers(activeSessionId);
         stopSession(activeSessionId, 'client-disconnect');

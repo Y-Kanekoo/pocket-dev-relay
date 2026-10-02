@@ -6,6 +6,7 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import multer from 'multer';
 
 import { FileItem, FileListResponse, FileContentResponse, UploadResponse } from '../types/index.js';
@@ -158,11 +159,11 @@ const storage = multer.diskStorage({
   },
   filename: (
     _req: Request,
-    file: Express.Multer.File,
+    _file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void,
   ) => {
-    // オリジナルファイル名を使用
-    cb(null, file.originalname);
+    // 検証完了前に既存ファイルを上書きしない、一意なステージング名。
+    cb(null, `.pdr-upload-${randomUUID()}.tmp`);
   },
 });
 
@@ -180,6 +181,14 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddleware,
+  (_req, _res, next) => {
+    // multerがディスクへ書く前に、機能フラグを検証する。
+    if (!ALLOW_FILE_WRITE) {
+      next(new FeatureDisabledError('ファイルアップロード'));
+      return;
+    }
+    next();
+  },
   upload.single('file'),
   asyncHandler(async (req: Request, res: Response) => {
     if (!ALLOW_FILE_WRITE) {
