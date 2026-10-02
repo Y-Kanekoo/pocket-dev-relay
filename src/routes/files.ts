@@ -248,13 +248,24 @@ router.post(
       throw new InvalidPathError();
     }
 
-    // ディレクトリを作成（存在しない場合）
-    await fs.mkdir(targetDir, { recursive: true });
-
-    // multerがROOT_DIRに保存したファイルを目的のパスに移動
     const sourcePath = req.file.path;
-    if (sourcePath !== targetPath) {
-      await fs.rename(sourcePath, targetPath);
+    let committed = false;
+    try {
+      // 検証完了後にのみ目的のパスへ移動する。
+      await fs.mkdir(targetDir, { recursive: true });
+      if (sourcePath !== targetPath) {
+        await fs.rename(sourcePath, targetPath);
+      }
+      committed = true;
+    } finally {
+      if (!committed) {
+        // mkdir/rename失敗時にも、拒否したアップロードを残さない。
+        try {
+          await fs.unlink(sourcePath);
+        } catch {
+          // 元のI/Oエラーを保持する。
+        }
+      }
     }
 
     const response: UploadResponse = {

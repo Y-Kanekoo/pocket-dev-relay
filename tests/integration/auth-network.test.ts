@@ -2,7 +2,7 @@
 import { once } from 'node:events';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import express from 'express';
@@ -116,6 +116,32 @@ describe('upload write boundary over real multipart HTTP', () => {
     expect(await response.json()).toMatchObject({ ok: true, fileName: 'existing.txt' });
     expect(await readFile(path.join(config.root, 'existing.txt'), 'utf8')).toBe('replacement');
     expect(await readdir(config.root)).toEqual(['existing.txt']);
+  });
+
+  it('cleans up a failed destination commit and permits retry', async () => {
+    config.allowWrite = true;
+    await mkdir(path.join(config.root, 'existing.txt'));
+    const rejected = await upload('replacement');
+    expect(rejected.status).toBeGreaterThanOrEqual(400);
+    expect(await readdir(config.root)).toEqual(['existing.txt']);
+    await rm(path.join(config.root, 'existing.txt'), { recursive: true });
+    expect((await upload('retry content')).status).toBe(200);
+    expect(await readFile(path.join(config.root, 'existing.txt'), 'utf8')).toBe('retry content');
+    expect(await readdir(config.root)).toEqual(['existing.txt']);
+  });
+
+  it('cleans up when a parent path cannot become a directory', async () => {
+    config.allowWrite = true;
+    await writeFile(path.join(config.root, 'blocked'), 'keep parent');
+    expect((await upload('replacement', 'blocked/child')).status).toBeGreaterThanOrEqual(400);
+    expect(await readFile(path.join(config.root, 'blocked'), 'utf8')).toBe('keep parent');
+    expect(await readdir(config.root)).toEqual(['blocked']);
+    await rm(path.join(config.root, 'blocked'));
+    expect((await upload('retry content', 'blocked/child')).status).toBe(200);
+    expect(await readFile(path.join(config.root, 'blocked/child/existing.txt'), 'utf8')).toBe(
+      'retry content',
+    );
+    expect(await readdir(config.root)).toEqual(['blocked']);
   });
 });
 
