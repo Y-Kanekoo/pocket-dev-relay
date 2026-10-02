@@ -39,8 +39,71 @@ Do not merge the overlapping #37/#46 changes without re-running these gates. #77
 changes the product into a CLI and requires an explicit architecture decision;
 it is not part of this safety work.
 
+## Implemented decisions and test rationale
+
+Recorded on 2026-10-02 from [PR #113](https://github.com/Y-Kanekoo/pocket-dev-relay/pull/113),
+merged as [42c72fd4](https://github.com/Y-Kanekoo/pocket-dev-relay/commit/42c72fd48419bec9fdbd6cc1d1c18c03d059eee9).
+The authentication choices and alternatives remain owned by
+[auth-safety.md](auth-safety.md); this section supplies the test rationale rather
+than duplicating that design record. It describes implemented behavior, not a
+new approval of deployment or the Web/CLI product choice in #116.
+
+### Test the boundary with the smallest useful real stack
+
+- Unit/boundary tests isolate configuration validity, exact credential matching
+  and pre-listener startup refusal. A successful comparison is not enough:
+  negative tests also require that no listener or session execution is reached
+- [`websocket-lifecycle.test.ts`](../tests/server/websocket-lifecycle.test.ts)
+  controls deferred promises for shell and SSH startup. Duplicate start, stop or
+  disconnect during startup, late completion and retry have independent expected
+  call counts and fixed protocol messages. Real terminals would not make these
+  event orderings deterministic
+- [`auth-network.test.ts`](../tests/integration/auth-network.test.ts) adds real
+  Express, multer and WebSocket transport on temporary loopback ports. Literal
+  HTTP status/JSON and WS close-code expectations check the actual boundary;
+  rejected starts must not call terminal/SSH factories. Synthetic files are
+  inspected after upload rejection and retry, so a response alone cannot hide a
+  write or leftover staging file
+
+This split avoids two inadequate alternatives: mocked request/response objects
+alone miss middleware and multipart/transport wiring; real PTY/SSH in every
+protocol test couples deterministic checks to host configuration and processes.
+The cost is that transport success with mocked sessions does not establish actual
+terminal execution, SSH teardown or browser reconnect. #115 owns those checks.
+
+### Implemented lifecycle and upload trade-offs
+
+The [WS service](../src/services/websocket.ts) keeps pending startup state as well
+as a running session ID. A late session is stopped after disconnect or a pending
+stop instead of sending a stale success. This adds state to the handler but makes
+duplicate starts and cleanup observable without starting real processes.
+
+The [upload route](../src/routes/files.ts) checks the write flag before multer,
+uses unique staging, then validates and commits the destination. Failure paths
+remove staged content. Compared with writing directly to the destination, this
+adds staging/cleanup work but lets tests prove that rejected attempts preserve
+existing files. It is not a filesystem transaction or proof of every filesystem
+boundary; broader operational acceptance remains in #115.
+
+### Evidence, ownership and revision
+
+[package.json](../package.json) owns `test:unit` and `test:integration`;
+[CI](../.github/workflows/ci.yml) owns the Node.js 20/22 matrix and validation
+commands. The feature map above remains the single test-strategy index.
+
+The [post-merge reference run](https://github.com/Y-Kanekoo/pocket-dev-relay/actions/runs/36962449550)
+belongs to `42c72fd48419bec9fdbd6cc1d1c18c03d059eee9`. The earlier counts and
+pre-publication CI note in auth-safety.md are historical, not the final run.
+Each later PR must supply exact-head pass, fail, skipped, not-run or blocked
+evidence; link logs/artifacts instead of copying them here. Fixtures must remain
+synthetic and must not contain user tokens, terminal output or private files.
+Revisit the boundary when the protocol, session implementation or supported host
+changes, or when a real-host failure is hidden by a mock.
+
 ## Tracked follow-up work
 
-- https://github.com/Y-Kanekoo/pocket-dev-relay/issues/114
-- https://github.com/Y-Kanekoo/pocket-dev-relay/issues/115
-- https://github.com/Y-Kanekoo/pocket-dev-relay/issues/116
+- [#115](https://github.com/Y-Kanekoo/pocket-dev-relay/issues/115): Docker, HTTPS, real PTY/SSH and browser reconnect acceptance
+- [#116](https://github.com/Y-Kanekoo/pocket-dev-relay/issues/116): Web/CLI decision and overlapping PR integration
+
+[#114](https://github.com/Y-Kanekoo/pocket-dev-relay/issues/114) is the completed
+dependency repair history, not an open acceptance gap (state checked 2026-10-02).
