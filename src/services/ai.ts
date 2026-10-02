@@ -86,17 +86,13 @@ class ClaudeProvider implements AIProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(
-        `Claude API エラー (${response.status}): ${errorBody}`,
-      );
+      throw new Error(`Claude API エラー (${response.status}): ${errorBody}`);
     }
 
-    const data = await response.json() as ClaudeResponse;
+    const data = (await response.json()) as ClaudeResponse;
 
     // content配列からテキストを抽出
-    const textContent = data.content.find(
-      (block) => block.type === 'text',
-    );
+    const textContent = data.content.find((block) => block.type === 'text');
     if (!textContent || textContent.type !== 'text') {
       throw new Error('Claude API: テキスト応答が見つかりません');
     }
@@ -171,12 +167,10 @@ class OpenAIProvider implements AIProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(
-        `OpenAI API エラー (${response.status}): ${errorBody}`,
-      );
+      throw new Error(`OpenAI API エラー (${response.status}): ${errorBody}`);
     }
 
-    const data = await response.json() as OpenAIResponse;
+    const data = (await response.json()) as OpenAIResponse;
 
     if (!data.choices || data.choices.length === 0) {
       throw new Error('OpenAI API: 応答が空です');

@@ -7,7 +7,7 @@ services:
       # ホスト側のワークスペースをコンテナにマウント
       - "${WORKSPACE_PATH:-.}:/workspace"
     environment:
-      - AUTH_TOKEN=${AUTH_TOKEN:-pdr-local}
+      - AUTH_TOKEN=${AUTH_TOKEN:-}
       - WORKSPACE_ROOT=/workspace
       - PORT=4173
     healthcheck:

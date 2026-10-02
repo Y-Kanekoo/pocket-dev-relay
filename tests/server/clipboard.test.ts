@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 明示したテスト用トークンで本番の認証経路を通す
 vi.mock('../../src/config.js', () => ({
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
 }));
 
 describe('クリップボード API', () => {
@@ -18,10 +18,12 @@ describe('クリップボード API', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
     }));
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     app = express();
     app.use(express.json());
     app.use('/api', clipboardMod.default);
@@ -42,6 +44,7 @@ describe('クリップボード API', () => {
         url: path,
         headers: {
           'content-type': 'application/json',
+          authorization: 'Bearer route-test-token',
         },
         body: body,
       };

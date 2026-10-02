@@ -206,7 +206,7 @@ tests/
 |------|-----|-----------|------|
 | `PORT` | number | 4173 | サーバーポート |
 | `WORKSPACE_ROOT` | string | cwd() | ワークスペースルート |
-| `AUTH_TOKEN` | string | '' (認証無効) | 認証トークン |
+| `AUTH_TOKEN` | string | なし（必須） | 未設定・空白のみ・`change-me`・`pdr-local`では起動を拒否 |
 | `ALLOW_CUSTOM_COMMANDS` | boolean | false | カスタムコマンド許可 |
 | `ALLOW_FILE_WRITE` | boolean | false | ファイル書き込み許可 |
 | `MAX_FILE_SIZE` | number | 1048576 (1MB) | 最大ファイルサイズ |
@@ -404,7 +404,7 @@ export default logger: pino.Logger
 ### ミドルウェア層
 
 #### middleware/auth.ts
-- `authMiddleware(req, res, next)` — Bearer token検証（AUTH_TOKEN空 → 認証スキップ）
+- `authMiddleware(req, res, next)` — Bearer token検証（AUTH_TOKENが不正な場合も認証を拒否）
 - `authorizeWebSocket(req)` — クエリパラメータ `?token=` で検証
 
 #### middleware/errorHandler.ts
@@ -560,7 +560,7 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 ## セキュリティ
 
 ### 実装済み対策
-- **認証**: Bearer token（AUTH_TOKEN空 → 認証無効）
+- **認証**: Bearer token必須（AUTH_TOKENが不正な場合は待受開始前に起動を中止）
 - **CSP**: Content Security Policy ヘッダー
 - **HSTS**: HTTPS時のみ有効
 - **X-Frame-Options**: DENY（クリックジャッキング防止）

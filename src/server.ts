@@ -17,7 +17,9 @@ import {
   SSL_CERT_PATH,
   ENABLE_SESSION_LOGS,
   LOG_DIR,
+  AUTH_TOKEN,
 } from './config.js';
+import { assertAuthTokenConfigured } from './utils/auth.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
@@ -32,6 +34,9 @@ import logsRouter from './routes/logs.js';
 import clipboardRouter from './routes/clipboard.js';
 import snippetsRouter from './routes/snippets.js';
 import aiRouter from './routes/ai.js';
+
+// 認証設定が不正な場合、HTTP/HTTPS/WSリスナーを作成せずに終了する。
+assertAuthTokenConfigured(AUTH_TOKEN);
 
 // Expressアプリケーション
 const app = express();

@@ -128,7 +128,8 @@ async function loadSnippets(): Promise<void> {
     renderSnippetList(snippets);
   } catch {
     if (elements.snippetList) {
-      elements.snippetList.innerHTML = '<div class="snippet-error">スニペットの取得に失敗しました</div>';
+      elements.snippetList.innerHTML =
+        '<div class="snippet-error">スニペットの取得に失敗しました</div>';
     }
   }
 }

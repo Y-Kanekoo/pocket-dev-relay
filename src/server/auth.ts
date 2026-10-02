@@ -4,6 +4,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import type http from 'http';
+import { isConfiguredAuthToken } from '../utils/auth.js';
 
 // ============================================================
 // 認証関数
@@ -16,7 +17,7 @@ import type http from 'http';
  * @returns 認証結果
  */
 export function isAuthorizedHeader(header: string | undefined, authToken: string): boolean {
-  if (!authToken) return true;
+  if (!isConfiguredAuthToken(authToken)) return false;
   return header === `Bearer ${authToken}`;
 }
 
@@ -27,10 +28,6 @@ export function isAuthorizedHeader(header: string | undefined, authToken: string
  */
 export function createAuthMiddleware(authToken: string) {
   return function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-    if (!authToken) {
-      next();
-      return;
-    }
     if (isAuthorizedHeader(req.headers.authorization, authToken)) {
       next();
       return;
@@ -45,8 +42,12 @@ export function createAuthMiddleware(authToken: string) {
  * @returns トークン
  */
 export function getTokenFromRequest(req: http.IncomingMessage): string {
-  const url = new URL(req.url || '', 'http://localhost');
-  return url.searchParams.get('token') || '';
+  try {
+    const url = new URL(req.url || '', 'http://localhost');
+    return url.searchParams.get('token') || '';
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -56,6 +57,6 @@ export function getTokenFromRequest(req: http.IncomingMessage): string {
  * @returns 認証結果
  */
 export function authorizeWebSocket(req: http.IncomingMessage, authToken: string): boolean {
-  if (!authToken) return true;
+  if (!isConfiguredAuthToken(authToken)) return false;
   return getTokenFromRequest(req) === authToken;
 }

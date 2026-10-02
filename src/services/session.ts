@@ -13,12 +13,23 @@ import { nanoid } from 'nanoid';
 import { Client as SSHClient, ClientChannel } from 'ssh2';
 
 import { SessionMode, SessionConfig, SessionLogMeta, ServerMessage } from '../types/index.js';
-import { ROOT_DIR, ENABLE_SESSION_LOGS, LOG_DIR, LOG_MAX_AGE_DAYS, LOG_MAX_SIZE_MB } from '../config.js';
+import {
+  ROOT_DIR,
+  ENABLE_SESSION_LOGS,
+  LOG_DIR,
+  LOG_MAX_AGE_DAYS,
+  LOG_MAX_SIZE_MB,
+} from '../config.js';
 import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { spawnForMode } from './pty.js';
-import { createSSHSession, resizeSSHChannel, closeSSHConnection, isSSHEnabled } from './ssh.js';
-import { detectError, sendErrorNotification, sendExitNotification, clearNotificationState } from './notifier.js';
+import { createSSHSession, closeSSHConnection, isSSHEnabled } from './ssh.js';
+import {
+  detectError,
+  sendErrorNotification,
+  sendExitNotification,
+  clearNotificationState,
+} from './notifier.js';
 
 // ============================================================
 // 型定義（サーバー内部用）
@@ -102,7 +113,7 @@ async function rotateOldLogs(): Promise<void> {
     let deletedCount = 0;
 
     for (const info of fileInfos) {
-      const isOld = (now - info.mtime) > maxAgeMs;
+      const isOld = now - info.mtime > maxAgeMs;
       const isOverSize = totalSize > maxSizeBytes;
 
       if (isOld || isOverSize) {
@@ -277,7 +288,10 @@ export async function startSession(config: SessionConfig, ws: WebSocket): Promis
  * @param ws WebSocket
  * @returns セッション情報
  */
-export async function startSSHSession(config: SessionConfig, ws: WebSocket): Promise<SessionInternal> {
+export async function startSSHSession(
+  config: SessionConfig,
+  ws: WebSocket,
+): Promise<SessionInternal> {
   if (!isSSHEnabled()) {
     throw new Error('ssh-disabled');
   }

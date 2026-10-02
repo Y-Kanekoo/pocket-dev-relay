@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import { AUTH_TOKEN } from '../config.js';
 import { AuthenticationError } from '../errors/AppError.js';
+import { isConfiguredAuthToken } from '../utils/auth.js';
 
 /**
  * Authorizationヘッダーを検証
@@ -14,19 +15,15 @@ import { AuthenticationError } from '../errors/AppError.js';
  * @returns 認証結果
  */
 export function isAuthorizedHeader(header: string | undefined): boolean {
-  if (!AUTH_TOKEN) return true;
+  if (!isConfiguredAuthToken(AUTH_TOKEN)) return false;
   return header === `Bearer ${AUTH_TOKEN}`;
 }
 
 /**
  * 認証ミドルウェア
- * 認証トークンが設定されている場合、Authorizationヘッダーを検証
+ * Authorizationヘッダーを検証。不正な認証設定でもアクセスを拒否する。
  */
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  if (!AUTH_TOKEN) {
-    next();
-    return;
-  }
   if (isAuthorizedHeader(req.headers.authorization)) {
     next();
     return;
@@ -40,8 +37,12 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
  * @returns トークン
  */
 export function getTokenFromRequest(req: http.IncomingMessage): string {
-  const url = new URL(req.url || '', 'http://localhost');
-  return url.searchParams.get('token') || '';
+  try {
+    const url = new URL(req.url || '', 'http://localhost');
+    return url.searchParams.get('token') || '';
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -50,6 +51,6 @@ export function getTokenFromRequest(req: http.IncomingMessage): string {
  * @returns 認証結果
  */
 export function authorizeWebSocket(req: http.IncomingMessage): boolean {
-  if (!AUTH_TOKEN) return true;
+  if (!isConfiguredAuthToken(AUTH_TOKEN)) return false;
   return getTokenFromRequest(req) === AUTH_TOKEN;
 }
