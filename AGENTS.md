@@ -8,6 +8,7 @@
 - 技術スタック、ディレクトリ構成、プロジェクト固有の禁止事項をこの節に追記する。
 
 <!-- development-hub:standards v1 -->
+
 ## 共通基準（development-hub v1）
 
 この節は development-hub（https://github.com/Y-Kanekoo/development-hub）のテンプレートから生成した。共通部分の変更はハブで行い、プロジェクト固有の規則は上の節に書く。
