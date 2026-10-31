@@ -5,6 +5,7 @@
 Pocket Dev Relay は、外出先からスマートフォンのブラウザで自宅PCのターミナルを操作するためのリモート開発ツールである。Express + WebSocket サーバーがPCで動作し、xterm.js ベースのクライアントがブラウザで動作する。
 
 主要な通信方式:
+
 - **REST API**: 設定取得、ファイル操作、クリップボード共有、スニペット管理、AI解析
 - **WebSocket**: ターミナルセッション（PTY/SSH）のリアルタイム入出力
 
@@ -14,7 +15,7 @@ Pocket Dev Relay は、外出先からスマートフォンのブラウザで自
 
 ### トークンベース認証
 
-環境変数 `AUTH_TOKEN` が設定されている場合、`GET /api/health` を除くすべてのエンドポイントで認証が必要となる。
+環境変数 `AUTH_TOKEN` は必須。未設定・空白のみ・既知のサンプル値では起動を拒否する。静的ファイルと `GET /api/health` を除くAPIでは認証が必要となる。
 
 #### HTTP API認証
 
@@ -23,18 +24,18 @@ Authorization: Bearer <AUTH_TOKEN>
 ```
 
 - タイミング安全な比較（SHA-256ハッシュ経由の `timingSafeEqual`）を使用
-- `AUTH_TOKEN` 未設定時は認証をスキップ（全APIアクセス可能）
+- 不正な `AUTH_TOKEN` 設定でも認証を拒否する
 
 #### WebSocket認証
 
-メッセージベース方式で認証:
+接続時に `?token=<AUTH_TOKEN>` を検証し、不正なら `4001` で切断する。ブラウザクライアントは接続後に `auth` メッセージを送信し、認証結果を確認する。
 
-- 接続後5秒以内に認証メッセージを送信
-- タイムアウト時は `4001` コードで切断
 ```json
 { "type": "auth", "token": "<AUTH_TOKEN>" }
 ```
+
 - 認証結果:
+
 ```json
 { "type": "auth_result", "ok": true }
 ```
@@ -50,6 +51,7 @@ Authorization: Bearer <AUTH_TOKEN>
 認証不要。サーバーの稼働状態を返す。
 
 **レスポンス:**
+
 ```json
 {
   "status": "ok",
@@ -71,9 +73,10 @@ Authorization: Bearer <AUTH_TOKEN>
 アプリケーション設定を取得。
 
 **レスポンス:**
+
 ```json
 {
-  "workspaceRoot": "/Users/you/project",
+  "workspaceRoot": "/path/to/your/project",
   "workspaceName": "project",
   "modes": ["codex", "claude", "shell"],
   "allowCustomCommands": false,
@@ -93,12 +96,23 @@ Authorization: Bearer <AUTH_TOKEN>
 アクセスURL一覧を取得。
 
 **レスポンス:**
+
 ```json
 {
   "port": 4173,
   "urls": [
-    { "type": "tunnel", "name": "cloudflared", "host": "xxx.trycloudflare.com", "url": "https://xxx.trycloudflare.com" },
-    { "type": "mdns", "name": "hostname.local", "host": "hostname.local:4173", "url": "http://hostname.local:4173" },
+    {
+      "type": "tunnel",
+      "name": "cloudflared",
+      "host": "xxx.trycloudflare.com",
+      "url": "https://xxx.trycloudflare.com"
+    },
+    {
+      "type": "mdns",
+      "name": "hostname.local",
+      "host": "hostname.local:4173",
+      "url": "http://hostname.local:4173"
+    },
     { "type": "lan", "name": "en0", "host": "192.168.1.10:4173", "url": "http://192.168.1.10:4173" }
   ]
 }
@@ -111,9 +125,11 @@ Authorization: Bearer <AUTH_TOKEN>
 QRコードをdata URL形式で生成。
 
 **パラメータ:**
+
 - `text` (必須): QRコードに変換するテキスト
 
 **レスポンス:**
+
 ```json
 {
   "dataUrl": "data:image/png;base64,..."
@@ -127,9 +143,11 @@ QRコードをdata URL形式で生成。
 ディレクトリ内のファイル一覧を取得。
 
 **パラメータ:**
+
 - `path` (任意): ワークスペースルートからの相対パス。省略時はルート
 
 **レスポンス:**
+
 ```json
 {
   "path": "src",
@@ -148,9 +166,11 @@ QRコードをdata URL形式で生成。
 ファイル内容を取得。
 
 **パラメータ:**
+
 - `path` (必須): ファイルの相対パス
 
 **レスポンス:**
+
 ```json
 {
   "path": "src/server.ts",
@@ -159,6 +179,7 @@ QRコードをdata URL形式で生成。
 ```
 
 **エラー:**
+
 - `MAX_FILE_SIZE` 超過時: `{ "error": "file-too-large", "size": 2000000, "maxSize": 1048576 }`
 
 #### POST /api/file
@@ -166,6 +187,7 @@ QRコードをdata URL形式で生成。
 ファイルに書き込み。`ALLOW_FILE_WRITE=true` が必要。
 
 **リクエストボディ:**
+
 ```json
 {
   "path": "src/example.ts",
@@ -174,6 +196,7 @@ QRコードをdata URL形式で生成。
 ```
 
 **レスポンス:**
+
 ```json
 { "ok": true }
 ```
@@ -183,10 +206,12 @@ QRコードをdata URL形式で生成。
 ファイルをアップロード（multipart/form-data）。`ALLOW_FILE_WRITE=true` が必要。
 
 **フォームフィールド:**
+
 - `file`: アップロードファイル
 - `uploadPath` (任意): アップロード先の相対ディレクトリ（デフォルト: `"."`)
 
 **レスポンス:**
+
 ```json
 {
   "ok": true,
@@ -205,6 +230,7 @@ QRコードをdata URL形式で生成。
 クリップボード内容を取得。
 
 **レスポンス:**
+
 ```json
 {
   "text": "コピーしたテキスト",
@@ -217,6 +243,7 @@ QRコードをdata URL形式で生成。
 クリップボードにテキストを設定。
 
 **リクエストボディ:**
+
 ```json
 { "text": "設定するテキスト" }
 ```
@@ -226,6 +253,7 @@ QRコードをdata URL形式で生成。
 クリップボードをクリア。
 
 **レスポンス:**
+
 ```json
 { "ok": true }
 ```
@@ -237,11 +265,10 @@ QRコードをdata URL形式で生成。
 スニペット一覧を取得。
 
 **レスポンス:**
+
 ```json
 {
-  "snippets": [
-    { "id": "abc12345", "label": "git status", "command": "git status\n" }
-  ]
+  "snippets": [{ "id": "abc12345", "label": "git status", "command": "git status\n" }]
 }
 ```
 
@@ -250,6 +277,7 @@ QRコードをdata URL形式で生成。
 スニペットを追加。
 
 **リクエストボディ:**
+
 ```json
 {
   "label": "git log",
@@ -266,11 +294,13 @@ QRコードをdata URL形式で生成。
 スニペットをアクティブセッションで実行。最初に見つかったPTYセッションにコマンドを送信する。
 
 **レスポンス:**
+
 ```json
 { "ok": true, "message": "コマンド \"git status\" を実行しました" }
 ```
 
 アクティブセッションがない場合:
+
 ```json
 { "ok": false, "message": "アクティブなセッションがありません" }
 ```
@@ -282,6 +312,7 @@ QRコードをdata URL形式で生成。
 AI機能のステータスを取得。
 
 **レスポンス:**
+
 ```json
 {
   "enabled": true,
@@ -299,6 +330,7 @@ AI機能のステータスを取得。
 ターミナル出力をAIで解析。
 
 **リクエストボディ:**
+
 ```json
 {
   "context": "ターミナル出力のテキスト",
@@ -310,6 +342,7 @@ AI機能のステータスを取得。
 - `question` (任意): ユーザーの質問
 
 **レスポンス:**
+
 ```json
 {
   "answer": "AIの解析結果",
@@ -320,6 +353,7 @@ AI機能のステータスを取得。
 
 **エラー (503):**
 AI機能が無効の場合:
+
 ```json
 { "error": "AI_NOT_AVAILABLE", "message": "AI機能が有効になっていません..." }
 ```
@@ -333,6 +367,7 @@ AI機能が無効の場合:
 セッションログ一覧を取得。
 
 **レスポンス:**
+
 ```json
 {
   "logs": [
@@ -355,6 +390,7 @@ AI機能が無効の場合:
 セッションログ内容を取得。ファイル名は `session-` で始まり `.log` で終わる必要がある。
 
 **レスポンス:**
+
 ```json
 {
   "fileName": "session-2025-01-01T00-00-00-shell-abc123.log",
@@ -372,7 +408,7 @@ AI機能が無効の場合:
 ws://host:port/ws?token=<AUTH_TOKEN>
 ```
 
-または認証なしで接続後、メッセージベース認証を行う。
+接続時にクエリトークンを検証する。ブラウザクライアントは接続後に認証メッセージも送る。
 
 ### クライアント → サーバー
 
@@ -393,13 +429,13 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|------|------|------|
-| `type` | `"start"` | 必須 | メッセージ種別 |
-| `mode` | `SessionMode` | 必須 | `"codex"` / `"claude"` / `"shell"` / `"custom"` / `"ssh"` |
-| `cwd` | `string` | 任意 | 作業ディレクトリ（相対パス）。省略時はワークスペースルート |
-| `command` | `string` | 任意 | カスタムコマンド（`mode: "custom"` 時のみ） |
-| `sshConfig` | `SSHConnectionConfig` | 任意 | SSH接続設定（`mode: "ssh"` 時のみ） |
+| フィールド  | 型                    | 必須 | 説明                                                       |
+| ----------- | --------------------- | ---- | ---------------------------------------------------------- |
+| `type`      | `"start"`             | 必須 | メッセージ種別                                             |
+| `mode`      | `SessionMode`         | 必須 | `"codex"` / `"claude"` / `"shell"` / `"custom"` / `"ssh"`  |
+| `cwd`       | `string`              | 任意 | 作業ディレクトリ（相対パス）。省略時はワークスペースルート |
+| `command`   | `string`              | 任意 | カスタムコマンド（`mode: "custom"` 時のみ）                |
+| `sshConfig` | `SSHConnectionConfig` | 任意 | SSH接続設定（`mode: "ssh"` 時のみ）                        |
 
 #### input（ターミナル入力）
 
@@ -460,6 +496,7 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 ```
 
 `reason` の値:
+
 - `"client-stop"`: クライアントからの明示的な停止
 - `"client-disconnect"`: WebSocket切断による停止
 - `"session-timeout"`: セッションタイムアウトによる停止
@@ -495,13 +532,13 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### セッションモード
 
-| モード | 説明 | バックエンド |
-|--------|------|------------|
-| `codex` | Codex CLI | PTY (node-pty) |
-| `claude` | Claude Code | PTY (node-pty) |
-| `shell` | シェル（zsh/bash等） | PTY (node-pty) |
-| `custom` | カスタムコマンド | PTY (node-pty) |
-| `ssh` | SSH中継接続 | ssh2ライブラリ |
+| モード   | 説明                 | バックエンド   |
+| -------- | -------------------- | -------------- |
+| `codex`  | Codex CLI            | PTY (node-pty) |
+| `claude` | Claude Code          | PTY (node-pty) |
+| `shell`  | シェル（zsh/bash等） | PTY (node-pty) |
+| `custom` | カスタムコマンド     | PTY (node-pty) |
+| `ssh`    | SSH中継接続          | ssh2ライブラリ |
 
 ### コマンドプリセット
 
@@ -509,13 +546,13 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 #### モード別コマンド仕様
 
-| モード | デフォルトコマンド | コマンド環境変数 | 引数環境変数 |
-|--------|------------------|----------------|------------|
-| `codex` | `codex` | `CODEX_CMD` | `CODEX_ARGS` |
-| `claude` | `claude` | `CLAUDE_CMD` | `CLAUDE_ARGS` |
-| `shell` | `SHELL_CMD` または `$SHELL` または `zsh` | `SHELL_CMD` | `SHELL_ARGS` |
-| `custom` | ユーザー指定 | — | — |
-| `ssh` | — （ssh2ライブラリで接続） | — | — |
+| モード   | デフォルトコマンド                       | コマンド環境変数 | 引数環境変数  |
+| -------- | ---------------------------------------- | ---------------- | ------------- |
+| `codex`  | `codex`                                  | `CODEX_CMD`      | `CODEX_ARGS`  |
+| `claude` | `claude`                                 | `CLAUDE_CMD`     | `CLAUDE_ARGS` |
+| `shell`  | `SHELL_CMD` または `$SHELL` または `zsh` | `SHELL_CMD`      | `SHELL_ARGS`  |
+| `custom` | ユーザー指定                             | —                | —             |
+| `ssh`    | — （ssh2ライブラリで接続）               | —                | —             |
 
 - `custom` モード: `ALLOW_CUSTOM_COMMANDS=true` が必要。クライアントが `start` メッセージの `command` フィールドで指定したコマンドを実行する
 - `ssh` モード: PTYプリセットを使用せず、ssh2ライブラリで直接接続する
@@ -538,18 +575,18 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 PTYプロセスに渡される環境変数は、以下の許可リストに含まれるもののみに制限される（機密情報の漏洩防止）。
 
-| カテゴリ | 環境変数 |
-|----------|---------|
-| ユーザー情報 | `HOME`, `USER`, `LOGNAME` |
-| シェル・ロケール | `SHELL`, `LANG`, `LC_ALL`, `LC_CTYPE` |
-| パス・ターミナル | `PATH`, `TERM`（常に `xterm-256color`）, `COLORTERM` |
-| エディタ・ツール | `EDITOR`, `VISUAL`, `PAGER` |
-| XDG | `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, `XDG_RUNTIME_DIR` |
-| 一時ディレクトリ | `TMPDIR`, `TMP`, `TEMP` |
-| シェル状態 | `HOSTNAME`, `PWD`, `OLDPWD`, `SHLVL` |
-| 認証・署名 | `SSH_AUTH_SOCK`, `GPG_AGENT_INFO` |
-| Node.js | `NODE_ENV`, `NODE_PATH`（`NODE_OPTIONS` は任意コード実行可能なため除外） |
-| Git | `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL` |
+| カテゴリ         | 環境変数                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| ユーザー情報     | `HOME`, `USER`, `LOGNAME`                                                          |
+| シェル・ロケール | `SHELL`, `LANG`, `LC_ALL`, `LC_CTYPE`                                              |
+| パス・ターミナル | `PATH`, `TERM`（常に `xterm-256color`）, `COLORTERM`                               |
+| エディタ・ツール | `EDITOR`, `VISUAL`, `PAGER`                                                        |
+| XDG              | `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, `XDG_RUNTIME_DIR`            |
+| 一時ディレクトリ | `TMPDIR`, `TMP`, `TEMP`                                                            |
+| シェル状態       | `HOSTNAME`, `PWD`, `OLDPWD`, `SHLVL`                                               |
+| 認証・署名       | `SSH_AUTH_SOCK`, `GPG_AGENT_INFO`                                                  |
+| Node.js          | `NODE_ENV`, `NODE_PATH`（`NODE_OPTIONS` は任意コード実行可能なため除外）           |
+| Git              | `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL` |
 
 ### ライフサイクル
 
@@ -608,15 +645,15 @@ PTYプロセスに渡される環境変数は、以下の許可リストに含�
 
 ### HTTPステータスコード
 
-| コード | 意味 | 例 |
-|--------|------|-----|
-| 400 | バリデーションエラー | パラメータ不正、パストラバーサル |
-| 401 | 認証エラー | トークン不正・未指定 |
-| 403 | 機能無効 | `ALLOW_FILE_WRITE=false` 時のファイル書き込み |
-| 404 | リソース未発見 | ファイル、スニペットが存在しない |
-| 413 | ファイルサイズ超過 | `MAX_FILE_SIZE` / `MAX_UPLOAD_SIZE` 超過 |
-| 429 | レート制限超過 | API / 認証のレート制限 |
-| 503 | サービス利用不可 | AI機能が無効 |
+| コード | 意味                 | 例                                            |
+| ------ | -------------------- | --------------------------------------------- |
+| 400    | バリデーションエラー | パラメータ不正、パストラバーサル              |
+| 401    | 認証エラー           | トークン不正・未指定                          |
+| 403    | 機能無効             | `ALLOW_FILE_WRITE=false` 時のファイル書き込み |
+| 404    | リソース未発見       | ファイル、スニペットが存在しない              |
+| 413    | ファイルサイズ超過   | `MAX_FILE_SIZE` / `MAX_UPLOAD_SIZE` 超過      |
+| 429    | レート制限超過       | API / 認証のレート制限                        |
+| 503    | サービス利用不可     | AI機能が無効                                  |
 
 ### レート制限
 

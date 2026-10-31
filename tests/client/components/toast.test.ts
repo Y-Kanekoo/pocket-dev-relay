@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ============================================================
 
 // createElement で生成される要素のモック
-function createMockElement(): Record<string, unknown> {
+function createMockElement() {
   return {
     className: '',
     textContent: '',

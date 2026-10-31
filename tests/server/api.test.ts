@@ -7,11 +7,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express, Request, Response, NextFunction } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 認証済みAPIの検証用トークンを設定
 vi.mock('../../src/config.js', () => ({
   PORT: 4173,
   ROOT_DIR: '/tmp/test-workspace',
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
   ALLOW_CUSTOM_COMMANDS: false,
   ALLOW_FILE_WRITE: true,
   MAX_FILE_SIZE: 1048576,
@@ -66,6 +66,7 @@ function makeRequest(
       url: path,
       headers: {
         'content-type': 'application/json',
+        authorization: 'Bearer route-test-token',
         ...headers,
       },
       body: body,
@@ -152,7 +153,7 @@ describe('API ルーター', () => {
       vi.doMock('../../src/config.js', () => ({
         PORT: 4173,
         ROOT_DIR: '/tmp/test-workspace',
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ALLOW_CUSTOM_COMMANDS: false,
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -185,7 +186,8 @@ describe('API ルーター', () => {
         toDataURL: vi.fn(async () => 'data:image/png;base64,mockQRCode'),
       }));
 
-      const apiMod = await import('../../src/routes/api.js');
+      const apiMod =
+        await vi.importActual<typeof import('../../src/routes/api.js')>('../../src/routes/api.js');
       app = express();
       app.use(express.json());
       app.use('/api', apiMod.default);
@@ -225,9 +227,9 @@ describe('API ルーター', () => {
       expect(result.body.sshDefaultUser).toBeUndefined();
     });
 
-    it('AUTH_TOKEN未設定時はauthEnabled=falseであること', async () => {
+    it('AUTH_TOKEN設定時はauthEnabled=trueであること', async () => {
       const result = await makeRequest(app, 'GET', '/api/config');
-      expect(result.body).toHaveProperty('authEnabled', false);
+      expect(result.body).toHaveProperty('authEnabled', true);
     });
 
     it('レスポンスにAUTH_TOKENが含まれないこと（セキュリティ確認）', async () => {
@@ -272,7 +274,8 @@ describe('API ルーター', () => {
         toDataURL: vi.fn(async () => 'data:image/png;base64,mockQRCode'),
       }));
 
-      const apiMod = await import('../../src/routes/api.js');
+      const apiMod =
+        await vi.importActual<typeof import('../../src/routes/api.js')>('../../src/routes/api.js');
       app = express();
       app.use(express.json());
       app.use('/api', apiMod.default);
@@ -348,7 +351,7 @@ describe('API ルーター', () => {
       vi.doMock('../../src/config.js', () => ({
         PORT: 4173,
         ROOT_DIR: '/tmp/test-workspace',
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ALLOW_CUSTOM_COMMANDS: false,
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -372,7 +375,8 @@ describe('API ルーター', () => {
         toDataURL: vi.fn(async () => 'data:image/png;base64,mockQRCode'),
       }));
 
-      const apiMod = await import('../../src/routes/api.js');
+      const apiMod =
+        await vi.importActual<typeof import('../../src/routes/api.js')>('../../src/routes/api.js');
       app = express();
       app.use(express.json());
       app.use('/api', apiMod.default);
@@ -425,7 +429,7 @@ describe('API ルーター', () => {
       vi.doMock('../../src/config.js', () => ({
         PORT: 4173,
         ROOT_DIR: '/tmp/test-workspace',
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ALLOW_CUSTOM_COMMANDS: false,
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -449,7 +453,8 @@ describe('API ルーター', () => {
         toDataURL: vi.fn(async () => 'data:image/png;base64,mockQRCode'),
       }));
 
-      const apiMod = await import('../../src/routes/api.js');
+      const apiMod =
+        await vi.importActual<typeof import('../../src/routes/api.js')>('../../src/routes/api.js');
       app = express();
       app.use(express.json());
       app.use('/api', apiMod.default);

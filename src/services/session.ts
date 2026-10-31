@@ -25,6 +25,7 @@ import logger from './logger.js';
 import { resolvePath } from '../utils/path.js';
 import { stripAnsi } from '../utils/text.js';
 import { send, outputBuffer } from '../utils/ws.js';
+export { send } from '../utils/ws.js';
 import { spawnForMode } from './pty.js';
 import { createSSHSession, closeSSHConnection, isSSHEnabled } from './ssh.js';
 import {

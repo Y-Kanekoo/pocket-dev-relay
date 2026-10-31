@@ -13,7 +13,11 @@ import {
   copyText,
 } from '../services/api.js';
 import { loadFiles as loadFilesInternal } from './fileList.js';
-import { loadFile as loadFileInternal, updateFileEditor as updateFileEditorInternal, initFileEditorEvents } from './fileEditor.js';
+import {
+  loadFile as loadFileInternal,
+  updateFileEditor as updateFileEditorInternal,
+  initFileEditorEvents,
+} from './fileEditor.js';
 import { initFileUploadEvents } from './fileUpload.js';
 
 // サブモジュールのre-export

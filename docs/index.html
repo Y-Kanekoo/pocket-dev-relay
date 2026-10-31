@@ -897,10 +897,10 @@
           セットアップ手順
         </a>
       </div>
-      <div class="install-cmd" role="presentation" aria-label="インストールコマンド: npx pocket-dev-relay" id="install-cmd" tabindex="0">
+      <div class="install-cmd" role="presentation" aria-label="AUTH_TOKEN設定後の起動コマンド: npx pocket-dev-relay" id="install-cmd" tabindex="0">
         <span class="prompt" aria-hidden="true">$</span>
         <span class="cmd-text">npx pocket-dev-relay</span>
-        <span class="copy-hint">クリックでコピー</span>
+        <span class="copy-hint">設定後に実行</span>
       </div>
     </div>
   </section>
@@ -993,10 +993,10 @@
         <div class="setup-methods">
           <article class="setup-card fade-in" aria-labelledby="setup-npx">
             <div class="setup-card-number" aria-hidden="true">1</div>
-            <h3 id="setup-npx">npx で即座に起動</h3>
-            <p>インストール不要。コマンド一発ですぐに使えます。</p>
+            <h3 id="setup-npx">npx で起動</h3>
+            <p>起動前に、カレントディレクトリの.envまたは環境変数にAUTH_TOKENを設定してください。自分で用意した十分に長いランダムな値を使います。</p>
             <div class="code-block" role="code" aria-label="npxでの起動コマンド">
-              <code><span class="code-comment"># 最もシンプルな起動方法</span>
+              <code><span class="code-comment"># AUTH_TOKENを設定した後に起動</span>
 <span class="code-cmd">$ </span>npx pocket-dev-relay
 
 <span class="code-comment"># ポートを指定して起動</span>
@@ -1009,12 +1009,13 @@
             <h3 id="setup-docker">Docker で起動</h3>
             <p>コンテナ環境で隔離して実行したい場合に。</p>
             <div class="code-block" role="code" aria-label="Dockerでの起動コマンド">
-              <code><span class="code-comment"># Docker Compose で起動</span>
+              <code><span class="code-comment"># .envにAUTH_TOKENを設定した後に起動</span>
 <span class="code-cmd">$ </span>docker compose up <span class="code-flag">-d</span>
 
 <span class="code-comment"># または直接実行</span>
 <span class="code-cmd">$ </span>docker run <span class="code-flag">-p</span> 3000:3000 \
   <span class="code-flag">-v</span> <span class="code-string">$(pwd):/workspace</span> \
+  <span class="code-flag">--env-file</span> .env \
   pocket-dev-relay</code>
             </div>
           </article>
@@ -1032,7 +1033,9 @@
 <span class="code-cmd">$ </span>npm install
 <span class="code-cmd">$ </span>npm run build
 
-<span class="code-comment"># 起動</span>
+<span class="code-comment"># .env.exampleを.envにコピーし、AUTH_TOKENとWORKSPACE_ROOTを設定</span>
+<span class="code-cmd">$ </span>cp .env.example .env
+<span class="code-comment"># 設定後に起動</span>
 <span class="code-cmd">$ </span>npm start</code>
             </div>
           </article>

@@ -24,6 +24,7 @@ import {
   TRUST_PROXY,
   SSH_REQUIRE_HTTPS_FOR_PASSWORD,
 } from './config.js';
+import { assertAuthTokenConfigured } from './utils/auth.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
@@ -34,6 +35,9 @@ import { createRateLimiter } from './middleware/rateLimit.js';
 import { securityHeaders } from './middleware/security.js';
 import healthRouter from './routes/health.js';
 import combinedApiRouter from './routes/index.js';
+
+// 認証設定が不正な場合、HTTP/HTTPS/WSリスナーを作成せずに終了する。
+assertAuthTokenConfigured(AUTH_TOKEN);
 
 // Expressアプリケーション
 const app = express();

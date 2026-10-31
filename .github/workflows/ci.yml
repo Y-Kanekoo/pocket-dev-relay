@@ -35,6 +35,15 @@ jobs:
       - name: 型チェック
         run: npm run typecheck
 
+      - name: テストの型チェック
+        run: npm run typecheck:tests
+
+      - name: 機能別ユニット・境界テスト
+        run: npm run test:unit
+
+      - name: HTTP・WebSocket統合テスト
+        run: npm run test:integration
+
       - name: テスト実行（カバレッジレポート付き）
         run: npx vitest run --coverage
 
@@ -78,7 +87,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: ESLint
-        run: npx eslint . --ext .ts,.js
+        run: npx eslint . --ext .ts,.js --max-warnings=0
 
       # package-lock.jsonはPrettierチェック対象外
       - name: Prettier（フォーマットチェック）

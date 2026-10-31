@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express, Request, Response, NextFunction } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 認証済みAPIの検証用トークンを設定
 vi.mock('../../src/config.js', () => ({
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
   ROOT_DIR: '/tmp/test-workspace',
   ALLOW_FILE_WRITE: true,
   MAX_FILE_SIZE: 1048576,
@@ -44,10 +44,14 @@ vi.mock('multer', () => {
     single: vi.fn(() => mockMiddleware),
   };
 
-  const multerFn = vi.fn(() => mockMulterInstance);
+  const multerFn = Object.assign(
+    vi.fn(() => mockMulterInstance),
+    {
+      diskStorage: vi.fn(() => ({})),
+    },
+  );
 
   // diskStorage モック
-  multerFn.diskStorage = vi.fn(() => ({}));
 
   return { default: multerFn };
 });
@@ -67,6 +71,7 @@ function makeRequest(
       url: path,
       headers: {
         'content-type': 'application/json',
+        authorization: 'Bearer route-test-token',
       },
       body: body,
       query: {} as Record<string, string>,
@@ -155,7 +160,7 @@ describe('ファイル API', () => {
       mockReaddir = vi.fn();
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -177,12 +182,18 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);
@@ -279,7 +290,7 @@ describe('ファイル API', () => {
       mockReadFile = vi.fn();
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -301,12 +312,18 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);
@@ -396,7 +413,7 @@ describe('ファイル API', () => {
       mockWriteFile = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -418,12 +435,18 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);
@@ -489,7 +512,7 @@ describe('ファイル API', () => {
       vi.resetModules();
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: false,
         MAX_FILE_SIZE: 1048576,
@@ -511,12 +534,18 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);
@@ -546,7 +575,7 @@ describe('ファイル API', () => {
       mockUnlink = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -574,12 +603,18 @@ describe('ファイル API', () => {
           next();
         });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);
@@ -601,7 +636,7 @@ describe('ファイル API', () => {
       mockUnlink = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -623,20 +658,27 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
           // アップロードファイルをシミュレート
-          (req as unknown as { file: { originalname: string; path: string; size: number } }).file = {
-            originalname: 'test.txt',
-            path: '/tmp/test-workspace/test.txt',
-            size: 1024,
-          };
+          (req as unknown as { file: { originalname: string; path: string; size: number } }).file =
+            {
+              originalname: 'test.txt',
+              path: '/tmp/test-workspace/test.txt',
+              size: 1024,
+            };
           next();
         });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       const uploadApp = express();
       uploadApp.use(express.json());
       uploadApp.use('/api', filesMod.default);
@@ -656,7 +698,7 @@ describe('ファイル API', () => {
       mockUnlink = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -679,7 +721,12 @@ describe('ファイル API', () => {
         const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
           // ソースパスがターゲットパスと同一になるケース
           // uploadPath='.'でファイル名がそのままROOT_DIRに保存された場合
-          (req as unknown as { file: { originalname: string; path: string; size: number }; body: Record<string, string> }).file = {
+          (
+            req as unknown as {
+              file: { originalname: string; path: string; size: number };
+              body: Record<string, string>;
+            }
+          ).file = {
             originalname: 'upload.txt',
             path: '/tmp/test-workspace/upload.txt',
             size: 512,
@@ -687,12 +734,18 @@ describe('ファイル API', () => {
           next();
         });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       const uploadApp = express();
       uploadApp.use(express.json());
       uploadApp.use('/api', filesMod.default);
@@ -710,7 +763,7 @@ describe('ファイル API', () => {
       const localMockUnlink = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -731,20 +784,27 @@ describe('ファイル API', () => {
       }));
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
-          (req as unknown as { file: { originalname: string; path: string; size: number } }).file = {
-            originalname: '..',
-            path: '/tmp/test-workspace/..',
-            size: 100,
-          };
+          (req as unknown as { file: { originalname: string; path: string; size: number } }).file =
+            {
+              originalname: '..',
+              path: '/tmp/test-workspace/..',
+              size: 100,
+            };
           next();
         });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       const uploadApp = express();
       uploadApp.use(express.json());
       uploadApp.use('/api', filesMod.default);
@@ -760,7 +820,7 @@ describe('ファイル API', () => {
       const localMockUnlink = vi.fn().mockResolvedValue(undefined);
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: true,
         MAX_FILE_SIZE: 1048576,
@@ -781,7 +841,12 @@ describe('ファイル API', () => {
       }));
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((req: Request, _res: Response, next: NextFunction) => {
-          (req as unknown as { file: { originalname: string; path: string; size: number }; body: Record<string, string> }).file = {
+          (
+            req as unknown as {
+              file: { originalname: string; path: string; size: number };
+              body: Record<string, string>;
+            }
+          ).file = {
             originalname: 'malicious.txt',
             path: '/tmp/test-workspace/malicious.txt',
             size: 100,
@@ -791,12 +856,18 @@ describe('ファイル API', () => {
           next();
         });
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       const uploadApp = express();
       uploadApp.use(express.json());
       uploadApp.use('/api', filesMod.default);
@@ -817,7 +888,7 @@ describe('ファイル API', () => {
       vi.resetModules();
 
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         ROOT_DIR: '/tmp/test-workspace',
         ALLOW_FILE_WRITE: false,
         MAX_FILE_SIZE: 1048576,
@@ -839,12 +910,18 @@ describe('ファイル API', () => {
       vi.doMock('multer', () => {
         const mockMiddleware = vi.fn((_req: Request, _res: Response, next: NextFunction) => next());
         const mockMulterInstance = { single: vi.fn(() => mockMiddleware) };
-        const multerFn = vi.fn(() => mockMulterInstance);
-        multerFn.diskStorage = vi.fn(() => ({}));
+        const multerFn = Object.assign(
+          vi.fn(() => mockMulterInstance),
+          {
+            diskStorage: vi.fn(() => ({})),
+          },
+        );
         return { default: multerFn };
       });
 
-      const filesMod = await import('../../src/routes/files.js');
+      const filesMod = await vi.importActual<typeof import('../../src/routes/files.js')>(
+        '../../src/routes/files.js',
+      );
       app = express();
       app.use(express.json());
       app.use('/api', filesMod.default);

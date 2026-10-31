@@ -68,8 +68,9 @@ npm run dev
 ### Docker
 
 ```bash
-# .env ファイルを作成
-echo "AUTH_TOKEN=your-secret-token" > .env
+# .env ファイルを作成し、自分で用意した認証トークンを設定
+cp .env.example .env
+# .env の AUTH_TOKEN を十分に長いランダムな値に変更
 echo "WORKSPACE_PATH=/path/to/your/project" >> .env
 
 # 起動
@@ -87,53 +88,53 @@ docker compose up -d
 
 #### サーバー基本設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `PORT` | サーバーのリッスンポート | `4173` |
-| `WORKSPACE_ROOT` | ファイルブラウザ・ターミナルのルートディレクトリ | カレントディレクトリ |
-| `AUTH_TOKEN` | 認証トークン（空の場合は認証無効） | 空（認証無効） |
-| `ALLOW_CUSTOM_COMMANDS` | カスタムコマンドモードの許可 | `false` |
-| `ALLOW_FILE_WRITE` | ファイルブラウザでの書き込み・アップロード許可 | `false` |
-| `MAX_FILE_SIZE` | ファイルプレビューの最大サイズ（バイト） | `1048576`（1MB） |
-| `MAX_UPLOAD_SIZE` | アップロードファイルの最大サイズ（バイト） | `10485760`（10MB） |
-| `SESSION_TIMEOUT` | セッションタイムアウト（ミリ秒） | `3600000`（1時間） |
-| `MAX_SESSIONS` | 最大同時セッション数 | `10` |
-| `TRUST_PROXY` | リバースプロキシ信頼設定（`true`/`false`/数値/IP） | `false` |
-| `DATA_DIR` | データ永続化ディレクトリ | `WORKSPACE_ROOT/.pocket-dev-relay` |
+| 変数名                  | 説明                                                                 | デフォルト値                       |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| `PORT`                  | サーバーのリッスンポート                                             | `4173`                             |
+| `WORKSPACE_ROOT`        | ファイルブラウザ・ターミナルのルートディレクトリ                     | カレントディレクトリ               |
+| `AUTH_TOKEN`            | 必須の認証トークン。未設定・空白のみ・既知のサンプル値では起動しない | なし                               |
+| `ALLOW_CUSTOM_COMMANDS` | カスタムコマンドモードの許可                                         | `false`                            |
+| `ALLOW_FILE_WRITE`      | ファイルブラウザでの書き込み・アップロード許可                       | `false`                            |
+| `MAX_FILE_SIZE`         | ファイルプレビューの最大サイズ（バイト）                             | `1048576`（1MB）                   |
+| `MAX_UPLOAD_SIZE`       | アップロードファイルの最大サイズ（バイト）                           | `10485760`（10MB）                 |
+| `SESSION_TIMEOUT`       | セッションタイムアウト（ミリ秒）                                     | `3600000`（1時間）                 |
+| `MAX_SESSIONS`          | 最大同時セッション数                                                 | `10`                               |
+| `TRUST_PROXY`           | リバースプロキシ信頼設定（`true`/`false`/数値/IP）                   | `false`                            |
+| `DATA_DIR`              | データ永続化ディレクトリ                                             | `WORKSPACE_ROOT/.pocket-dev-relay` |
 
 #### コマンド設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `CODEX_CMD` | Codex CLIのコマンド名 | `codex` |
-| `CODEX_ARGS` | Codex CLIの追加引数 | 空 |
-| `CLAUDE_CMD` | Claude Codeのコマンド名 | `claude` |
-| `CLAUDE_ARGS` | Claude Codeの追加引数 | 空 |
-| `SHELL_CMD` | シェルのコマンド名 | `zsh`（環境変数`SHELL`のフォールバック） |
-| `SHELL_ARGS` | シェルの追加引数 | 空 |
+| 変数名        | 説明                    | デフォルト値                             |
+| ------------- | ----------------------- | ---------------------------------------- |
+| `CODEX_CMD`   | Codex CLIのコマンド名   | `codex`                                  |
+| `CODEX_ARGS`  | Codex CLIの追加引数     | 空                                       |
+| `CLAUDE_CMD`  | Claude Codeのコマンド名 | `claude`                                 |
+| `CLAUDE_ARGS` | Claude Codeの追加引数   | 空                                       |
+| `SHELL_CMD`   | シェルのコマンド名      | `zsh`（環境変数`SHELL`のフォールバック） |
+| `SHELL_ARGS`  | シェルの追加引数        | 空                                       |
 
 > **注意**: これらのコマンドはサーバーの `PATH` 上で実行可能である必要があります。
 
 #### SSH設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `ENABLE_SSH` | SSH中継接続機能の有効化 | `false` |
-| `SSH_DEFAULT_HOST` | SSHデフォルト接続先ホスト | 空 |
-| `SSH_DEFAULT_PORT` | SSHデフォルトポート | `22` |
-| `SSH_DEFAULT_USER` | SSHデフォルトユーザー名 | 空 |
-| `SSH_KEY_PATH` | SSH秘密鍵のパス | `~/.ssh/id_rsa` |
-| `SSH_STRICT_HOST_KEY` | SSHホスト鍵の厳格な検証 | `true` |
-| `SSH_REQUIRE_HTTPS_FOR_PASSWORD` | SSHパスワード認証にHTTPSを要求 | `true` |
+| 変数名                           | 説明                           | デフォルト値    |
+| -------------------------------- | ------------------------------ | --------------- |
+| `ENABLE_SSH`                     | SSH中継接続機能の有効化        | `false`         |
+| `SSH_DEFAULT_HOST`               | SSHデフォルト接続先ホスト      | 空              |
+| `SSH_DEFAULT_PORT`               | SSHデフォルトポート            | `22`            |
+| `SSH_DEFAULT_USER`               | SSHデフォルトユーザー名        | 空              |
+| `SSH_KEY_PATH`                   | SSH秘密鍵のパス                | `~/.ssh/id_rsa` |
+| `SSH_STRICT_HOST_KEY`            | SSHホスト鍵の厳格な検証        | `true`          |
+| `SSH_REQUIRE_HTTPS_FOR_PASSWORD` | SSHパスワード認証にHTTPSを要求 | `true`          |
 
 #### AI設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `ANTHROPIC_API_KEY` | Anthropic APIキー（設定するとClaude使用） | 空 |
-| `OPENAI_API_KEY` | OpenAI APIキー（設定するとGPT使用） | 空 |
-| `AI_MODEL` | AIモデル名 | Claudeの場合 `claude-sonnet-4-5-20250929`、OpenAIの場合 `gpt-4o` |
-| `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数 | `200` |
+| 変数名                 | 説明                                      | デフォルト値                                                     |
+| ---------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`    | Anthropic APIキー（設定するとClaude使用） | 空                                                               |
+| `OPENAI_API_KEY`       | OpenAI APIキー（設定するとGPT使用）       | 空                                                               |
+| `AI_MODEL`             | AIモデル名                                | Claudeの場合 `claude-sonnet-4-5-20250929`、OpenAIの場合 `gpt-4o` |
+| `AI_MAX_CONTEXT_LINES` | AI解析に送信するターミナル出力の最大行数  | `200`                                                            |
 
 ##### AI機能の注意点
 
@@ -143,37 +144,37 @@ docker compose up -d
 
 #### ログ設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `LOG_LEVEL` | ログレベル（`fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent`） | `info` |
-| `ENABLE_SESSION_LOGS` | セッションログの有効化 | `false` |
-| `LOG_DIR` | ログファイルの保存先 | `WORKSPACE_ROOT/logs` |
-| `LOG_MAX_AGE_DAYS` | ログ保持日数 | `30` |
-| `LOG_MAX_SIZE_MB` | ログ最大サイズ（MB） | `100` |
+| 変数名                | 説明                                                                       | デフォルト値          |
+| --------------------- | -------------------------------------------------------------------------- | --------------------- |
+| `LOG_LEVEL`           | ログレベル（`fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent`） | `info`                |
+| `ENABLE_SESSION_LOGS` | セッションログの有効化                                                     | `false`               |
+| `LOG_DIR`             | ログファイルの保存先                                                       | `WORKSPACE_ROOT/logs` |
+| `LOG_MAX_AGE_DAYS`    | ログ保持日数                                                               | `30`                  |
+| `LOG_MAX_SIZE_MB`     | ログ最大サイズ（MB）                                                       | `100`                 |
 
 #### レート制限
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `RATE_LIMIT_API` | API全体のレート制限（リクエスト数/分） | `100` |
-| `RATE_LIMIT_AUTH` | 認証失敗のレート制限（回数/分） | `5` |
+| 変数名            | 説明                                   | デフォルト値 |
+| ----------------- | -------------------------------------- | ------------ |
+| `RATE_LIMIT_API`  | API全体のレート制限（リクエスト数/分） | `100`        |
+| `RATE_LIMIT_AUTH` | 認証失敗のレート制限（回数/分）        | `5`          |
 
 #### HTTPS設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `ENABLE_HTTPS` | HTTPSモードの有効化 | `false` |
-| `SSL_KEY_PATH` | SSL秘密鍵のパス（HTTPS有効時に必須） | 空 |
-| `SSL_CERT_PATH` | SSL証明書のパス（HTTPS有効時に必須） | 空 |
+| 変数名          | 説明                                 | デフォルト値 |
+| --------------- | ------------------------------------ | ------------ |
+| `ENABLE_HTTPS`  | HTTPSモードの有効化                  | `false`      |
+| `SSL_KEY_PATH`  | SSL秘密鍵のパス（HTTPS有効時に必須） | 空           |
+| `SSL_CERT_PATH` | SSL証明書のパス（HTTPS有効時に必須） | 空           |
 
 #### トンネル設定
 
-| 変数名 | 説明 | デフォルト値 |
-|--------|------|-------------|
-| `ENABLE_TUNNEL` | cloudflaredトンネルの有効化（`AUTH_TOKEN`必須） | `false` |
-| `TUNNEL_PROVIDER` | トンネルプロバイダー | `cloudflared` |
+| 変数名             | 説明                                              | デフォルト値       |
+| ------------------ | ------------------------------------------------- | ------------------ |
+| `ENABLE_TUNNEL`    | cloudflaredトンネルの有効化（`AUTH_TOKEN`必須）   | `false`            |
+| `TUNNEL_PROVIDER`  | トンネルプロバイダー                              | `cloudflared`      |
 | `CLOUDFLARED_PATH` | cloudflaredバイナリのパス（PATHにない場合に指定） | 空（PATHから検索） |
-| `TUNNEL_TIMEOUT` | トンネル起動タイムアウト（ミリ秒） | `30000` |
+| `TUNNEL_TIMEOUT`   | トンネル起動タイムアウト（ミリ秒）                | `30000`            |
 
 > **注意**: `ENABLE_TUNNEL=true` を設定する場合、`AUTH_TOKEN` は必須です。インターネットに公開されるため、認証なしでは起動できません。
 
@@ -204,69 +205,69 @@ CODEX_ARGS=["--model", "o3"]
 
 ### 認証
 
-`AUTH_TOKEN` が設定されている場合、`GET /` 以外の全APIリクエストにBearerトークンが必要。
+`AUTH_TOKEN` は必須。`/api/health` を除くAPIリクエストにBearerトークンが必要。静的ファイルとヘルスチェックは認証不要。
 
 ```
 Authorization: Bearer <AUTH_TOKEN>
 ```
 
-WebSocket接続はメッセージベース認証で認証する。接続後に `auth` メッセージを送信する。詳細は「WebSocketメッセージ」セクションを参照。
+WebSocket接続時は `?token=` に認証トークンを指定する。ブラウザクライアントは接続後に `auth` メッセージも送り、`auth_result` を確認する。
 
 ### エンドポイント一覧
 
 #### ヘルスチェック
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/health` | サーバーの稼働状態を確認（認証不要） |
+| メソッド | パス          | 説明                                 |
+| -------- | ------------- | ------------------------------------ |
+| GET      | `/api/health` | サーバーの稼働状態を確認（認証不要） |
 
 #### 設定
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/config` | アプリケーション設定を取得 |
-| GET | `/api/addresses` | アクセスURL一覧を取得 |
-| GET | `/api/qr?text=<url>` | QRコードを生成（data URL形式） |
+| メソッド | パス                 | 説明                           |
+| -------- | -------------------- | ------------------------------ |
+| GET      | `/api/config`        | アプリケーション設定を取得     |
+| GET      | `/api/addresses`     | アクセスURL一覧を取得          |
+| GET      | `/api/qr?text=<url>` | QRコードを生成（data URL形式） |
 
 #### ファイル操作
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/files?path=<relative_path>` | ディレクトリ内のファイル一覧を取得 |
-| GET | `/api/file?path=<relative_path>` | ファイル内容を取得 |
-| POST | `/api/file` | ファイルに書き込み（`ALLOW_FILE_WRITE=true` が必要） |
-| POST | `/api/upload` | ファイルをアップロード（`ALLOW_FILE_WRITE=true` が必要） |
+| メソッド | パス                              | 説明                                                     |
+| -------- | --------------------------------- | -------------------------------------------------------- |
+| GET      | `/api/files?path=<relative_path>` | ディレクトリ内のファイル一覧を取得                       |
+| GET      | `/api/file?path=<relative_path>`  | ファイル内容を取得                                       |
+| POST     | `/api/file`                       | ファイルに書き込み（`ALLOW_FILE_WRITE=true` が必要）     |
+| POST     | `/api/upload`                     | ファイルをアップロード（`ALLOW_FILE_WRITE=true` が必要） |
 
 #### クリップボード
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/clipboard` | クリップボード内容を取得 |
-| POST | `/api/clipboard` | クリップボードにテキストを設定 |
-| DELETE | `/api/clipboard` | クリップボードをクリア |
+| メソッド | パス             | 説明                           |
+| -------- | ---------------- | ------------------------------ |
+| GET      | `/api/clipboard` | クリップボード内容を取得       |
+| POST     | `/api/clipboard` | クリップボードにテキストを設定 |
+| DELETE   | `/api/clipboard` | クリップボードをクリア         |
 
 #### コマンドスニペット
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/snippets` | スニペット一覧を取得 |
-| POST | `/api/snippets` | スニペットを追加 |
-| DELETE | `/api/snippets/:id` | スニペットを削除 |
-| POST | `/api/snippets/:id/execute` | スニペットをアクティブセッションで実行 |
+| メソッド | パス                        | 説明                                   |
+| -------- | --------------------------- | -------------------------------------- |
+| GET      | `/api/snippets`             | スニペット一覧を取得                   |
+| POST     | `/api/snippets`             | スニペットを追加                       |
+| DELETE   | `/api/snippets/:id`         | スニペットを削除                       |
+| POST     | `/api/snippets/:id/execute` | スニペットをアクティブセッションで実行 |
 
 #### AI解析
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/ai/status` | AI機能のステータスを取得 |
-| POST | `/api/ai/analyze` | ターミナル出力をAIで解析 |
+| メソッド | パス              | 説明                     |
+| -------- | ----------------- | ------------------------ |
+| GET      | `/api/ai/status`  | AI機能のステータスを取得 |
+| POST     | `/api/ai/analyze` | ターミナル出力をAIで解析 |
 
 #### ログ
 
-| メソッド | パス | 説明 |
-|----------|------|------|
-| GET | `/api/logs` | セッションログ一覧を取得（`ENABLE_SESSION_LOGS=true` が必要） |
-| GET | `/api/log/:fileName` | セッションログの内容を取得 |
+| メソッド | パス                 | 説明                                                          |
+| -------- | -------------------- | ------------------------------------------------------------- |
+| GET      | `/api/logs`          | セッションログ一覧を取得（`ENABLE_SESSION_LOGS=true` が必要） |
+| GET      | `/api/log/:fileName` | セッションログの内容を取得                                    |
 
 #### GET /api/config
 
@@ -274,7 +275,7 @@ WebSocket接続はメッセージベース認証で認証する。接続後に `
 
 ```json
 {
-  "workspaceRoot": "/Users/you/Projects/my-project",
+  "workspaceRoot": "/path/to/your/project",
   "workspaceName": "my-project",
   "modes": ["codex", "claude", "shell"],
   "allowCustomCommands": false,
@@ -293,8 +294,18 @@ WebSocket接続はメッセージベース認証で認証する。接続後に `
 {
   "port": 4173,
   "urls": [
-    { "type": "tunnel", "name": "cloudflared", "host": "abc-def-123.trycloudflare.com", "url": "https://abc-def-123.trycloudflare.com" },
-    { "type": "mdns", "name": "hostname.local", "host": "hostname.local:4173", "url": "http://hostname.local:4173" },
+    {
+      "type": "tunnel",
+      "name": "cloudflared",
+      "host": "abc-def-123.trycloudflare.com",
+      "url": "https://abc-def-123.trycloudflare.com"
+    },
+    {
+      "type": "mdns",
+      "name": "hostname.local",
+      "host": "hostname.local:4173",
+      "url": "http://hostname.local:4173"
+    },
     { "type": "lan", "name": "en0", "host": "192.168.1.10:4173", "url": "http://192.168.1.10:4173" }
   ]
 }
@@ -402,13 +413,13 @@ WebSocket接続はメッセージベース認証で認証する。接続後に `
 
 ### WebSocketメッセージ
 
-WebSocketエンドポイント: `ws://host:port/ws`
+WebSocketエンドポイント: `ws://host:port/ws?token=<AUTH_TOKEN>`
 
 #### クライアント → サーバー
 
 **auth** - 認証
 
-接続後の最初のメッセージとして送信する。`AUTH_TOKEN` が設定されている場合、WebSocket接続後 **5秒以内** にこのメッセージを送信する必要がある。
+ブラウザクライアントはクエリトークンで接続した後、認証結果を確認するために送信する。
 
 ```json
 {
@@ -417,23 +428,24 @@ WebSocketエンドポイント: `ws://host:port/ws`
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `type` | `"auth"` | はい | メッセージ種別 |
-| `token` | `string` | はい | 認証トークン（`AUTH_TOKEN` と一致する必要がある） |
+| フィールド | 型       | 必須 | 説明                                              |
+| ---------- | -------- | ---- | ------------------------------------------------- |
+| `type`     | `"auth"` | はい | メッセージ種別                                    |
+| `token`    | `string` | はい | 認証トークン（`AUTH_TOKEN` と一致する必要がある） |
 
 **認証フロー:**
 
-1. クライアントがWebSocket接続を確立する
-2. クライアントが `auth` メッセージを送信する（5秒以内）
-3. サーバーが `auth_result` メッセージで応答する
-4. 認証成功後、`start` 等のメッセージを送信できる
+1. クライアントが `?token=` を付けてWebSocket接続を確立する
+2. サーバーが接続時にトークンを検証し、不正なら `4001` で切断する
+3. ブラウザクライアントが `auth` メッセージを送信する
+4. サーバーが `auth_result` メッセージで応答する
+5. 認証成功後、`start` 等のメッセージを送信できる
 
 **認証失敗時の動作:**
 
-- トークンが不正な場合: `auth_result` で `ok: false` が返り、接続が切断される（コード `4003`）
-- 5秒以内に `auth` メッセージが届かない場合: タイムアウトにより接続が切断される（コード `4001`）
-- `AUTH_TOKEN` が未設定の場合: 認証は不要で、接続後すぐに他のメッセージを送信できる
+- クエリトークンが不正な場合: セッションのメッセージ処理を始めず `4001` で切断する
+- `auth` メッセージのトークンが不正な場合: `auth_result` で `ok: false` を返し、`4001` で切断する
+- `AUTH_TOKEN` が未設定または不正な場合: サーバーは待受ポートを開く前に起動を拒否する
 
 **start** - セッション開始
 
@@ -468,13 +480,13 @@ SSHモードで接続する場合、`sshConfig` フィールドを含める：
 }
 ```
 
-| フィールド | 型 | 必須 | デフォルト | 説明 |
-|-----------|-----|------|-----------|------|
-| `host` | `string` | はい | - | 接続先ホスト（IPアドレスまたはホスト名） |
-| `port` | `number` | いいえ | `22` | SSHポート番号 |
-| `username` | `string` | はい | - | SSHユーザー名 |
-| `authMethod` | `"password"` \| `"key"` | はい | - | 認証方式。`"password"` はパスワード認証、`"key"` はサーバー側の秘密鍵（`SSH_KEY_PATH`）を使用 |
-| `password` | `string` | 条件付き | - | パスワード（`authMethod` が `"password"` の場合に必須）。HTTPS接続時のみ送信可能（`SSH_REQUIRE_HTTPS_FOR_PASSWORD` 参照） |
+| フィールド   | 型                      | 必須     | デフォルト | 説明                                                                                                                      |
+| ------------ | ----------------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `host`       | `string`                | はい     | -          | 接続先ホスト（IPアドレスまたはホスト名）                                                                                  |
+| `port`       | `number`                | いいえ   | `22`       | SSHポート番号                                                                                                             |
+| `username`   | `string`                | はい     | -          | SSHユーザー名                                                                                                             |
+| `authMethod` | `"password"` \| `"key"` | はい     | -          | 認証方式。`"password"` はパスワード認証、`"key"` はサーバー側の秘密鍵（`SSH_KEY_PATH`）を使用                             |
+| `password`   | `string`                | 条件付き | -          | パスワード（`authMethod` が `"password"` の場合に必須）。HTTPS接続時のみ送信可能（`SSH_REQUIRE_HTTPS_FOR_PASSWORD` 参照） |
 
 **input** - ターミナル入力
 
@@ -510,18 +522,17 @@ SSHモードで接続する場合、`sshConfig` フィールドを含める：
 ```json
 {
   "type": "auth_result",
-  "ok": true,
-  "message": "認証成功"
+  "ok": true
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| `type` | `"auth_result"` | はい | メッセージ種別 |
-| `ok` | `boolean` | はい | 認証成功なら `true`、失敗なら `false` |
-| `message` | `string` | いいえ | 認証結果の詳細メッセージ |
+| フィールド | 型              | 必須   | 説明                                  |
+| ---------- | --------------- | ------ | ------------------------------------- |
+| `type`     | `"auth_result"` | はい   | メッセージ種別                        |
+| `ok`       | `boolean`       | はい   | 認証成功なら `true`、失敗なら `false` |
+| `message`  | `string`        | いいえ | 認証結果の詳細メッセージ              |
 
-失敗時は `ok: false` で返り、直後に接続が切断される（クローズコード `4003`）。
+失敗時は `ok: false` で返り、直後に接続が切断される（クローズコード `4001`）。
 
 **data** - ターミナル出力
 
@@ -601,23 +612,23 @@ cp .env.example .env
 
 ### スクリプト一覧
 
-| コマンド | 説明 |
-|----------|------|
-| `npm run build` | サーバーとクライアントをビルド |
-| `npm run build:server` | サーバーのみビルド（esbuild） |
-| `npm run build:client` | クライアントのみビルド（esbuild） |
-| `npm run dev` | ビルド後にサーバーを起動 |
-| `npm start` | ビルド済みのサーバーを起動 |
-| `npm run start:awake` | macOSスリープ防止付きで起動（caffeinate） |
-| `npm run watch` | サーバーとクライアントのファイル監視ビルド |
-| `npm run watch:server` | サーバーのファイル監視ビルド |
-| `npm run watch:client` | クライアントのファイル監視ビルド |
-| `npm run lint` | ESLintを実行 |
-| `npm run format` | Prettierでフォーマット |
-| `npm run typecheck` | TypeScriptの型チェック |
-| `npm test` | テストをウォッチモードで実行（vitest） |
-| `npm run test:ui` | テストUIを起動（vitest --ui） |
-| `npm run test:run` | テストを1回実行 |
+| コマンド               | 説明                                       |
+| ---------------------- | ------------------------------------------ |
+| `npm run build`        | サーバーとクライアントをビルド             |
+| `npm run build:server` | サーバーのみビルド（esbuild）              |
+| `npm run build:client` | クライアントのみビルド（esbuild）          |
+| `npm run dev`          | ビルド後にサーバーを起動                   |
+| `npm start`            | ビルド済みのサーバーを起動                 |
+| `npm run start:awake`  | macOSスリープ防止付きで起動（caffeinate）  |
+| `npm run watch`        | サーバーとクライアントのファイル監視ビルド |
+| `npm run watch:server` | サーバーのファイル監視ビルド               |
+| `npm run watch:client` | クライアントのファイル監視ビルド           |
+| `npm run lint`         | ESLintを実行                               |
+| `npm run format`       | Prettierでフォーマット                     |
+| `npm run typecheck`    | TypeScriptの型チェック                     |
+| `npm test`             | テストをウォッチモードで実行（vitest）     |
+| `npm run test:ui`      | テストUIを起動（vitest --ui）              |
+| `npm run test:run`     | テストを1回実行                            |
 
 ### プロジェクト構造
 
@@ -695,6 +706,7 @@ pocket-dev-relay/
 ### テスト
 
 テストフレームワークにはVitestを使用している。
+機能別の unit / 境界テストと実 HTTP / WebSocket 統合を分ける理由、mock の範囲、合否の根拠、未検証の実環境受入は [merge acceptance gates](docs/merge-gates.md) を参照する。実行コマンドは [package.json](package.json)、Node.js 20 / 22 の実行範囲は [CI](.github/workflows/ci.yml) を正本とする。
 
 ```bash
 # テストを1回実行
@@ -726,12 +738,28 @@ npm run watch
 
 ## セキュリティに関する注意
 
-- `AUTH_TOKEN` を必ず設定すること。未設定の場合、認証なしで全APIにアクセスできる
-- `--tunnel` を使う場合は `AUTH_TOKEN` が必須（未設定では起動拒否される）
-- トンネルURLはランダム生成されるが、URLを知っている人は誰でもアクセスを試みるため、強力なトークンを設定すること
+- `AUTH_TOKEN` に十分に長いランダムな値を設定すること。未設定・空文字・空白のみ・`change-me`・`pdr-local` の場合は、待受ポートを開く前に起動を中止する
+- `--tunnel` を使う場合も `AUTH_TOKEN` が必須
+- トンネルURLを知っている人はアクセスを試みられるため、強力なトークンを設定すること
+- 信頼できるLAN内での使用を想定している。外出先からはTailscale等のVPN経由で接続すること
 - `ALLOW_CUSTOM_COMMANDS` と `ALLOW_FILE_WRITE` はデフォルトで無効。必要な場合のみ有効にすること
 - HTTPS を手動で有効にする場合は、信頼できる証明書を使用すること（トンネル経由の場合はCloudflareが自動的にHTTPSを付与する）
 - トンネルを使わずLAN内のみで使う場合は、Tailscale等のVPN経由も安全な選択肢
+
+### 既存環境からの移行
+
+従来の認証なし起動と、Docker Composeの共通トークンへのフォールバックは廃止した。
+`.env` または起動環境の `AUTH_TOKEN` に自分で用意した秘密の値を設定し、接続するブラウザにも同じ値を入力する。
+`change-me` と `pdr-local` は前後に空白を付けても使えない。その他の値は自動で切り詰めず、そのまま照合する。
+ローカル開発でも認証は必須。HostやOriginがlocalhostでも認証を省略しない。
+
+有効なトークンを設定済みの環境では、HTTPのBearerヘッダーとWebSocketのクエリパラメータは従来どおり使える。
+認証エラーや起動エラーにトークンの値は表示しない。値の自動生成・保存・変更は行わない。
+
+この変更だけでインターネットへの公開が安全になるわけではない。
+WebSocketのクエリトークンがアクセスログに残る可能性や、HTTP利用時の平文通信などは残るため、信頼できるネットワーク内で使うこと。
+
+設計上の判断、検証範囲、既存PRとの重複は[認証対策の設計記録](docs/auth-safety.md)を参照。
 
 ## ヒント
 

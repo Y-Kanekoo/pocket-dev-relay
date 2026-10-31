@@ -123,15 +123,15 @@ PR を提出する前に、`npm run lint`、`npm run typecheck`、`npm run test:
 
 ### Type 一覧
 
-| Type | 用途 |
-|------|------|
-| `feat` | 新機能 |
-| `fix` | バグ修正 |
+| Type       | 用途                             |
+| ---------- | -------------------------------- |
+| `feat`     | 新機能                           |
+| `fix`      | バグ修正                         |
 | `refactor` | リファクタリング（機能変更なし） |
-| `docs` | ドキュメント |
-| `test` | テスト追加・修正 |
-| `chore` | ビルド・依存関係など保守作業 |
-| `ops` | 運用・CI/CD |
+| `docs`     | ドキュメント                     |
+| `test`     | テスト追加・修正                 |
+| `chore`    | ビルド・依存関係など保守作業     |
+| `ops`      | 運用・CI/CD                      |
 
 ### 例
 
@@ -156,6 +156,7 @@ git checkout -b feature/my-feature main
 ```
 
 ブランチ名の規約:
+
 - `feature/` — 新機能
 - `fix/` — バグ修正
 - `hotfix/` — 緊急修正

@@ -20,6 +20,7 @@ export interface TerminalOptions {
   cursorBlink?: boolean;
   fontSize?: number;
   fontFamily?: string;
+  scrollback?: number;
   theme?: {
     background?: string;
     foreground?: string;

@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express, Request, Response, NextFunction } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 明示したテスト用トークンで本番の認証経路を通す
 vi.mock('../../src/config.js', () => ({
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
   LOG_LEVEL: 'silent',
   APP_VERSION: '0.0.0-test',
   DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -47,7 +47,7 @@ describe('スニペット API', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -75,7 +75,9 @@ describe('スニペット API', () => {
       sessions: new Map(),
     }));
 
-    const snippetsMod = await import('../../src/routes/snippets.js');
+    const snippetsMod = await vi.importActual<typeof import('../../src/routes/snippets.js')>(
+      '../../src/routes/snippets.js',
+    );
     app = express();
     app.use(express.json());
     app.use('/api', snippetsMod.default);
@@ -100,6 +102,7 @@ describe('スニペット API', () => {
         url: path,
         headers: {
           'content-type': 'application/json',
+          authorization: 'Bearer route-test-token',
         },
         body: body,
       };
@@ -305,7 +308,7 @@ describe('スニペット API', () => {
     // resetModulesでsaveが失敗するモックに差し替え
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -332,7 +335,9 @@ describe('スニペット API', () => {
       sessions: new Map(),
     }));
 
-    const snippetsMod = await import('../../src/routes/snippets.js');
+    const snippetsMod = await vi.importActual<typeof import('../../src/routes/snippets.js')>(
+      '../../src/routes/snippets.js',
+    );
     const failApp = express();
     failApp.use(express.json());
     failApp.use('/api', snippetsMod.default);
@@ -347,7 +352,7 @@ describe('スニペット API', () => {
         const req = {
           method: 'POST',
           url: '/api/snippets',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
           body: { label: 'テスト', command: 'echo test\n' },
         };
         let resultBody = {} as Record<string, unknown>;
@@ -408,7 +413,7 @@ describe('スニペット API', () => {
     // PTYを持つセッションをモックに追加
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -446,7 +451,9 @@ describe('スニペット API', () => {
       sessions: mockSessions,
     }));
 
-    const snippetsMod = await import('../../src/routes/snippets.js');
+    const snippetsMod = await vi.importActual<typeof import('../../src/routes/snippets.js')>(
+      '../../src/routes/snippets.js',
+    );
     const execApp = express();
     execApp.use(express.json());
     execApp.use('/api', snippetsMod.default);
@@ -461,7 +468,7 @@ describe('スニペット API', () => {
         const req = {
           method: 'GET',
           url: '/api/snippets',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
         };
         let resultBody = {} as Record<string, unknown>;
         let resultStatus = 200;
@@ -525,7 +532,7 @@ describe('スニペット API', () => {
         const req = {
           method: 'POST',
           url: `/api/snippets/${targetId}/execute`,
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
         };
         let resultBody = {} as Record<string, unknown>;
         let resultStatus = 200;
@@ -589,7 +596,7 @@ describe('スニペット API', () => {
     // PTY書き込みエラーが発生するセッションと正常なセッションをモック
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -636,7 +643,9 @@ describe('スニペット API', () => {
       sessions: mockSessions,
     }));
 
-    const snippetsMod = await import('../../src/routes/snippets.js');
+    const snippetsMod = await vi.importActual<typeof import('../../src/routes/snippets.js')>(
+      '../../src/routes/snippets.js',
+    );
     const retryApp = express();
     retryApp.use(express.json());
     retryApp.use('/api', snippetsMod.default);
@@ -651,7 +660,7 @@ describe('スニペット API', () => {
         const req = {
           method: 'GET',
           url: '/api/snippets',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
         };
         let resultBody = {} as Record<string, unknown>;
         let resultStatus = 200;
@@ -704,9 +713,8 @@ describe('スニペット API', () => {
       },
     );
 
-    const snippets = (
-      getResult.body as { snippets: Array<{ id: string; command: string }> }
-    ).snippets;
+    const snippets = (getResult.body as { snippets: Array<{ id: string; command: string }> })
+      .snippets;
     const targetId = snippets[0].id;
 
     // executeを呼び出す
@@ -715,7 +723,7 @@ describe('スニペット API', () => {
         const req = {
           method: 'POST',
           url: `/api/snippets/${targetId}/execute`,
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
         };
         let resultBody = {} as Record<string, unknown>;
         let resultStatus = 200;

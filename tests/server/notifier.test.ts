@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type WebSocket from 'ws';
 
 // ws.ts のモック（send関数を含む）
 vi.mock('../../src/utils/ws.js', () => ({
@@ -165,7 +166,7 @@ describe('detectError', () => {
 // ============================================================
 
 describe('sendErrorNotification', () => {
-  let sendErrorNotification: (ws: unknown, sessionId: string, errorLine: string) => void;
+  let sendErrorNotification: (ws: WebSocket, sessionId: string, errorLine: string) => void;
   let clearNotificationState: (sessionId: string) => void;
   let mockSend: ReturnType<typeof vi.fn>;
 
@@ -185,7 +186,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('エラー通知が正しいフォーマットで送信されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     sendErrorNotification(mockWs, 'session-1', 'Error: テスト失敗');
 
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -200,7 +201,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('クールダウン期間中は重複通知が抑制されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     // 1回目: 送信される
     sendErrorNotification(mockWs, 'session-dup', 'Error: 1回目');
@@ -212,7 +213,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('異なるセッションIDではクールダウンが独立していること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     sendErrorNotification(mockWs, 'session-A', 'Error: A');
     sendErrorNotification(mockWs, 'session-B', 'Error: B');
@@ -222,7 +223,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('クールダウン期間経過後は再度通知が送信されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     vi.useFakeTimers();
 
     try {
@@ -242,7 +243,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('clearNotificationStateでクールダウン状態がリセットされること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     // 1回目: 送信される
     sendErrorNotification(mockWs, 'session-clear', 'Error: 1回目');
@@ -257,7 +258,7 @@ describe('sendErrorNotification', () => {
   });
 
   it('WebSocketオブジェクトが正しくsendに渡されること', () => {
-    const mockWs = { id: 'test-ws' };
+    const mockWs = { id: 'test-ws' } as unknown as WebSocket;
     sendErrorNotification(mockWs, 'session-ws', 'Error: test');
 
     expect(mockSend).toHaveBeenCalledWith(
@@ -276,7 +277,7 @@ describe('sendErrorNotification', () => {
 
 describe('sendExitNotification', () => {
   let sendExitNotification: (
-    ws: unknown,
+    ws: WebSocket,
     sessionId: string,
     exitCode: number,
     signal: number | undefined,
@@ -299,7 +300,7 @@ describe('sendExitNotification', () => {
   });
 
   it('正常終了（exitCode=0）の場合はsuccessレベルの通知が送信されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     sendExitNotification(mockWs, 'session-1', 0, undefined, 'Shell');
 
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -314,7 +315,7 @@ describe('sendExitNotification', () => {
   });
 
   it('異常終了（exitCode!=0）の場合はwarningレベルの通知が送信されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     sendExitNotification(mockWs, 'session-2', 1, undefined, 'npm run build');
 
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -329,7 +330,7 @@ describe('sendExitNotification', () => {
   });
 
   it('シグナルがある場合はbodyに含まれること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     sendExitNotification(mockWs, 'session-3', 137, 9, 'テストプロセス');
 
     const notification = mockSend.mock.calls[0][1];
@@ -338,7 +339,7 @@ describe('sendExitNotification', () => {
   });
 
   it('シグナルがundefinedの場合はbodyに含まれないこと', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
     sendExitNotification(mockWs, 'session-4', 2, undefined, 'プロセス');
 
     const notification = mockSend.mock.calls[0][1];
@@ -347,7 +348,7 @@ describe('sendExitNotification', () => {
   });
 
   it('ラベルがタイトルに正しく反映されること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     sendExitNotification(mockWs, 's1', 0, undefined, 'SSH: user@host');
     expect(mockSend.mock.calls[0][1].title).toBe('SSH: user@host が正常終了しました');
@@ -362,7 +363,7 @@ describe('sendExitNotification', () => {
 // ============================================================
 
 describe('clearNotificationState', () => {
-  let sendErrorNotification: (ws: unknown, sessionId: string, errorLine: string) => void;
+  let sendErrorNotification: (ws: WebSocket, sessionId: string, errorLine: string) => void;
   let clearNotificationState: (sessionId: string) => void;
   let mockSend: ReturnType<typeof vi.fn>;
 
@@ -386,7 +387,7 @@ describe('clearNotificationState', () => {
   });
 
   it('クリア後に同じセッションで即座に通知が送信できること', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     // 通知送信 → クールダウン状態になる
     sendErrorNotification(mockWs, 'session-x', 'Error: first');
@@ -405,7 +406,7 @@ describe('clearNotificationState', () => {
   });
 
   it('他のセッションのクールダウンに影響しないこと', () => {
-    const mockWs = {};
+    const mockWs = {} as WebSocket;
 
     // 両方のセッションで通知送信
     sendErrorNotification(mockWs, 'session-p', 'Error: p');

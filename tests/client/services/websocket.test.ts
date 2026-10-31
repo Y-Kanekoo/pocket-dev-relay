@@ -49,6 +49,11 @@ type WsEventHandler = (event?: Record<string, unknown>) => void;
 class MockWebSocket {
   static readonly OPEN = 1;
   static readonly CLOSED = 3;
+  static lastUrl = '';
+
+  constructor(url = '') {
+    MockWebSocket.lastUrl = url;
+  }
 
   readyState = MockWebSocket.OPEN;
   private listeners = new Map<string, WsEventHandler[]>();
@@ -95,6 +100,7 @@ vi.stubGlobal('document', {
 // テスト対象のインポート（モック設定の後に行う）
 import {
   initWebSocket,
+  connectWebSocket,
   sendMessage,
   getConnectionState,
   ConnectionState,
@@ -107,6 +113,7 @@ describe('WebSocket通信サービス', () => {
     vi.clearAllMocks();
     mockSessionStore.getWebSocket.mockReturnValue(null);
     mockSessionStore.getToken.mockReturnValue('');
+    MockWebSocket.lastUrl = '';
     mockSessionStore.getReconnectConfig.mockReturnValue({
       enabled: true,
       attempts: 0,
@@ -245,6 +252,18 @@ describe('WebSocket通信サービス', () => {
       const result = sendMessage({ type: 'stop', sessionId: 'test' });
       expect(result).toBe(false);
       expect(getPendingMessageCount()).toBe(0);
+    });
+  });
+  describe('接続時認証', () => {
+    it('トークンをURLエンコードして接続する', () => {
+      mockSessionStore.getToken.mockReturnValue('token with spaces');
+      void connectWebSocket();
+      expect(MockWebSocket.lastUrl).toBe('ws://localhost:4173/ws?token=token%20with%20spaces');
+    });
+
+    it('トークン未設定では接続しない', async () => {
+      await expect(connectWebSocket()).rejects.toThrow('認証トークンが必要です');
+      expect(MockWebSocket.lastUrl).toBe('');
     });
   });
 });

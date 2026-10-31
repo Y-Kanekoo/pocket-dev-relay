@@ -91,7 +91,7 @@ function createMockSession(
     tabElement: {} as HTMLElement,
     active: overrides.active ?? false,
     label: overrides.label ?? `Session ${id}`,
-    cwd: overrides.cwd ?? '/home/user',
+    cwd: overrides.cwd ?? '/workspace',
   };
 }
 
@@ -290,9 +290,9 @@ describe('SessionStore', () => {
     it('設定を設定・取得できる', async () => {
       const { sessionStore } = await importFreshStore();
       const config = {
-        workspaceRoot: '/home/user/project',
+        workspaceRoot: '/workspace/project',
         workspaceName: 'project',
-        modes: ['codex', 'shell'] as const,
+        modes: ['codex', 'shell'] as Array<'codex' | 'shell'>,
         allowCustomCommands: false,
         fileWriteEnabled: true,
         authEnabled: true,

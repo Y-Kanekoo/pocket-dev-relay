@@ -15,10 +15,7 @@ import type { FileBrowserSharedState } from './fileBrowser.js';
 /**
  * ファイルをアップロード
  */
-export async function uploadFile(
-  file: File,
-  shared: FileBrowserSharedState,
-): Promise<void> {
+export async function uploadFile(file: File, shared: FileBrowserSharedState): Promise<void> {
   if (shared.elements.uploadProgress) {
     shared.elements.uploadProgress.style.display = 'block';
     shared.elements.uploadProgress.textContent = 'アップロード中...';

@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express, Request, Response, NextFunction } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 認証済みAPIの検証用トークンを設定
 vi.mock('../../src/config.js', () => ({
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
   AI_MAX_CONTEXT_LINES: 100,
   LOG_LEVEL: 'silent',
   APP_VERSION: '0.0.0-test',
@@ -35,6 +35,7 @@ function makeRequest(
       url: path,
       headers: {
         'content-type': 'application/json',
+        authorization: 'Bearer route-test-token',
       },
       body: body,
     };
@@ -109,7 +110,7 @@ describe('AI解析 API', () => {
     beforeEach(async () => {
       vi.resetModules();
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         AI_MAX_CONTEXT_LINES: 100,
         LOG_LEVEL: 'silent',
         APP_VERSION: '0.0.0-test',
@@ -118,7 +119,8 @@ describe('AI解析 API', () => {
         createAIProvider: vi.fn(() => null),
       }));
 
-      const aiMod = await import('../../src/routes/ai.js');
+      const aiMod =
+        await vi.importActual<typeof import('../../src/routes/ai.js')>('../../src/routes/ai.js');
       app = express();
       app.use(express.json());
       app.use('/api', aiMod.default);
@@ -151,7 +153,7 @@ describe('AI解析 API', () => {
       mockAnalyze.mockReset();
       mockAnalyze.mockResolvedValue('AIの回答');
       vi.doMock('../../src/config.js', () => ({
-        AUTH_TOKEN: '',
+        AUTH_TOKEN: 'route-test-token',
         AI_MAX_CONTEXT_LINES: 100,
         LOG_LEVEL: 'silent',
         APP_VERSION: '0.0.0-test',
@@ -164,7 +166,8 @@ describe('AI解析 API', () => {
         })),
       }));
 
-      const aiMod = await import('../../src/routes/ai.js');
+      const aiMod =
+        await vi.importActual<typeof import('../../src/routes/ai.js')>('../../src/routes/ai.js');
       app = express();
       app.use(express.json());
       app.use('/api', aiMod.default);

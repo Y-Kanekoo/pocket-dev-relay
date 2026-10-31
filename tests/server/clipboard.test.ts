@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import type { Express } from 'express';
 
-// 認証をスキップするためAUTH_TOKENを空にモック
+// 明示したテスト用トークンで本番の認証経路を通す
 vi.mock('../../src/config.js', () => ({
-  AUTH_TOKEN: '',
+  AUTH_TOKEN: 'route-test-token',
   LOG_LEVEL: 'silent',
   APP_VERSION: '0.0.0-test',
   DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -42,7 +42,7 @@ describe('クリップボード API', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -67,7 +67,9 @@ describe('クリップボード API', () => {
       return { JsonStore: MockJsonStore };
     });
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     app = express();
     app.use(express.json());
     app.use('/api', clipboardMod.default);
@@ -88,6 +90,7 @@ describe('クリップボード API', () => {
         url: path,
         headers: {
           'content-type': 'application/json',
+          authorization: 'Bearer route-test-token',
         },
         body: body,
       };
@@ -193,7 +196,7 @@ describe('クリップボード API', () => {
     // エラーハンドラを追加したアプリを作成
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -218,7 +221,9 @@ describe('クリップボード API', () => {
       return { JsonStore: MockJsonStore };
     });
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     const errApp = express();
     errApp.use(express.json());
     errApp.use('/api', clipboardMod.default);
@@ -241,7 +246,7 @@ describe('クリップボード API', () => {
         const req = {
           method: 'POST',
           url: '/api/clipboard',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
           body: { text: 123 },
         };
         let resultBody = {} as Record<string, unknown>;
@@ -302,7 +307,7 @@ describe('クリップボード API', () => {
   it('POST /api/clipboard でtextが未指定の場合はバリデーションエラーになること', async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -327,7 +332,9 @@ describe('クリップボード API', () => {
       return { JsonStore: MockJsonStore };
     });
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     const errApp = express();
     errApp.use(express.json());
     errApp.use('/api', clipboardMod.default);
@@ -348,7 +355,7 @@ describe('クリップボード API', () => {
         const req = {
           method: 'POST',
           url: '/api/clipboard',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
           body: {},
         };
         let resultBody = {} as Record<string, unknown>;
@@ -409,7 +416,7 @@ describe('クリップボード API', () => {
   it('POST /api/clipboard で保存失敗時はInternalServerErrorになること', async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -433,7 +440,9 @@ describe('クリップボード API', () => {
       return { JsonStore: MockJsonStore };
     });
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     const failApp = express();
     failApp.use(express.json());
     failApp.use('/api', clipboardMod.default);
@@ -454,7 +463,7 @@ describe('クリップボード API', () => {
         const req = {
           method: 'POST',
           url: '/api/clipboard',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
           body: { text: 'テスト' },
         };
         let resultBody = {} as Record<string, unknown>;
@@ -514,7 +523,7 @@ describe('クリップボード API', () => {
   it('DELETE /api/clipboard で保存失敗時はInternalServerErrorになること', async () => {
     vi.resetModules();
     vi.doMock('../../src/config.js', () => ({
-      AUTH_TOKEN: '',
+      AUTH_TOKEN: 'route-test-token',
       LOG_LEVEL: 'silent',
       APP_VERSION: '0.0.0-test',
       DATA_DIR: '/tmp/test-pocket-dev-relay',
@@ -538,7 +547,9 @@ describe('クリップボード API', () => {
       return { JsonStore: MockJsonStore };
     });
 
-    const clipboardMod = await import('../../src/routes/clipboard.js');
+    const clipboardMod = await vi.importActual<typeof import('../../src/routes/clipboard.js')>(
+      '../../src/routes/clipboard.js',
+    );
     const failApp = express();
     failApp.use(express.json());
     failApp.use('/api', clipboardMod.default);
@@ -559,7 +570,7 @@ describe('クリップボード API', () => {
         const req = {
           method: 'DELETE',
           url: '/api/clipboard',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', authorization: 'Bearer route-test-token' },
         };
         let resultBody = {} as Record<string, unknown>;
         let resultStatus = 200;

@@ -142,11 +142,7 @@ export class SessionError extends AppError {
  */
 export class ServiceUnavailableError extends AppError {
   constructor(service: string, message?: string) {
-    super(
-      'SERVICE_UNAVAILABLE',
-      503,
-      message ?? `${service}は現在利用できません`,
-    );
+    super('SERVICE_UNAVAILABLE', 503, message ?? `${service}は現在利用できません`);
     this.name = 'ServiceUnavailableError';
     Object.setPrototypeOf(this, ServiceUnavailableError.prototype);
   }

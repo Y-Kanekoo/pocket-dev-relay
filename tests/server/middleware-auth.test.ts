@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 
-// デフォルトのconfig.jsモック（AUTH_TOKEN空 → 認証無効）
+// デフォルトのconfig.jsモック（AUTH_TOKEN空 → 認証拒否）
 vi.mock('../../src/config.js', () => ({
   AUTH_TOKEN: '',
   LOG_LEVEL: 'silent',
@@ -27,24 +27,23 @@ describe('middleware/auth.ts', () => {
       mod = await import('../../src/middleware/auth.js');
     });
 
-    it('isAuthorizedHeader は常にtrueを返す', () => {
-      expect(mod.isAuthorizedHeader(undefined)).toBe(true);
-      expect(mod.isAuthorizedHeader('Bearer anything')).toBe(true);
+    it('isAuthorizedHeader は常にfalseを返す', () => {
+      expect(mod.isAuthorizedHeader(undefined)).toBe(false);
+      expect(mod.isAuthorizedHeader('Bearer anything')).toBe(false);
     });
 
-    it('authMiddleware はnextを呼ぶ', () => {
+    it('authMiddleware は認証エラーをnextに渡す', () => {
       const req = { headers: {} } as Request;
       const res = {} as Response;
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn();
       mod.authMiddleware(req, res, next);
-      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    it('authorizeToken は常にtrueを返す', () => {
-      expect(mod.authorizeToken('anything')).toBe(true);
-      expect(mod.authorizeToken('')).toBe(true);
+    it('authorizeToken は常にfalseを返す', () => {
+      expect(mod.authorizeToken('anything')).toBe(false);
+      expect(mod.authorizeToken('')).toBe(false);
     });
-
   });
 
   describe('AUTH_TOKEN設定時', () => {
@@ -76,7 +75,7 @@ describe('middleware/auth.ts', () => {
     it('authMiddleware は正しいトークンでnextを呼ぶ', () => {
       const req = { headers: { authorization: `Bearer ${TEST_TOKEN}` } } as Request;
       const res = {} as Response;
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn();
       mod.authMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(1);
       // AuthenticationErrorで呼ばれていないことを確認
@@ -87,7 +86,7 @@ describe('middleware/auth.ts', () => {
     it('authMiddleware は不正なトークンでAuthenticationErrorをnextに渡す', () => {
       const req = { headers: { authorization: 'Bearer wrong' } } as Request;
       const res = {} as Response;
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn();
       mod.authMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(1);
       const err = next.mock.calls[0][0];
@@ -98,7 +97,7 @@ describe('middleware/auth.ts', () => {
     it('authMiddleware はヘッダーなしでAuthenticationErrorをnextに渡す', () => {
       const req = { headers: {} } as Request;
       const res = {} as Response;
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn();
       mod.authMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(1);
       const err = next.mock.calls[0][0];

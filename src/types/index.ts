@@ -65,8 +65,4 @@ export type {
 } from './server.js';
 
 // クライアントUI専用型
-export type {
-  ClientSession,
-  ReconnectConfig,
-  ToastType,
-} from './client.js';
+export type { ClientSession, ReconnectConfig, ToastType } from './client.js';

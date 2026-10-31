@@ -6,6 +6,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import multer from 'multer';
 
 import { FileItem, FileListResponse, FileContentResponse, UploadResponse } from '../types/index.js';
@@ -159,11 +160,11 @@ const storage = multer.diskStorage({
   },
   filename: (
     _req: Request,
-    file: Express.Multer.File,
+    _file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void,
   ) => {
-    // オリジナルファイル名を使用
-    cb(null, file.originalname);
+    // 検証完了前に既存ファイルを上書きしない、一意なステージング名。
+    cb(null, `.pdr-upload-${randomUUID()}.tmp`);
   },
 });
 
@@ -181,9 +182,11 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddleware,
-  (req: Request, res: Response, next: NextFunction) => {
+  (_req: Request, _res: Response, next: NextFunction) => {
+    // multerがディスクへ書く前に、機能フラグを検証する。
     if (!ALLOW_FILE_WRITE) {
-      throw new FeatureDisabledError('ファイルアップロード');
+      next(new FeatureDisabledError('ファイルアップロード'));
+      return;
     }
     next();
   },
@@ -234,13 +237,24 @@ router.post(
       throw new InvalidPathError();
     }
 
-    // ディレクトリを作成（存在しない場合）
-    await fs.mkdir(targetDir, { recursive: true });
-
-    // multerがROOT_DIRに保存したファイルを目的のパスに移動
     const sourcePath = req.file.path;
-    if (sourcePath !== targetPath) {
-      await fs.rename(sourcePath, targetPath);
+    let committed = false;
+    try {
+      // 検証完了後にのみ目的のパスへ移動する。
+      await fs.mkdir(targetDir, { recursive: true });
+      if (sourcePath !== targetPath) {
+        await fs.rename(sourcePath, targetPath);
+      }
+      committed = true;
+    } finally {
+      if (!committed) {
+        // mkdir/rename失敗時にも、拒否したアップロードを残さない。
+        try {
+          await fs.unlink(sourcePath);
+        } catch {
+          // 元のI/Oエラーを保持する。
+        }
+      }
     }
 
     const response: UploadResponse = {

@@ -40,13 +40,9 @@ describe('getErrorMessage', () => {
 
   it('機能関連のエラーコードを日本語に変換する', () => {
     expect(getErrorMessage('FEATURE_DISABLED')).toBe('この機能は無効化されています。');
-    expect(getErrorMessage('file-write-disabled')).toBe(
-      'ファイル書き込みは無効化されています。',
-    );
+    expect(getErrorMessage('file-write-disabled')).toBe('ファイル書き込みは無効化されています。');
     expect(getErrorMessage('write-disabled')).toBe('ファイル書き込みが無効になっています。');
-    expect(getErrorMessage('session-logs-disabled')).toBe(
-      'セッションログは無効化されています。',
-    );
+    expect(getErrorMessage('session-logs-disabled')).toBe('セッションログは無効化されています。');
     expect(getErrorMessage('custom-commands-disabled')).toBe(
       'カスタムコマンドは無効になっています。管理者に連絡してください。',
     );
@@ -96,9 +92,7 @@ describe('getErrorMessage', () => {
 
 describe('translateError', () => {
   it('既知のエラーコードを日本語メッセージに変換する', () => {
-    expect(translateError('unauthorized')).toBe(
-      '認証に失敗しました。トークンを確認してください。',
-    );
+    expect(translateError('unauthorized')).toBe('認証に失敗しました。トークンを確認してください。');
     expect(translateError('NOT_FOUND')).toBe('リソースが見つかりません。');
   });
 
@@ -120,9 +114,7 @@ describe('extractErrorMessage', () => {
 
   it('message がなく error がある場合はエラーコードから変換する', () => {
     const response = { error: 'unauthorized', message: '' };
-    expect(extractErrorMessage(response)).toBe(
-      '認証に失敗しました。トークンを確認してください。',
-    );
+    expect(extractErrorMessage(response)).toBe('認証に失敗しました。トークンを確認してください。');
   });
 
   it('message も error も空の場合はデフォルトメッセージを返す', () => {
@@ -136,10 +128,12 @@ describe('extractErrorMessage', () => {
 // ============================================================
 
 describe('handleApiError', () => {
-  let showToast: ReturnType<typeof vi.fn>;
+  let showToast: ReturnType<
+    typeof vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>
+  >;
 
   beforeEach(() => {
-    showToast = vi.fn();
+    showToast = vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>();
   });
 
   it('ApiErrorResponse型のエラーを処理する', () => {
@@ -192,10 +186,12 @@ describe('handleApiError', () => {
 // ============================================================
 
 describe('handleFetchError', () => {
-  let showToast: ReturnType<typeof vi.fn>;
+  let showToast: ReturnType<
+    typeof vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>
+  >;
 
   beforeEach(() => {
-    showToast = vi.fn();
+    showToast = vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>();
   });
 
   it('レスポンスがokの場合はfalseを返す', async () => {
@@ -302,19 +298,18 @@ describe('handleFetchError', () => {
 // ============================================================
 
 describe('handleNetworkError', () => {
-  let showToast: ReturnType<typeof vi.fn>;
+  let showToast: ReturnType<
+    typeof vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>
+  >;
 
   beforeEach(() => {
-    showToast = vi.fn();
+    showToast = vi.fn<(message: string, type: 'success' | 'error' | 'warning' | 'info') => void>();
   });
 
   it('fetchを含むTypeErrorはネットワークエラーとして処理する', () => {
     const error = new TypeError('Failed to fetch');
     handleNetworkError(error, showToast);
-    expect(showToast).toHaveBeenCalledWith(
-      'ネットワークエラー: サーバーに接続できません',
-      'error',
-    );
+    expect(showToast).toHaveBeenCalledWith('ネットワークエラー: サーバーに接続できません', 'error');
   });
 
   it('fetch以外のTypeErrorはhandleApiErrorにフォールバックする', () => {

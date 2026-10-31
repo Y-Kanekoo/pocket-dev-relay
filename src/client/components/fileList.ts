@@ -6,6 +6,7 @@
 import type { FileItem } from '../../types/index.js';
 import { fetchFileList } from '../services/api.js';
 import type { FileBrowserSharedState } from './fileBrowser.js';
+import { joinPath, parentPath } from '../../utils/filepath.js';
 // joinPath, parentPath は src/utils/filepath.ts に一元化。再エクスポート
 export { joinPath, parentPath } from '../../utils/filepath.js';
 
@@ -68,10 +69,7 @@ export function renderFileList(
 /**
  * ファイル一覧を読み込み
  */
-export async function loadFiles(
-  path: string,
-  shared: FileBrowserSharedState,
-): Promise<void> {
+export async function loadFiles(path: string, shared: FileBrowserSharedState): Promise<void> {
   try {
     const data = await fetchFileList(path);
     renderFileList(data.items, data.path, shared);

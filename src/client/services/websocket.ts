@@ -224,11 +224,11 @@ function enqueueMessage(message: ClientMessage): boolean {
 
 /**
  * WebSocket URLを取得
- * 認証はメッセージベースで行うため、クエリパラメータにトークンを含めない
+ * 接続時の認証トークンをクエリパラメータに含める
  */
-function getWsUrl(): string {
+function getWsUrl(token: string): string {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  return `${protocol}://${window.location.host}/ws`;
+  return `${protocol}://${window.location.host}/ws?token=${encodeURIComponent(token)}`;
 }
 
 /**
@@ -260,6 +260,10 @@ function onConnectionEstablished(resolve: () => void): void {
  * WebSocket接続を確立
  */
 export function connectWebSocket(): Promise<void> {
+  const token = sessionStore.getToken();
+  if (!token) {
+    return Promise.reject(new Error('認証トークンが必要です'));
+  }
   const ws = sessionStore.getWebSocket();
   if (ws && ws.readyState === WebSocket.OPEN) {
     return Promise.resolve();
@@ -279,22 +283,16 @@ export function connectWebSocket(): Promise<void> {
   }
 
   return new Promise((resolve, reject) => {
-    const newWs = new WebSocket(getWsUrl());
+    const newWs = new WebSocket(getWsUrl(token));
     sessionStore.setWebSocket(newWs);
 
     newWs.addEventListener('open', () => {
-      const token = sessionStore.getToken();
-      if (token) {
-        // メッセージベース認証を送信
-        pendingAuthResolve = () => {
-          onConnectionEstablished(resolve);
-        };
-        pendingAuthReject = reject;
-        newWs.send(JSON.stringify({ type: 'auth', token }));
-      } else {
-        // トークンなし：認証不要
+      // 接続時の認証に加えて認証結果を確認する
+      pendingAuthResolve = () => {
         onConnectionEstablished(resolve);
-      }
+      };
+      pendingAuthReject = reject;
+      newWs.send(JSON.stringify({ type: 'auth', token }));
     });
 
     newWs.addEventListener('message', (event: MessageEvent) => {

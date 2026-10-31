@@ -12,6 +12,8 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import type http from 'http';
+import { isConfiguredAuthToken } from '../utils/auth.js';
 
 // ============================================================
 // 認証関数
@@ -24,7 +26,7 @@ import type { Request, Response, NextFunction } from 'express';
  * @returns 認証結果
  */
 export function isAuthorizedHeader(header: string | undefined, authToken: string): boolean {
-  if (!authToken) return true;
+  if (!isConfiguredAuthToken(authToken)) return false;
   return header === `Bearer ${authToken}`;
 }
 
@@ -35,10 +37,6 @@ export function isAuthorizedHeader(header: string | undefined, authToken: string
  */
 export function createAuthMiddleware(authToken: string) {
   return function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-    if (!authToken) {
-      next();
-      return;
-    }
     if (isAuthorizedHeader(req.headers.authorization, authToken)) {
       next();
       return;
@@ -47,3 +45,27 @@ export function createAuthMiddleware(authToken: string) {
   };
 }
 
+/**
+ * WebSocketリクエストからトークンを取得
+ * @param req HTTPリクエスト
+ * @returns トークン
+ */
+export function getTokenFromRequest(req: http.IncomingMessage): string {
+  try {
+    const url = new URL(req.url || '', 'http://localhost');
+    return url.searchParams.get('token') || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * WebSocket接続を認証
+ * @param req HTTPリクエスト
+ * @param authToken 認証トークン
+ * @returns 認証結果
+ */
+export function authorizeWebSocket(req: http.IncomingMessage, authToken: string): boolean {
+  if (!isConfiguredAuthToken(authToken)) return false;
+  return getTokenFromRequest(req) === authToken;
+}

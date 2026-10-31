@@ -7,14 +7,8 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { AUTH_TOKEN } from '../config.js';
 import { AuthenticationError } from '../errors/AppError.js';
-import logger from '../services/logger.js';
-
-// AUTH_TOKEN未設定時の警告
-if (!AUTH_TOKEN) {
-  logger.warn(
-    'AUTH_TOKEN が未設定です。認証なしでアクセス可能な状態です。本番環境では必ず設定してください。',
-  );
-}
+import { isConfiguredAuthToken } from '../utils/auth.js';
+import type http from 'http';
 
 /**
  * タイミング安全な文字列比較
@@ -30,27 +24,22 @@ function timingSafeCompare(a: string, b: string): boolean {
   const hashB = crypto.createHash('sha256').update(b).digest();
   return crypto.timingSafeEqual(hashA, hashB);
 }
-
 /**
  * Authorizationヘッダーを検証
  * @param header Authorizationヘッダー値
  * @returns 認証結果
  */
 export function isAuthorizedHeader(header: string | undefined): boolean {
-  if (!AUTH_TOKEN) return true;
+  if (!isConfiguredAuthToken(AUTH_TOKEN)) return false;
   if (!header) return false;
   return timingSafeCompare(header, `Bearer ${AUTH_TOKEN}`);
 }
 
 /**
  * 認証ミドルウェア
- * 認証トークンが設定されている場合、Authorizationヘッダーを検証
+ * Authorizationヘッダーを検証。不正な認証設定でもアクセスを拒否する。
  */
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  if (!AUTH_TOKEN) {
-    next();
-    return;
-  }
   if (isAuthorizedHeader(req.headers.authorization)) {
     next();
     return;
@@ -64,8 +53,31 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
  * @returns 認証結果
  */
 export function authorizeToken(token: string): boolean {
-  if (!AUTH_TOKEN) return true;
+  if (!isConfiguredAuthToken(AUTH_TOKEN)) return false;
   if (!token) return false;
   return timingSafeCompare(token, AUTH_TOKEN);
 }
 
+/**
+ * WebSocketリクエストからトークンを取得
+ * @param req HTTPリクエスト
+ * @returns トークン
+ */
+export function getTokenFromRequest(req: http.IncomingMessage): string {
+  try {
+    const url = new URL(req.url || '', 'http://localhost');
+    return url.searchParams.get('token') || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * WebSocket接続を認証
+ * @param req HTTPリクエスト
+ * @returns 認証結果
+ */
+export function authorizeWebSocket(req: http.IncomingMessage): boolean {
+  if (!isConfiguredAuthToken(AUTH_TOKEN)) return false;
+  return authorizeToken(getTokenFromRequest(req));
+}

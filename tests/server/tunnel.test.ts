@@ -47,7 +47,7 @@ function createMockProcess(): ChildProcess & {
   Object.defineProperty(proc, 'stdout', { value: stdoutEmitter, writable: true });
   Object.defineProperty(proc, 'stderr', { value: stderrEmitter, writable: true });
   proc.kill = vi.fn(() => true);
-  proc.pid = 12345;
+  Object.defineProperty(proc, 'pid', { value: 12345 });
 
   // ヘルパーメソッド
   proc._emitStderr = (data: string) => {
@@ -131,7 +131,13 @@ describe('tunnel', () => {
       const binaryMock = await import('../../src/utils/binary.js');
       vi.mocked(binaryMock.findCloudflaredBinary).mockReturnValue(null);
 
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
       const { startTunnel } = await import('../../src/services/tunnel.js');
       await expect(startTunnel(4173)).rejects.toThrow();
 
@@ -483,7 +489,13 @@ describe('tunnel', () => {
     it('再起動が連続して失敗すると上限で停止する', async () => {
       const binaryMock = await import('../../src/utils/binary.js');
       vi.mocked(binaryMock.findCloudflaredBinary).mockReturnValue('/usr/local/bin/cloudflared');
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
 
       const { startTunnel } = await import('../../src/services/tunnel.js');
 
@@ -538,7 +550,13 @@ describe('tunnel', () => {
       await vi.advanceTimersByTimeAsync(3000);
 
       // エラーにならずに完了する
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
       expect(loggerMock.default.error).toHaveBeenCalled();
     });
 
@@ -572,7 +590,13 @@ describe('tunnel', () => {
     it('running状態でプロセス終了時にログが出力される', async () => {
       const binaryMock = await import('../../src/utils/binary.js');
       vi.mocked(binaryMock.findCloudflaredBinary).mockReturnValue('/usr/local/bin/cloudflared');
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
 
       const mockProc = createMockProcess();
       mockSpawn.mockReturnValue(mockProc);
@@ -602,7 +626,13 @@ describe('tunnel', () => {
     it('running状態でcode=nullの場合のログ出力', async () => {
       const binaryMock = await import('../../src/utils/binary.js');
       vi.mocked(binaryMock.findCloudflaredBinary).mockReturnValue('/usr/local/bin/cloudflared');
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
 
       const mockProc = createMockProcess();
       mockSpawn.mockReturnValue(mockProc);
@@ -660,9 +690,8 @@ describe('tunnel', () => {
       const mockProc = createMockProcess();
       mockSpawn.mockReturnValue(mockProc);
 
-      const { startTunnel, stopTunnel, getTunnelInfo } = await import(
-        '../../src/services/tunnel.js'
-      );
+      const { startTunnel, stopTunnel, getTunnelInfo } =
+        await import('../../src/services/tunnel.js');
       const promise = startTunnel(4173);
 
       mockProc._emitStderr('https://stop-state.trycloudflare.com\n');
@@ -676,7 +705,13 @@ describe('tunnel', () => {
     });
 
     it('停止後にログが出力される', async () => {
-      const loggerMock = await import('../../src/services/logger.js');
+      const loggerMock = await vi.importMock<{
+        default: {
+          info: ReturnType<typeof vi.fn>;
+          warn: ReturnType<typeof vi.fn>;
+          error: ReturnType<typeof vi.fn>;
+        };
+      }>('../../src/services/logger.js');
       const { stopTunnel } = await import('../../src/services/tunnel.js');
       stopTunnel();
       expect(loggerMock.default.info).toHaveBeenCalledWith('トンネルを停止しました');
@@ -715,9 +750,8 @@ describe('tunnel', () => {
       const mockProc1 = createMockProcess();
       mockSpawn.mockReturnValue(mockProc1);
 
-      const { startTunnel, stopTunnel, getTunnelInfo } = await import(
-        '../../src/services/tunnel.js'
-      );
+      const { startTunnel, stopTunnel, getTunnelInfo } =
+        await import('../../src/services/tunnel.js');
       const promise1 = startTunnel(4173);
       mockProc1._emitStderr('https://first-start.trycloudflare.com\n');
       await promise1;

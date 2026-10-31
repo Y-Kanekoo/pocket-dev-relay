@@ -14,10 +14,7 @@ import type { FileBrowserSharedState } from './fileBrowser.js';
 /**
  * ファイル内容を読み込み
  */
-export async function loadFile(
-  path: string,
-  shared: FileBrowserSharedState,
-): Promise<void> {
+export async function loadFile(path: string, shared: FileBrowserSharedState): Promise<void> {
   try {
     const data = await fetchFileContent(path);
     shared.currentFile.path = data.path;
@@ -57,7 +54,8 @@ export function updateFileEditor(shared: FileBrowserSharedState): void {
   }
   if (shared.elements.fileStatus) {
     if (!writable) {
-      shared.elements.fileStatus.textContent = '読み取り専用です（ALLOW_FILE_WRITE=true で保存可）。';
+      shared.elements.fileStatus.textContent =
+        '読み取り専用です（ALLOW_FILE_WRITE=true で保存可）。';
     } else {
       shared.elements.fileStatus.textContent = '';
     }

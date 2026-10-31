@@ -37,8 +37,10 @@ vi.stubGlobal('localStorage', mockLocalStorage);
 
 // Notification API のモック
 let mockPermission: NotificationPermission = 'default';
-let lastNotificationInstance: { addEventListener: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> } | null =
-  null;
+let lastNotificationInstance: {
+  addEventListener: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+} | null = null;
 
 // Notification をクラスとしてモック（new で呼べるようにする）
 class MockNotification {
@@ -61,7 +63,7 @@ class MockNotification {
     this.body = options?.body || '';
     this.icon = options?.icon || '';
     this.tag = options?.tag || '';
-    lastNotificationInstance = this;
+    lastNotificationInstance = { addEventListener: this.addEventListener, close: this.close };
   }
 }
 
