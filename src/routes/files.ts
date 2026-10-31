@@ -3,7 +3,7 @@
  * /api/files, /api/file, /api/upload エンドポイント
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
@@ -13,6 +13,7 @@ import { FileItem, FileListResponse, FileContentResponse, UploadResponse } from 
 import { ROOT_DIR, ALLOW_FILE_WRITE, MAX_FILE_SIZE, MAX_UPLOAD_SIZE } from '../config.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import logger from '../services/logger.js';
 import { resolvePath, convertFsError } from '../utils/path.js';
 import {
   FileTypeError,
@@ -181,7 +182,7 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddleware,
-  (_req, _res, next) => {
+  (_req: Request, _res: Response, next: NextFunction) => {
     // multerがディスクへ書く前に、機能フラグを検証する。
     if (!ALLOW_FILE_WRITE) {
       next(new FeatureDisabledError('ファイルアップロード'));
@@ -191,18 +192,6 @@ router.post(
   },
   upload.single('file'),
   asyncHandler(async (req: Request, res: Response) => {
-    if (!ALLOW_FILE_WRITE) {
-      // アップロードされたファイルを削除
-      if (req.file) {
-        try {
-          await fs.unlink(req.file.path);
-        } catch {
-          // 削除失敗は無視
-        }
-      }
-      throw new FeatureDisabledError('ファイルアップロード');
-    }
-
     if (!req.file) {
       throw new ValidationError('ファイルが選択されていません');
     }
@@ -218,8 +207,8 @@ router.post(
       // アップロードされたファイルを削除
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw convertFsError(error, 'パス');
     }
@@ -229,8 +218,8 @@ router.post(
     if (!safeFileName || safeFileName === '.' || safeFileName === '..') {
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw new InvalidPathError('不正なファイル名です');
     }
@@ -242,8 +231,8 @@ router.post(
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
       try {
         await fs.unlink(req.file.path);
-      } catch {
-        // 削除失敗は無視
+      } catch (err) {
+        logger.debug({ err }, 'アップロード一時ファイル削除失敗（無視）');
       }
       throw new InvalidPathError();
     }

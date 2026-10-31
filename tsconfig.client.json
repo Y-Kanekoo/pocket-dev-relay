@@ -17,13 +17,6 @@
     "isolatedModules": true,
     "sourceMap": true
   },
-  "include": [
-    "src/client/**/*",
-    "src/types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public"
-  ]
+  "include": ["src/client/**/*", "src/types/**/*"],
+  "exclude": ["node_modules", "dist", "public"]
 }

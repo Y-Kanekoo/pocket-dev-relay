@@ -161,22 +161,8 @@ export async function saveFile(path: string, content: string): Promise<void> {
 // ユーティリティ
 // ==================================================
 
-/**
- * 最適なURLを選択
- */
-export function pickBestUrl(urls: AccessUrl[]): AccessUrl | undefined {
-  return urls.find((entry) => entry.type !== 'local') || urls[0];
-}
-
-/**
- * URLエントリのラベルを取得
- */
-export function labelForUrl(entry: AccessUrl): string {
-  if (entry.type === 'mdns') return `mDNS (${entry.host})`;
-  if (entry.type === 'lan') return `LAN (${entry.name})`;
-  if (entry.type === 'local') return 'このPC (localhost)';
-  return entry.host || entry.url || 'URL';
-}
+// pickBestUrl, labelForUrl は src/utils/url.ts に一元化。再エクスポート
+export { pickBestUrl, labelForUrl } from '../../utils/url.js';
 
 /**
  * テキストをクリップボードにコピー

@@ -10,20 +10,20 @@
 
 ## 技術スタック
 
-| カテゴリ | 技術 | バージョン |
-|----------|------|------------|
-| ランタイム | Node.js | >= 20.0.0 |
-| 言語 | TypeScript | ^5.6.0 |
-| サーバー | Express | ^4.18.2 |
-| WebSocket | ws | ^8.17.0 |
-| ターミナル | node-pty | ^1.0.0 |
-| SSH | ssh2 | ^1.17.0 |
-| ログ | pino + pino-pretty | ^10.3.0 |
-| フロントエンド | バニラTS + xterm.js (@xterm/xterm) | ^5.5.0 |
-| ビルド | esbuild | ^0.24.0 |
-| テスト | Vitest + @vitest/coverage-v8 | ^4.0.18 |
-| リンター | ESLint + @typescript-eslint | ^8.57.0 |
-| フォーマッター | Prettier | ^3.2.5 |
+| カテゴリ       | 技術                               | バージョン |
+| -------------- | ---------------------------------- | ---------- |
+| ランタイム     | Node.js                            | >= 20.0.0  |
+| 言語           | TypeScript                         | ^5.6.0     |
+| サーバー       | Express                            | ^4.18.2    |
+| WebSocket      | ws                                 | ^8.17.0    |
+| ターミナル     | node-pty                           | ^1.0.0     |
+| SSH            | ssh2                               | ^1.17.0    |
+| ログ           | pino + pino-pretty                 | ^10.3.0    |
+| フロントエンド | バニラTS + xterm.js (@xterm/xterm) | ^5.5.0     |
+| ビルド         | esbuild                            | ^0.24.0    |
+| テスト         | Vitest + @vitest/coverage-v8       | ^4.0.18    |
+| リンター       | ESLint + @typescript-eslint        | ^8.57.0    |
+| フォーマッター | Prettier                           | ^3.2.5     |
 
 ---
 
@@ -167,15 +167,15 @@ tests/
 
 ## 変更ガイド（AI向け逆引き表）
 
-| やりたいこと | 変更するファイル |
-|---|---|
-| **新しいREST APIエンドポイント追加** | 1. `src/types/index.ts`（リクエスト/レスポンス型） → 2. `src/routes/新ファイル.ts`（ルート実装） → 3. `src/server.ts`（ルーター登録） → 4. `src/client/services/api.ts`（API呼び出し関数） → 5. テスト追加 |
-| **新しいセッションモード追加** | 1. `src/types/index.ts`（SessionModeに追加） → 2. `src/services/pty.ts`（PRESETSに追加） → 3. `src/services/session.ts`（startSession分岐） → 4. `src/services/websocket.ts`（start処理分岐） → 5. `src/client/components/session.ts`（UIボタン） → 6. `public/index.html`（モードカード） |
-| **環境変数追加** | 1. `src/config.ts`（定数追加） → 2. `.env.example`（説明追加） → 3. 使用箇所でimport |
-| **新しいクライアントコンポーネント** | 1. `src/client/components/新ファイル.ts`（コンポーネント） → 2. `src/client/app.ts`（import+初期化） → 3. `public/index.html`（HTML要素） → 4. `public/styles.css`（スタイル） |
-| **テスト追加** | 1. `tests/server/` or `tests/client/` に `*.test.ts` → vitest.config.tsのincludeパターンで自動認識 |
-| **ミドルウェア追加** | 1. `src/middleware/新ファイル.ts` → 2. `src/server.ts`（app.use() — **順序に注意**） |
-| **エラーコード追加** | 1. `src/errors/AppError.ts`（サブクラス） → 2. `src/client/services/errorHandler.ts`（ERROR_MAPPINGに日本語追加） |
+| やりたいこと                         | 変更するファイル                                                                                                                                                                                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **新しいREST APIエンドポイント追加** | 1. `src/types/index.ts`（リクエスト/レスポンス型） → 2. `src/routes/新ファイル.ts`（ルート実装） → 3. `src/server.ts`（ルーター登録） → 4. `src/client/services/api.ts`（API呼び出し関数） → 5. テスト追加                                                                                 |
+| **新しいセッションモード追加**       | 1. `src/types/index.ts`（SessionModeに追加） → 2. `src/services/pty.ts`（PRESETSに追加） → 3. `src/services/session.ts`（startSession分岐） → 4. `src/services/websocket.ts`（start処理分岐） → 5. `src/client/components/session.ts`（UIボタン） → 6. `public/index.html`（モードカード） |
+| **環境変数追加**                     | 1. `src/config.ts`（定数追加） → 2. `.env.example`（説明追加） → 3. 使用箇所でimport                                                                                                                                                                                                       |
+| **新しいクライアントコンポーネント** | 1. `src/client/components/新ファイル.ts`（コンポーネント） → 2. `src/client/app.ts`（import+初期化） → 3. `public/index.html`（HTML要素） → 4. `public/styles.css`（スタイル）                                                                                                             |
+| **テスト追加**                       | 1. `tests/server/` or `tests/client/` に `*.test.ts` → vitest.config.tsのincludeパターンで自動認識                                                                                                                                                                                         |
+| **ミドルウェア追加**                 | 1. `src/middleware/新ファイル.ts` → 2. `src/server.ts`（app.use() — **順序に注意**）                                                                                                                                                                                                       |
+| **エラーコード追加**                 | 1. `src/errors/AppError.ts`（サブクラス） → 2. `src/client/services/errorHandler.ts`（ERROR_MAPPINGに日本語追加）                                                                                                                                                                          |
 
 ---
 
@@ -202,48 +202,50 @@ tests/
 
 ### config.ts — 全環境変数
 
-| 変数 | 型 | デフォルト | 説明 |
-|------|-----|-----------|------|
-| `PORT` | number | 4173 | サーバーポート |
-| `WORKSPACE_ROOT` | string | cwd() | ワークスペースルート |
-| `AUTH_TOKEN` | string | なし（必須） | 未設定・空白のみ・`change-me`・`pdr-local`では起動を拒否 |
-| `ALLOW_CUSTOM_COMMANDS` | boolean | false | カスタムコマンド許可 |
-| `ALLOW_FILE_WRITE` | boolean | false | ファイル書き込み許可 |
-| `MAX_FILE_SIZE` | number | 1048576 (1MB) | 最大ファイルサイズ |
-| `SHELL_CMD` | string | $SHELL or 'zsh' | シェルコマンド |
-| `MAX_UPLOAD_SIZE` | number | 10485760 (10MB) | アップロード最大サイズ |
-| `LOG_LEVEL` | string | 'info' | ログレベル（pino） |
-| `ENABLE_SESSION_LOGS` | boolean | false | セッションログ有効化 |
-| `LOG_DIR` | string | $ROOT/logs | ログディレクトリ |
-| `LOG_MAX_AGE_DAYS` | number | 30 | ログ保持日数 |
-| `LOG_MAX_SIZE_MB` | number | 100 | ログ最大合計サイズ |
-| `SESSION_TIMEOUT` | number | 3600000 (1h) | セッションタイムアウト(ms) |
-| `ENABLE_HTTPS` | boolean | false | HTTPS有効化 |
-| `SSL_KEY_PATH` | string | '' | SSL秘密鍵パス |
-| `SSL_CERT_PATH` | string | '' | SSL証明書パス |
-| `RATE_LIMIT_API` | number | 100 | APIレート制限(回/分) |
-| `RATE_LIMIT_AUTH` | number | 5 | 認証失敗制限(回/分) |
-| `ENABLE_SSH` | boolean | false | SSH機能有効化 |
-| `SSH_DEFAULT_HOST` | string | '' | SSHデフォルトホスト |
-| `SSH_DEFAULT_PORT` | number | 22 | SSHデフォルトポート |
-| `SSH_DEFAULT_USER` | string | '' | SSHデフォルトユーザー |
-| `SSH_KEY_PATH` | string | ~/.ssh/id_rsa | SSH秘密鍵パス |
-| `SSH_STRICT_HOST_KEY` | boolean | true | known_hostsによるホスト鍵検証 |
-| `SSH_REQUIRE_HTTPS_FOR_PASSWORD` | boolean | true | パスワード認証にHTTPS要求 |
-| `ANTHROPIC_API_KEY` | string | '' | Claude APIキー |
-| `OPENAI_API_KEY` | string | '' | OpenAI APIキー |
-| `AI_MODEL` | string | 自動選択 | AIモデル名 |
-| `AI_MAX_CONTEXT_LINES` | number | 100 | AI送信最大行数 |
+| 変数                             | 型      | デフォルト      | 説明                                                     |
+| -------------------------------- | ------- | --------------- | -------------------------------------------------------- |
+| `PORT`                           | number  | 4173            | サーバーポート                                           |
+| `WORKSPACE_ROOT`                 | string  | cwd()           | ワークスペースルート                                     |
+| `AUTH_TOKEN`                     | string  | なし（必須）    | 未設定・空白のみ・`change-me`・`pdr-local`では起動を拒否 |
+| `ALLOW_CUSTOM_COMMANDS`          | boolean | false           | カスタムコマンド許可                                     |
+| `ALLOW_FILE_WRITE`               | boolean | false           | ファイル書き込み許可                                     |
+| `MAX_FILE_SIZE`                  | number  | 1048576 (1MB)   | 最大ファイルサイズ                                       |
+| `SHELL_CMD`                      | string  | $SHELL or 'zsh' | シェルコマンド                                           |
+| `MAX_UPLOAD_SIZE`                | number  | 10485760 (10MB) | アップロード最大サイズ                                   |
+| `LOG_LEVEL`                      | string  | 'info'          | ログレベル（pino）                                       |
+| `ENABLE_SESSION_LOGS`            | boolean | false           | セッションログ有効化                                     |
+| `LOG_DIR`                        | string  | $ROOT/logs      | ログディレクトリ                                         |
+| `LOG_MAX_AGE_DAYS`               | number  | 30              | ログ保持日数                                             |
+| `LOG_MAX_SIZE_MB`                | number  | 100             | ログ最大合計サイズ                                       |
+| `SESSION_TIMEOUT`                | number  | 3600000 (1h)    | セッションタイムアウト(ms)                               |
+| `ENABLE_HTTPS`                   | boolean | false           | HTTPS有効化                                              |
+| `SSL_KEY_PATH`                   | string  | ''              | SSL秘密鍵パス                                            |
+| `SSL_CERT_PATH`                  | string  | ''              | SSL証明書パス                                            |
+| `RATE_LIMIT_API`                 | number  | 100             | APIレート制限(回/分)                                     |
+| `RATE_LIMIT_AUTH`                | number  | 5               | 認証失敗制限(回/分)                                      |
+| `ENABLE_SSH`                     | boolean | false           | SSH機能有効化                                            |
+| `SSH_DEFAULT_HOST`               | string  | ''              | SSHデフォルトホスト                                      |
+| `SSH_DEFAULT_PORT`               | number  | 22              | SSHデフォルトポート                                      |
+| `SSH_DEFAULT_USER`               | string  | ''              | SSHデフォルトユーザー                                    |
+| `SSH_KEY_PATH`                   | string  | ~/.ssh/id_rsa   | SSH秘密鍵パス                                            |
+| `SSH_STRICT_HOST_KEY`            | boolean | true            | known_hostsによるホスト鍵検証                            |
+| `SSH_REQUIRE_HTTPS_FOR_PASSWORD` | boolean | true            | パスワード認証にHTTPS要求                                |
+| `ANTHROPIC_API_KEY`              | string  | ''              | Claude APIキー                                           |
+| `OPENAI_API_KEY`                 | string  | ''              | OpenAI APIキー                                           |
+| `AI_MODEL`                       | string  | 自動選択        | AIモデル名                                               |
+| `AI_MAX_CONTEXT_LINES`           | number  | 100             | AI送信最大行数                                           |
 
 ### サービス層
 
 #### services/session.ts (460行) — セッション管理
 
 **内部状態:**
+
 - `sessions: Map<string, SessionInternal>` — アクティブセッション
 - `sessionLogs: Map<string, SessionLogMetaInternal>` — ログメタデータ
 
 **エクスポート関数:**
+
 ```typescript
 initLogDir(): Promise<void>                           // ログディレクトリ初期化 + ローテーション
 send(ws: WebSocket, payload: ServerMessage): void     // WebSocket送信
@@ -254,6 +256,7 @@ cleanupAllSessions(): void                            // 全セッション終�
 ```
 
 **内部関数:**
+
 - `rotateOldLogs()` — LOG_MAX_AGE_DAYS/LOG_MAX_SIZE_MBに基づく自動削除
 - `generateLogFileName(sessionId, mode)` — ログファイル名生成
 - `stripAnsi(str)` — ANSIエスケープ除去
@@ -261,14 +264,17 @@ cleanupAllSessions(): void                            // 全セッション終�
 #### services/websocket.ts (195行) — WebSocketハンドラ
 
 **内部状態:**
+
 - `sessionTimers: Map<string, SessionTimers>` — タイムアウト/警告タイマー
 
 **エクスポート関数:**
+
 ```typescript
 setupWebSocketHandlers(wss: WebSocketServer): void
 ```
 
 **タイムアウト機構:**
+
 - 入力があるたびにリセット
 - 警告: タイムアウト5分前
 - 自動切断: SESSION_TIMEOUT到達時
@@ -276,11 +282,13 @@ setupWebSocketHandlers(wss: WebSocketServer): void
 #### services/pty.ts (145行) — コマンドプリセット
 
 **エクスポート関数:**
+
 ```typescript
 spawnForMode(mode: SessionMode, customCommand?: string): SpawnConfig
 ```
 
 **PRESETS:**
+
 - `codex`: `{ command: 'codex', args: [] }`
 - `claude`: `{ command: 'claude', args: [] }`
 - `shell`: `{ command: SHELL_CMD, args: [] }`
@@ -288,6 +296,7 @@ spawnForMode(mode: SessionMode, customCommand?: string): SpawnConfig
 #### services/ssh.ts (222行) — SSH接続中継
 
 **エクスポート関数:**
+
 ```typescript
 isSSHEnabled(): boolean
 createSSHSession(config: SSHConnectionConfig): Promise<SSHSessionResult>
@@ -296,6 +305,7 @@ closeSSHConnection(client: SSHClient): void
 ```
 
 **セキュリティ:**
+
 - `loadKnownHosts()` — ~/.ssh/known_hostsを読み込みMap<host, key[]>を返す
 - `SSH_STRICT_HOST_KEY=true`（デフォルト）: known_hostsに未登録のホストは拒否
 - `SSH_REQUIRE_HTTPS_FOR_PASSWORD=true`（デフォルト）: HTTPS未使用時のパスワード認証を拒否
@@ -303,16 +313,18 @@ closeSSHConnection(client: SSHClient): void
 #### services/ai.ts (237行) — AI解析
 
 **エクスポート関数:**
+
 ```typescript
 createAIProvider(): AIProvider | null
 ```
 
 **AIProvider インターフェース:**
+
 ```typescript
 interface AIProvider {
-  name: AIProviderName          // 'claude' | 'openai'
-  model: string
-  analyze(context: string, question: string): Promise<string>
+  name: AIProviderName; // 'claude' | 'openai'
+  model: string;
+  analyze(context: string, question: string): Promise<string>;
 }
 ```
 
@@ -321,9 +333,11 @@ interface AIProvider {
 #### services/notifier.ts (169行) — エラー検知
 
 **内部状態:**
+
 - `lastNotificationTime: Map<string, number>` — クールダウン(5秒)
 
 **エクスポート関数:**
+
 ```typescript
 detectError(data: string): string | null           // エラーパターン検知
 sendErrorNotification(ws, sessionId, errorLine): void
@@ -347,77 +361,82 @@ export default logger: pino.Logger
 
 #### routes/health.ts (認証不要)
 
-| メソッド | パス | レスポンス型 |
-|----------|------|-------------|
-| GET | `/api/health` | `HealthResponse` |
+| メソッド | パス          | レスポンス型     |
+| -------- | ------------- | ---------------- |
+| GET      | `/api/health` | `HealthResponse` |
 
 #### routes/api.ts (認証必要)
 
-| メソッド | パス | レスポンス型 |
-|----------|------|-------------|
-| GET | `/api/config` | `AppConfig` |
-| GET | `/api/addresses` | `AddressesResponse` |
-| GET | `/api/qr?text=` | `QrResponse` |
+| メソッド | パス             | レスポンス型        |
+| -------- | ---------------- | ------------------- |
+| GET      | `/api/config`    | `AppConfig`         |
+| GET      | `/api/addresses` | `AddressesResponse` |
+| GET      | `/api/qr?text=`  | `QrResponse`        |
 
 #### routes/files.ts (認証必要)
 
-| メソッド | パス | レスポンス型 | 備考 |
-|----------|------|-------------|------|
-| GET | `/api/files?path=` | `FileListResponse` | |
-| GET | `/api/file?path=` | `FileContentResponse` | MAX_FILE_SIZE制限 |
-| POST | `/api/file` | `FileWriteResponse` | ALLOW_FILE_WRITE=true要 |
-| POST | `/api/upload` | `UploadResponse` | multer, MAX_UPLOAD_SIZE制限 |
+| メソッド | パス               | レスポンス型          | 備考                        |
+| -------- | ------------------ | --------------------- | --------------------------- |
+| GET      | `/api/files?path=` | `FileListResponse`    |                             |
+| GET      | `/api/file?path=`  | `FileContentResponse` | MAX_FILE_SIZE制限           |
+| POST     | `/api/file`        | `FileWriteResponse`   | ALLOW_FILE_WRITE=true要     |
+| POST     | `/api/upload`      | `UploadResponse`      | multer, MAX_UPLOAD_SIZE制限 |
 
 #### routes/logs.ts (認証必要, ENABLE_SESSION_LOGS=true要)
 
-| メソッド | パス | レスポンス型 |
-|----------|------|-------------|
-| GET | `/api/logs` | `SessionLogsResponse` |
-| GET | `/api/log/:fileName` | `SessionLogContentResponse` |
+| メソッド | パス                 | レスポンス型                |
+| -------- | -------------------- | --------------------------- |
+| GET      | `/api/logs`          | `SessionLogsResponse`       |
+| GET      | `/api/log/:fileName` | `SessionLogContentResponse` |
 
 #### routes/clipboard.ts (認証必要)
 
-| メソッド | パス | レスポンス型 | 内部状態 |
-|----------|------|-------------|---------|
-| GET | `/api/clipboard` | `ClipboardResponse` | clipboardStore: ClipboardData \| null |
-| POST | `/api/clipboard` | `ClipboardResponse` | メモリ保持（再起動で消失） |
-| DELETE | `/api/clipboard` | `{ok: true}` | |
+| メソッド | パス             | レスポンス型        | 内部状態                              |
+| -------- | ---------------- | ------------------- | ------------------------------------- |
+| GET      | `/api/clipboard` | `ClipboardResponse` | clipboardStore: ClipboardData \| null |
+| POST     | `/api/clipboard` | `ClipboardResponse` | メモリ保持（再起動で消失）            |
+| DELETE   | `/api/clipboard` | `{ok: true}`        |                                       |
 
 #### routes/snippets.ts (認証必要)
 
-| メソッド | パス | レスポンス型 | 内部状態 |
-|----------|------|-------------|---------|
-| GET | `/api/snippets` | `SnippetsResponse` | snippetStore: Snippet[] |
-| POST | `/api/snippets` | `Snippet` | メモリ保持（再起動で消失） |
-| DELETE | `/api/snippets/:id` | `{ok: true}` | |
-| POST | `/api/snippets/:id/execute` | `SnippetExecuteResponse` | アクティブセッションに送信 |
+| メソッド | パス                        | レスポンス型             | 内部状態                   |
+| -------- | --------------------------- | ------------------------ | -------------------------- |
+| GET      | `/api/snippets`             | `SnippetsResponse`       | snippetStore: Snippet[]    |
+| POST     | `/api/snippets`             | `Snippet`                | メモリ保持（再起動で消失） |
+| DELETE   | `/api/snippets/:id`         | `{ok: true}`             |                            |
+| POST     | `/api/snippets/:id/execute` | `SnippetExecuteResponse` | アクティブセッションに送信 |
 
 **デフォルトスニペット:** `git status`, `git log --oneline -10`, `ls -la`, `npm test`
 
 #### routes/ai.ts (認証必要)
 
-| メソッド | パス | レスポンス型 |
-|----------|------|-------------|
-| GET | `/api/ai/status` | `AIStatusResponse` |
-| POST | `/api/ai/analyze` | `AIAnalyzeResponse` |
+| メソッド | パス              | レスポンス型        |
+| -------- | ----------------- | ------------------- |
+| GET      | `/api/ai/status`  | `AIStatusResponse`  |
+| POST     | `/api/ai/analyze` | `AIAnalyzeResponse` |
 
 ### ミドルウェア層
 
 #### middleware/auth.ts
+
 - `authMiddleware(req, res, next)` — Bearer token検証（AUTH_TOKENが不正な場合も認証を拒否）
 - `authorizeWebSocket(req)` — クエリパラメータ `?token=` で検証
+- `authorizeToken(token)` — 接続後のWebSocket認証メッセージを検証
 
 #### middleware/errorHandler.ts
+
 - `errorHandler(err, req, res, next)` — AppError → JSON変換、500エラー時スタックトレース（開発のみ）
 - `notFoundHandler(req, res, next)` — 404
 - `asyncHandler(fn)` — async/awaitラッパー
 
 #### middleware/rateLimit.ts
+
 - `createRateLimiter()` — RATE_LIMIT_API回/分
 - `createAuthRateLimiter()` — RATE_LIMIT_AUTH回/分（skipSuccessfulRequests）
 - `createWebSocketRateLimiter()` — 10接続/分
 
 #### middleware/security.ts
+
 - CSP: `default-src 'self'`, `script-src/style-src 'unsafe-inline'`, `connect-src ws: wss:`
 - HSTS: HTTPS時のみ（max-age=31536000）
 - X-Frame-Options: DENY
@@ -441,10 +460,12 @@ AppError (基底: code, statusCode, message, details?)
 ### ユーティリティ
 
 #### utils/path.ts
+
 - `resolvePath(relativePath): string` — ROOT_DIR内に限定（パストラバーサル防止）
 - `convertFsError(error, name): AppError` — FSエラー → AppError変換
 
 #### utils/network.ts
+
 - `buildAccessUrls(): AccessUrl[]` — mDNS/LAN/localhost URL一覧
 
 ---
@@ -454,19 +475,21 @@ AppError (基底: code, statusCode, message, details?)
 ### state/sessionStore.ts — シングルトン状態管理
 
 **管理する状態:**
+
 ```typescript
-mode: SessionMode                           // 現在のモード
-ws: WebSocket | null                        // WebSocket接続
-config: AppConfig | null                    // サーバー設定
-token: string                               // 認証トークン
-sessions: Map<string, ClientSessionInfo>    // 複数セッション（最大5）
-activeSessionId: string | null              // アクティブセッション
-nextSessionNum: number                      // セッション番号カウンタ
-reconnect: ReconnectConfig                  // 再接続設定
-currentFontSize: number                     // フォントサイズ（10-24, デフォルト13）
+mode: SessionMode; // 現在のモード
+ws: WebSocket | null; // WebSocket接続
+config: AppConfig | null; // サーバー設定
+token: string; // 認証トークン
+sessions: Map<string, ClientSessionInfo>; // 複数セッション（最大5）
+activeSessionId: string | null; // アクティブセッション
+nextSessionNum: number; // セッション番号カウンタ
+reconnect: ReconnectConfig; // 再接続設定
+currentFontSize: number; // フォントサイズ（10-24, デフォルト13）
 ```
 
 **LocalStorageキー:**
+
 - `pdr_token` — 認証トークン
 - `pdr_terminal_font_size` — フォントサイズ
 - `pdr_theme` — テーマ（'light' | 'dark'）
@@ -478,41 +501,41 @@ currentFontSize: number                     // フォントサイズ（10-24, �
 
 ### コンポーネント概要
 
-| コンポーネント | 主な責務 | エクスポート関数 |
-|---|---|---|
-| terminal.ts | xterm.js管理、タブUI | `initTerminal`, `createSession`, `deleteSession`, `fitActiveSession` |
-| session.ts | セッション開始/停止、モード選択 | `initSessionUI`, `setStatus`, `handleServerMessage`, `updateModeUI` |
-| fileBrowser.ts | ファイル一覧/編集/アップロード | `initFileBrowser`, `loadFiles`, `loadAddresses` |
-| settings.ts | テーマ/フォント/通知設定 | `initSettings`, `applyTheme`, `toggleTheme`, `getCurrentTheme` |
-| aiPanel.ts | AI解析パネル | `initAIPanel`, `checkAIStatus` |
-| clipboard.ts | クリップボード共有モーダル | `initClipboard` |
-| snippets.ts | スニペットドロワー | `initSnippets` |
-| sshDialog.ts | SSH接続ダイアログ | `initSSHDialog`, `showSSHDialog`, `hideSSHDialog`, `setSSHDefaults` |
-| toast.ts | トースト通知 | `initToast`, `showToast(message, type, duration)` |
+| コンポーネント | 主な責務                        | エクスポート関数                                                     |
+| -------------- | ------------------------------- | -------------------------------------------------------------------- |
+| terminal.ts    | xterm.js管理、タブUI            | `initTerminal`, `createSession`, `deleteSession`, `fitActiveSession` |
+| session.ts     | セッション開始/停止、モード選択 | `initSessionUI`, `setStatus`, `handleServerMessage`, `updateModeUI`  |
+| fileBrowser.ts | ファイル一覧/編集/アップロード  | `initFileBrowser`, `loadFiles`, `loadAddresses`                      |
+| settings.ts    | テーマ/フォント/通知設定        | `initSettings`, `applyTheme`, `toggleTheme`, `getCurrentTheme`       |
+| aiPanel.ts     | AI解析パネル                    | `initAIPanel`, `checkAIStatus`                                       |
+| clipboard.ts   | クリップボード共有モーダル      | `initClipboard`                                                      |
+| snippets.ts    | スニペットドロワー              | `initSnippets`                                                       |
+| sshDialog.ts   | SSH接続ダイアログ               | `initSSHDialog`, `showSSHDialog`, `hideSSHDialog`, `setSSHDefaults`  |
+| toast.ts       | トースト通知                    | `initToast`, `showToast(message, type, duration)`                    |
 
 ### サービス概要
 
-| サービス | 主な責務 |
-|---|---|
-| api.ts | REST API呼び出し（authHeaders付き）、401で認証画面遷移 |
-| websocket.ts | WebSocket接続/再接続（指数バックオフ: 1s→2s→4s...最大30s、最大10回） |
+| サービス        | 主な責務                                                                        |
+| --------------- | ------------------------------------------------------------------------------- |
+| api.ts          | REST API呼び出し（authHeaders付き）、401で認証画面遷移                          |
+| websocket.ts    | WebSocket接続/再接続（指数バックオフ: 1s→2s→4s...最大30s、最大10回）            |
 | notification.ts | Notification API連携、バックグラウンド時ブラウザ通知/フォアグラウンド時トースト |
-| errorHandler.ts | エラーコード→日本語メッセージ変換（`translateError(code)`） |
+| errorHandler.ts | エラーコード→日本語メッセージ変換（`translateError(code)`）                     |
 
 ---
 
 ## グローバル状態一覧
 
-| 場所 | 変数名 | 型 | 説明 |
-|------|--------|-----|------|
-| services/session.ts | `sessions` | `Map<string, SessionInternal>` | アクティブセッション |
-| services/session.ts | `sessionLogs` | `Map<string, SessionLogMetaInternal>` | ログメタデータ |
-| services/websocket.ts | `sessionTimers` | `Map<string, SessionTimers>` | タイムアウトタイマー |
-| services/notifier.ts | `lastNotificationTime` | `Map<string, number>` | 通知クールダウン(5秒) |
-| routes/clipboard.ts | `clipboardStore` | `ClipboardData \| null` | メモリ内クリップボード |
-| routes/snippets.ts | `snippetStore` | `Snippet[]` | メモリ内スニペット |
-| routes/ai.ts | `aiProvider` | `AIProvider \| null` | AIプロバイダー（起動時に1回作成） |
-| client/state/sessionStore.ts | `sessionStore` | `SessionStore` | クライアント全状態（シングルトン） |
+| 場所                         | 変数名                 | 型                                    | 説明                               |
+| ---------------------------- | ---------------------- | ------------------------------------- | ---------------------------------- |
+| services/session.ts          | `sessions`             | `Map<string, SessionInternal>`        | アクティブセッション               |
+| services/session.ts          | `sessionLogs`          | `Map<string, SessionLogMetaInternal>` | ログメタデータ                     |
+| services/websocket.ts        | `sessionTimers`        | `Map<string, SessionTimers>`          | タイムアウトタイマー               |
+| services/notifier.ts         | `lastNotificationTime` | `Map<string, number>`                 | 通知クールダウン(5秒)              |
+| routes/clipboard.ts          | `clipboardStore`       | `ClipboardData \| null`               | メモリ内クリップボード             |
+| routes/snippets.ts           | `snippetStore`         | `Snippet[]`                           | メモリ内スニペット                 |
+| routes/ai.ts                 | `aiProvider`           | `AIProvider \| null`                  | AIプロバイダー（起動時に1回作成）  |
+| client/state/sessionStore.ts | `sessionStore`         | `SessionStore`                        | クライアント全状態（シングルトン） |
 
 **注意:** clipboard, snippetsはメモリ保持のため、サーバー再起動で消失する。
 
@@ -521,45 +544,49 @@ currentFontSize: number                     // フォントサイズ（10-24, �
 ## WebSocketプロトコル
 
 ### 接続
+
 ```
 ws://host:port/ws?token=<AUTH_TOKEN>
 ```
 
 ### クライアント → サーバー (ClientMessage)
 
-| type | フィールド | 説明 |
-|------|-----------|------|
-| `start` | `mode: SessionMode`, `cwd?: string`, `command?: string`, `sshConfig?: SSHConnectionConfig` | セッション開始 |
-| `input` | `data: string`, `sessionId?: string` | ターミナル入力 |
-| `resize` | `cols: number`, `rows: number`, `sessionId?: string` | リサイズ |
-| `stop` | `sessionId?: string` | セッション停止 |
+| type     | フィールド                                                                                 | 説明             |
+| -------- | ------------------------------------------------------------------------------------------ | ---------------- |
+| `auth`   | `token: string`                                                                            | 接続後の認証確認 |
+| `start`  | `mode: SessionMode`, `cwd?: string`, `command?: string`, `sshConfig?: SSHConnectionConfig` | セッション開始   |
+| `input`  | `data: string`, `sessionId?: string`                                                       | ターミナル入力   |
+| `resize` | `cols: number`, `rows: number`, `sessionId?: string`                                       | リサイズ         |
+| `stop`   | `sessionId?: string`                                                                       | セッション停止   |
 
 ### サーバー → クライアント (ServerMessage)
 
-| type | フィールド | 説明 |
-|------|-----------|------|
-| `started` | `sessionId`, `mode`, `cwd`, `label` | セッション開始完了 |
-| `data` | `data: string`, `sessionId?` | ターミナル出力 |
-| `exit` | `exitCode: number`, `signal?: string`, `sessionId?` | プロセス終了 |
-| `stopped` | `reason: string`, `sessionId?` | セッション停止 |
-| `error` | `message: string` | エラー |
-| `notification` | `title`, `body`, `level: 'info'\|'success'\|'warning'\|'error'`, `sessionId?` | 通知 |
+| type           | フィールド                                                                    | 説明               |
+| -------------- | ----------------------------------------------------------------------------- | ------------------ |
+| `auth_result`  | `ok: boolean`, `message?: string`                                             | 認証結果           |
+| `started`      | `sessionId`, `mode`, `cwd`, `label`                                           | セッション開始完了 |
+| `data`         | `data: string`, `sessionId?`                                                  | ターミナル出力     |
+| `exit`         | `exitCode: number`, `signal?: string`, `sessionId?`                           | プロセス終了       |
+| `stopped`      | `reason: string`, `sessionId?`                                                | セッション停止     |
+| `error`        | `message: string`                                                             | エラー             |
+| `notification` | `title`, `body`, `level: 'info'\|'success'\|'warning'\|'error'`, `sessionId?` | 通知               |
 
 ### セッションモード
 
-| モード | サーバー側処理 | コマンド |
-|--------|-------------|---------|
-| `codex` | pty.spawn() | `codex` |
-| `claude` | pty.spawn() | `claude` |
-| `shell` | pty.spawn() | `$SHELL_CMD` |
-| `custom` | pty.spawn() | ユーザー指定（ALLOW_CUSTOM_COMMANDS=true要） |
-| `ssh` | ssh2.connect() | ssh2ライブラリ（PTY不使用） |
+| モード   | サーバー側処理 | コマンド                                     |
+| -------- | -------------- | -------------------------------------------- |
+| `codex`  | pty.spawn()    | `codex`                                      |
+| `claude` | pty.spawn()    | `claude`                                     |
+| `shell`  | pty.spawn()    | `$SHELL_CMD`                                 |
+| `custom` | pty.spawn()    | ユーザー指定（ALLOW_CUSTOM_COMMANDS=true要） |
+| `ssh`    | ssh2.connect() | ssh2ライブラリ（PTY不使用）                  |
 
 ---
 
 ## セキュリティ
 
 ### 実装済み対策
+
 - **認証**: Bearer token必須（AUTH_TOKENが不正な場合は待受開始前に起動を中止）
 - **CSP**: Content Security Policy ヘッダー
 - **HSTS**: HTTPS時のみ有効
@@ -574,6 +601,7 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 - **Dockerヘルスチェック**: /api/health監視
 
 ### 既知の制限
+
 - CSPで `script-src 'unsafe-inline'`, `style-src 'unsafe-inline'` を許可中
 - known_hostsのハッシュ化ホスト名（HashKnownHosts）は未対応
 - クリップボード/スニペットはメモリ保持（永続化なし）
@@ -583,6 +611,7 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 ## 設計パターン・コーディング規約
 
 ### 規約
+
 - **`any`禁止** — `@typescript-eslint/no-explicit-any: "error"`
 - **コメントは日本語**
 - **変数名・関数名は英語**
@@ -590,15 +619,15 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### パターン
 
-| パターン | 使用箇所 | 説明 |
-|---------|---------|------|
-| シングルトン状態管理 | sessionStore | クライアント全状態を1インスタンスで管理 |
-| コールバックベース疎結合 | 全コンポーネントのinit関数 | `initXxx(elems, { onSomething })` 形式 |
-| IIFE初期化 | app.ts | `(() => { init() })()` でスコープ分離 |
-| asyncHandler | ルート定義 | `router.get('/', asyncHandler(async (req, res) => ...))` |
-| AppErrorサブクラス | エラー処理 | 各エラー種別にサブクラスを定義 |
-| CDNグローバル変数 | terminal.ts | `Terminal`, `FitAddon` はCDN経由でグローバル宣言 |
-| Map<string, T>状態管理 | サーバー側全般 | セッション、ログ、タイマーをMapで管理 |
+| パターン                 | 使用箇所                   | 説明                                                     |
+| ------------------------ | -------------------------- | -------------------------------------------------------- |
+| シングルトン状態管理     | sessionStore               | クライアント全状態を1インスタンスで管理                  |
+| コールバックベース疎結合 | 全コンポーネントのinit関数 | `initXxx(elems, { onSomething })` 形式                   |
+| IIFE初期化               | app.ts                     | `(() => { init() })()` でスコープ分離                    |
+| asyncHandler             | ルート定義                 | `router.get('/', asyncHandler(async (req, res) => ...))` |
+| AppErrorサブクラス       | エラー処理                 | 各エラー種別にサブクラスを定義                           |
+| CDNグローバル変数        | terminal.ts                | `Terminal`, `FitAddon` はCDN経由でグローバル宣言         |
+| Map<string, T>状態管理   | サーバー側全般             | セッション、ログ、タイマーをMapで管理                    |
 
 ---
 
@@ -606,18 +635,18 @@ ws://host:port/ws?token=<AUTH_TOKEN>
 
 ### テスト構成 (142件、10ファイル)
 
-| ファイル | テスト数 | 対象 |
-|---------|---------|------|
-| server/auth.test.ts | 17 | トークン認証 |
-| server/session.test.ts | 13 | セッション管理 |
-| server/utils.test.ts | 33 | パス解決、FSエラー変換 |
-| server/health.test.ts | 4 | ヘルスチェックAPI |
-| server/clipboard.test.ts | 4 | クリップボードAPI |
-| server/snippets.test.ts | 6 | スニペットAPI |
-| server/security.test.ts | 7 | セキュリティヘッダー |
-| server/notifier.test.ts | 21 | エラーパターン検知 |
-| client/utils.test.ts | 23 | クライアントユーティリティ |
-| client/services/api.test.ts | 14 | API呼び出し |
+| ファイル                    | テスト数 | 対象                       |
+| --------------------------- | -------- | -------------------------- |
+| server/auth.test.ts         | 17       | トークン認証               |
+| server/session.test.ts      | 13       | セッション管理             |
+| server/utils.test.ts        | 33       | パス解決、FSエラー変換     |
+| server/health.test.ts       | 4        | ヘルスチェックAPI          |
+| server/clipboard.test.ts    | 4        | クリップボードAPI          |
+| server/snippets.test.ts     | 6        | スニペットAPI              |
+| server/security.test.ts     | 7        | セキュリティヘッダー       |
+| server/notifier.test.ts     | 21       | エラーパターン検知         |
+| client/utils.test.ts        | 23       | クライアントユーティリティ |
+| client/services/api.test.ts | 14       | API呼び出し                |
 
 ### カバレッジ設定 (vitest.config.ts)
 
@@ -629,6 +658,7 @@ coverage: {
 ```
 
 ### テスト未対象（意図的に除外）
+
 - `src/client/**/*.ts` — ブラウザ環境依存
 - `src/services/session.ts` — PTY依存
 - `src/services/websocket.ts` — WebSocket依存
@@ -642,27 +672,27 @@ coverage: {
 
 ### ビルドコマンド
 
-| コマンド | 出力 | サイズ |
-|---------|------|--------|
+| コマンド               | 出力           | サイズ |
+| ---------------------- | -------------- | ------ |
 | `npm run build:server` | dist/server.js | ~1.7MB |
-| `npm run build:client` | public/app.js | ~48KB |
-| `npm run build:cli` | dist/cli.js | ~3KB |
+| `npm run build:client` | public/app.js  | ~48KB  |
+| `npm run build:cli`    | dist/cli.js    | ~3KB   |
 
 **esbuild external:** `node-pty`, `ssh2`, `cpu-features`, `pino`, `pino-pretty`
 
 ### npmスクリプト
 
-| スクリプト | 説明 |
-|-----------|------|
-| `build` | サーバー+クライアント+CLIをビルド |
-| `dev` | ビルド → サーバー起動 |
-| `start` | ビルド済みサーバー起動 |
-| `watch` | concurrently でサーバー+クライアントをwatch |
-| `lint` | ESLint実行 |
-| `format` | Prettier実行 |
-| `typecheck` | tsc --noEmit（サーバー+クライアント） |
-| `test` | vitest（watchモード） |
-| `test:run` | vitest run（1回実行） |
+| スクリプト  | 説明                                        |
+| ----------- | ------------------------------------------- |
+| `build`     | サーバー+クライアント+CLIをビルド           |
+| `dev`       | ビルド → サーバー起動                       |
+| `start`     | ビルド済みサーバー起動                      |
+| `watch`     | concurrently でサーバー+クライアントをwatch |
+| `lint`      | ESLint実行                                  |
+| `format`    | Prettier実行                                |
+| `typecheck` | tsc --noEmit（サーバー+クライアント）       |
+| `test`      | vitest（watchモード）                       |
+| `test:run`  | vitest run（1回実行）                       |
 
 ### Docker
 
@@ -680,9 +710,9 @@ coverage: {
 
 ## バージョン情報
 
-| 項目 | 値 |
-|------|-----|
-| バージョン | 0.1.0 |
-| Node.js | >= 20.0.0 |
-| ライセンス | MIT |
+| 項目       | 値                                            |
+| ---------- | --------------------------------------------- |
+| バージョン | 0.1.0                                         |
+| Node.js    | >= 20.0.0                                     |
+| ライセンス | MIT                                           |
 | リポジトリ | https://github.com/Y-Kanekoo/pocket-dev-relay |

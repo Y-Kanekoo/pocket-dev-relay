@@ -1,9 +1,55 @@
+# 依存関係（コンテナ内でnpm ciするため不要）
 node_modules
+
+# ビルド成果物（コンテナ内でビルドするため不要）
 dist
+public/app.js
+
+# バージョン管理
 .git
+.gitignore
+
+# 環境変数・機密情報
 .env
 .env.*
+!.env.example
 .npmrc
+
+# ドキュメント
 *.md
+docs/
+LICENSE
+
+# テスト・カバレッジ
 tests/
+coverage/
+vitest.config.ts
+
+# CI/CD・GitHub
 .github/
+
+# エディタ設定
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# Claude設定
+.claude/
+
+# ログ・データ
+logs/
+*.log
+.pocket-dev-relay/
+
+# リンター・フォーマッター設定
+.eslintrc.json
+.eslintignore
+.prettierrc
+
+# npm publish関連
+.npmignore

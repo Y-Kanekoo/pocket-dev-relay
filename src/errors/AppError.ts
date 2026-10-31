@@ -137,6 +137,18 @@ export class SessionError extends AppError {
 }
 
 /**
+ * サービス利用不可エラー
+ * 外部サービスや機能が一時的に利用できない場合
+ */
+export class ServiceUnavailableError extends AppError {
+  constructor(service: string, message?: string) {
+    super('SERVICE_UNAVAILABLE', 503, message ?? `${service}は現在利用できません`);
+    this.name = 'ServiceUnavailableError';
+    Object.setPrototypeOf(this, ServiceUnavailableError.prototype);
+  }
+}
+
+/**
  * 内部サーバーエラー
  * 予期しないエラーをラップする場合
  */

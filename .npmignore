@@ -1,12 +1,15 @@
 # ソースコード（dist/のみ公開）
 src/
 tests/
+*.test.ts
+*.spec.ts
 
 # CI/CD・GitHub
 .github/
 
 # ドキュメント（READMEは除く）
 docs/
+CHANGELOG.md
 
 # 環境変数・機密情報
 .env
@@ -21,8 +24,9 @@ docs/
 # TypeScript設定
 tsconfig*.json
 
-# テスト設定
+# テスト設定・カバレッジ
 vitest.config.ts
+coverage/
 
 # Docker関連
 Dockerfile
@@ -34,3 +38,15 @@ server.js
 
 # Claude設定
 .claude/
+
+# ログ・データ
+logs/
+*.log
+.pocket-dev-relay/
+
+# エディタ設定
+.vscode/
+.idea/
+
+# esbuild設定
+esbuild.config.*

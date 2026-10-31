@@ -111,7 +111,7 @@ describe('createAuthMiddleware', () => {
 });
 
 // ============================================================
-// getTokenFromRequest のテスト
+// authorizeToken のテスト
 // ============================================================
 
 describe('getTokenFromRequest', () => {

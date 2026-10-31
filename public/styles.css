@@ -4,8 +4,10 @@
   --bg-alt: #fff8ef;
   --ink: #1f1a14;
   --muted: #6b5f52;
-  --accent: #0b8f7a;
-  --accent-2: #d95a2b;
+  /* WCAG AA準拠: bg対比5.04:1, white対比5.77:1 */
+  --accent: #077363;
+  /* WCAG AA準拠: bg対比4.76:1, white対比5.44:1 */
+  --accent-2: #b5461e;
   --accent-3: #f0b94b;
   --card: rgba(255, 255, 255, 0.78);
   --border: rgba(60, 44, 28, 0.16);
@@ -20,7 +22,7 @@
 }
 
 /* ダークモード */
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
   --bg: #1a1a1a;
   --bg-alt: #242424;
@@ -43,21 +45,79 @@
   box-sizing: border-box;
 }
 
+/* ============================================================
+   フォーカス可視スタイル（WCAG 2.4.7準拠）
+   ============================================================ */
+
+/* グローバルfocus-visible: 全インタラクティブ要素に適用 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ボタンのフォーカスリング */
+button:focus-visible,
+.mode-card:focus-visible,
+.tab:focus-visible,
+.session-tab:focus-visible,
+.copy-btn:focus-visible,
+.snippet-exec-btn:focus-visible,
+.snippet-delete-btn:focus-visible,
+.ai-preset-btn:focus-visible,
+.header-icon-btn:focus-visible,
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 入力フィールドのフォーカスリング */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+/* 丸型ボタンのフォーカスリングは丸く */
+.theme-toggle:focus-visible,
+.header-icon-btn:focus-visible,
+.clipboard-close:focus-visible,
+.snippet-close:focus-visible,
+.session-tab-close:focus-visible,
+.font-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* ファイルアイテムのフォーカスリング */
+.file-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
 body {
   margin: 0;
-  font-family: "Noto Sans JP", "BIZ UDPGothic", "Hiragino Kaku Gothic ProN",
-    "Yu Gothic", sans-serif;
+  font-family:
+    'Noto Sans JP', 'BIZ UDPGothic', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at 12% 12%, #fbe8c2 0%, transparent 48%),
+  background:
+    radial-gradient(circle at 12% 12%, #fbe8c2 0%, transparent 48%),
     radial-gradient(circle at 88% 6%, #d4f1e5 0%, transparent 46%),
     linear-gradient(135deg, #f4efe8 0%, #efe3d5 52%, #f7f1e9 100%);
-  min-height: 100vh;
-  padding: 24px clamp(16px, 3vw, 40px) 40px;
+  min-height: 100dvh;
+  /* セーフエリア対応: ノッチ・角丸・ホームバーの余白を確保 */
+  padding: 24px clamp(16px, 3vw, 40px) calc(40px + env(safe-area-inset-bottom));
+  padding-left: max(clamp(16px, 3vw, 40px), env(safe-area-inset-left));
+  padding-right: max(clamp(16px, 3vw, 40px), env(safe-area-inset-right));
 }
 
 /* ダークモード時のbody背景 */
-[data-theme="dark"] body {
-  background: radial-gradient(circle at 12% 12%, rgba(40, 60, 50, 0.5) 0%, transparent 48%),
+[data-theme='dark'] body {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(40, 60, 50, 0.5) 0%, transparent 48%),
     radial-gradient(circle at 88% 6%, rgba(30, 50, 60, 0.5) 0%, transparent 46%),
     linear-gradient(135deg, #1a1a1a 0%, #252525 52%, #1e1e1e 100%);
 }
@@ -66,7 +126,8 @@ body {
   position: fixed;
   inset: -20% -10% auto -10%;
   height: 300px;
-  background: radial-gradient(circle at 20% 40%, #f6d38b 0%, transparent 55%),
+  background:
+    radial-gradient(circle at 20% 40%, #f6d38b 0%, transparent 55%),
     radial-gradient(circle at 80% 40%, #98d5c8 0%, transparent 58%);
   opacity: 0.7;
   pointer-events: none;
@@ -75,8 +136,9 @@ body {
 }
 
 /* ダークモード時のbackdrop */
-[data-theme="dark"] .backdrop {
-  background: radial-gradient(circle at 20% 40%, rgba(100, 80, 40, 0.4) 0%, transparent 55%),
+[data-theme='dark'] .backdrop {
+  background:
+    radial-gradient(circle at 20% 40%, rgba(100, 80, 40, 0.4) 0%, transparent 55%),
     radial-gradient(circle at 80% 40%, rgba(40, 100, 80, 0.4) 0%, transparent 58%);
   opacity: 0.5;
 }
@@ -109,11 +171,11 @@ body {
 }
 
 .brand-mark {
-  background: linear-gradient(140deg, #0b8f7a, #59b59c);
+  background: linear-gradient(140deg, #077363, #4a9e88);
   color: #fff;
   padding: 14px 16px;
   border-radius: 14px;
-  font-family: "Bebas Neue", "Noto Sans JP", sans-serif;
+  font-family: 'Bebas Neue', 'Noto Sans JP', sans-serif;
   letter-spacing: 0.08em;
   font-size: 1.2rem;
   box-shadow: var(--shadow);
@@ -121,7 +183,7 @@ body {
 
 .brand h1 {
   margin: 0;
-  font-family: "Bebas Neue", "Noto Sans JP", sans-serif;
+  font-family: 'Bebas Neue', 'Noto Sans JP', sans-serif;
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   letter-spacing: 0.08em;
 }
@@ -149,7 +211,9 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .theme-toggle:hover {
@@ -170,11 +234,11 @@ body {
 }
 
 /* ダークモード時は月アイコンを非表示 */
-[data-theme="dark"] .theme-toggle .icon-sun {
+[data-theme='dark'] .theme-toggle .icon-sun {
   display: block;
 }
 
-[data-theme="dark"] .theme-toggle .icon-moon {
+[data-theme='dark'] .theme-toggle .icon-moon {
   display: none;
 }
 
@@ -193,8 +257,8 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #d95a2b;
-  box-shadow: 0 0 12px rgba(217, 90, 43, 0.6);
+  background: #b5461e;
+  box-shadow: 0 0 12px rgba(181, 70, 30, 0.6);
 }
 
 .main {
@@ -263,7 +327,7 @@ body {
 }
 
 /* ダークモード時のフォントサイズコントロール */
-[data-theme="dark"] .font-size-controls {
+[data-theme='dark'] .font-size-controls {
   background: rgba(50, 50, 50, 0.8);
 }
 
@@ -342,15 +406,27 @@ body {
   color: var(--muted);
 }
 
+.tunnel-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent-green, #077363);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
 .url-text {
-  font-family: "SFMono-Regular", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'Menlo', monospace;
   font-size: 0.88rem;
   word-break: break-all;
 }
 
 .copy-btn {
   background: rgba(11, 143, 122, 0.12);
-  color: #0b8f7a;
+  color: #077363;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 0.8rem;
@@ -359,7 +435,7 @@ body {
 
 .copy-btn.success {
   background: rgba(11, 143, 122, 0.22);
-  color: #0b8f7a;
+  color: #077363;
 }
 
 .connect-note {
@@ -469,7 +545,7 @@ button {
 }
 
 button.primary {
-  background: linear-gradient(140deg, #0b8f7a, #0ba09c);
+  background: linear-gradient(140deg, #077363, #0a8d88);
   color: #fff;
   padding: 10px 18px;
   border-radius: 999px;
@@ -486,7 +562,7 @@ button.ghost {
 }
 
 /* ダークモード時のghostボタン */
-[data-theme="dark"] button.ghost {
+[data-theme='dark'] button.ghost {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -625,16 +701,16 @@ button:disabled {
 }
 
 /* ダークモード時のセッションタブ */
-[data-theme="dark"] .session-tab {
+[data-theme='dark'] .session-tab {
   background: rgba(30, 30, 30, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-theme="dark"] .session-tab:hover {
+[data-theme='dark'] .session-tab:hover {
   background: rgba(40, 40, 40, 0.9);
 }
 
-[data-theme="dark"] .session-tab.active {
+[data-theme='dark'] .session-tab.active {
   background: #14110d;
 }
 
@@ -644,7 +720,8 @@ button:disabled {
   border-radius: 0 16px 16px 16px;
   overflow: hidden;
   border: 1px solid rgba(15, 10, 5, 0.16);
-  height: clamp(320px, 45vh, 560px);
+  /* dvh: OSキーボード表示時にビューポート高さが動的に変わる */
+  height: clamp(320px, 45dvh, 560px);
   background: #14110d;
 }
 
@@ -721,7 +798,7 @@ button:disabled {
   border-radius: 14px;
   border: 1px solid var(--border);
   padding: 12px;
-  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
   font-size: 0.85rem;
   background: var(--file-content-bg);
   color: var(--ink);
@@ -739,7 +816,7 @@ button:disabled {
 }
 
 .footer code {
-  font-family: "SFMono-Regular", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'Menlo', monospace;
 }
 
 .overlay {
@@ -752,7 +829,7 @@ button:disabled {
 }
 
 /* ダークモード時のオーバーレイ */
-[data-theme="dark"] .overlay {
+[data-theme='dark'] .overlay {
   background: rgba(0, 0, 0, 0.6);
 }
 
@@ -818,7 +895,8 @@ button:disabled {
 /* トースト通知 */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  /* セーフエリア対応: ホームバーとの重なりを回避 */
+  bottom: calc(24px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -865,7 +943,7 @@ button:disabled {
 
 .toast.toast-warning .toast-icon {
   background: rgba(240, 185, 75, 0.2);
-  color: #b38600;
+  color: #8a6800;
 }
 
 .toast.toast-success .toast-icon {
@@ -916,7 +994,9 @@ button:disabled {
   align-items: center;
   justify-content: center;
   color: var(--ink);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .header-icon-btn:hover {
@@ -975,7 +1055,7 @@ button:disabled {
   color: var(--accent-2);
 }
 
-[data-theme="dark"] .clipboard-close {
+[data-theme='dark'] .clipboard-close {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -992,7 +1072,7 @@ button:disabled {
   border-radius: 14px;
   border: 1px solid var(--border);
   padding: 12px;
-  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
   font-size: 0.9rem;
   background: var(--input-bg);
   color: var(--ink);
@@ -1030,7 +1110,7 @@ button:disabled {
   display: none;
 }
 
-[data-theme="dark"] .snippet-overlay {
+[data-theme='dark'] .snippet-overlay {
   background: rgba(0, 0, 0, 0.5);
 }
 
@@ -1039,7 +1119,7 @@ button:disabled {
   top: 0;
   right: -360px;
   width: min(360px, 85vw);
-  height: 100vh;
+  height: 100dvh;
   background: var(--card);
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 32px rgba(24, 17, 8, 0.15);
@@ -1088,7 +1168,7 @@ button:disabled {
   color: var(--accent-2);
 }
 
-[data-theme="dark"] .snippet-close {
+[data-theme='dark'] .snippet-close {
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -1130,7 +1210,7 @@ button:disabled {
 }
 
 .snippet-item-command {
-  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
   font-size: 0.78rem;
   color: var(--muted);
   overflow: hidden;
@@ -1257,7 +1337,7 @@ button:disabled {
 
 .upload-progress.uploading {
   background: rgba(240, 185, 75, 0.15);
-  color: #b38600;
+  color: #8a6800;
   border: 1px solid rgba(240, 185, 75, 0.3);
 }
 
@@ -1450,12 +1530,12 @@ button:disabled {
   padding: 12px;
   margin: 8px 0;
   overflow-x: auto;
-  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
   font-size: 0.85rem;
   line-height: 1.5;
 }
 
-[data-theme="dark"] .ai-code-block {
+[data-theme='dark'] .ai-code-block {
   background: #0d0d0d;
 }
 
@@ -1464,21 +1544,21 @@ button:disabled {
   color: var(--accent);
   padding: 2px 6px;
   border-radius: 6px;
-  font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
   font-size: 0.88em;
 }
 
 /* ダークモード対応 */
-[data-theme="dark"] .ai-preset-btn {
+[data-theme='dark'] .ai-preset-btn {
   background: rgba(15, 191, 159, 0.1);
   border-color: rgba(15, 191, 159, 0.2);
 }
 
-[data-theme="dark"] .ai-preset-btn:hover:not(:disabled) {
+[data-theme='dark'] .ai-preset-btn:hover:not(:disabled) {
   background: rgba(15, 191, 159, 0.2);
 }
 
-[data-theme="dark"] .ai-provider-label {
+[data-theme='dark'] .ai-provider-label {
   background: rgba(15, 191, 159, 0.12);
 }
 
@@ -1550,14 +1630,14 @@ button:disabled {
   color: var(--ink);
 }
 
-.toggle-label input[type="checkbox"] {
+.toggle-label input[type='checkbox'] {
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
   cursor: pointer;
 }
 
-.toggle-label input[type="checkbox"]:disabled {
+.toggle-label input[type='checkbox']:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1595,7 +1675,7 @@ button:disabled {
 
 .ssh-warning {
   background: rgba(240, 185, 75, 0.15);
-  color: #b38600;
+  color: #8a6800;
   border: 1px solid rgba(240, 185, 75, 0.3);
   border-radius: 12px;
   padding: 10px 14px;
@@ -1603,7 +1683,7 @@ button:disabled {
   line-height: 1.5;
 }
 
-[data-theme="dark"] .ssh-warning {
+[data-theme='dark'] .ssh-warning {
   background: rgba(245, 201, 96, 0.12);
   color: var(--accent-3);
   border-color: rgba(245, 201, 96, 0.25);
@@ -1633,7 +1713,7 @@ button:disabled {
   padding: 6px 0;
 }
 
-.ssh-radio-label input[type="radio"] {
+.ssh-radio-label input[type='radio'] {
   accent-color: var(--accent);
   cursor: pointer;
 }
@@ -1649,12 +1729,93 @@ button:disabled {
 }
 
 /* SSHモードカードのアイコン風装飾 */
-.mode-card[data-mode="ssh"] {
+.mode-card[data-mode='ssh'] {
   border-style: dashed;
   border-color: var(--border);
 }
 
-.mode-card[data-mode="ssh"].active {
+.mode-card[data-mode='ssh'].active {
   border-style: solid;
   border-color: var(--accent);
+}
+
+/* ============================================================
+   接続品質インジケータ
+   ============================================================ */
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b5461e;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+.connection-label {
+  white-space: nowrap;
+}
+
+/* 接続中: 緑 */
+.connection-indicator.connected .connection-dot {
+  background: #077363;
+  box-shadow: 0 0 8px rgba(7, 115, 99, 0.5);
+}
+
+.connection-indicator.connected {
+  color: var(--accent);
+}
+
+/* 再接続中/接続試行中: 黄 */
+.connection-indicator.reconnecting .connection-dot,
+.connection-indicator.connecting .connection-dot {
+  background: #f0b94b;
+  box-shadow: 0 0 8px rgba(240, 185, 75, 0.5);
+  animation: indicatorPulse 1.5s ease-in-out infinite;
+}
+
+.connection-indicator.reconnecting,
+.connection-indicator.connecting {
+  color: #8a6800;
+}
+
+[data-theme='dark'] .connection-indicator.reconnecting,
+[data-theme='dark'] .connection-indicator.connecting {
+  color: var(--accent-3);
+}
+
+/* 切断: 赤 */
+.connection-indicator.disconnected .connection-dot {
+  background: #b5461e;
+  box-shadow: 0 0 8px rgba(181, 70, 30, 0.5);
+}
+
+.connection-indicator.disconnected {
+  color: var(--accent-2);
+}
+
+@keyframes indicatorPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }

@@ -12,34 +12,38 @@ import { WebSocketServer } from 'ws';
 
 import {
   PORT,
+  HOST,
+  AUTH_TOKEN,
   ENABLE_HTTPS,
   SSL_KEY_PATH,
   SSL_CERT_PATH,
   ENABLE_SESSION_LOGS,
   LOG_DIR,
-  AUTH_TOKEN,
+  ENABLE_TUNNEL,
+  ENABLE_SSH,
+  TRUST_PROXY,
+  SSH_REQUIRE_HTTPS_FOR_PASSWORD,
 } from './config.js';
 import { assertAuthTokenConfigured } from './utils/auth.js';
 import logger from './services/logger.js';
 import { buildAccessUrls } from './utils/network.js';
 import { initLogDir, cleanupAllSessions } from './services/session.js';
-import { setupWebSocketHandlers } from './services/websocket.js';
+import { startTunnel, stopTunnel } from './services/tunnel.js';
+import { setupWebSocketHandlers, stopTimerCleanup } from './services/websocket.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
 import { securityHeaders } from './middleware/security.js';
 import healthRouter from './routes/health.js';
-import apiRouter from './routes/api.js';
-import filesRouter from './routes/files.js';
-import logsRouter from './routes/logs.js';
-import clipboardRouter from './routes/clipboard.js';
-import snippetsRouter from './routes/snippets.js';
-import aiRouter from './routes/ai.js';
+import combinedApiRouter from './routes/index.js';
 
 // 認証設定が不正な場合、HTTP/HTTPS/WSリスナーを作成せずに終了する。
 assertAuthTokenConfigured(AUTH_TOKEN);
 
 // Expressアプリケーション
 const app = express();
+
+// リバースプロキシ経由のX-Forwarded-For信頼設定
+app.set('trust proxy', TRUST_PROXY);
 
 // HTTPSまたはHTTPサーバーを作成
 let server: http.Server | https.Server;
@@ -84,7 +88,20 @@ app.use(securityHeaders);
 // ミドルウェア
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/vendor', express.static(path.join(__dirname, '..', 'node_modules')));
+// 必要なクライアントライブラリの必要なファイルのみ公開
+const nodeModulesDir = path.join(__dirname, '..', 'node_modules');
+app.use(
+  '/vendor/@xterm/xterm/css',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'css')),
+);
+app.use(
+  '/vendor/@xterm/xterm/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'xterm', 'lib')),
+);
+app.use(
+  '/vendor/@xterm/addon-fit/lib',
+  express.static(path.join(nodeModulesDir, '@xterm', 'addon-fit', 'lib')),
+);
 
 // ヘルスチェック（認証・レート制限の前に配置）
 app.use(healthRouter);
@@ -92,20 +109,48 @@ app.use(healthRouter);
 // APIレート制限
 app.use('/api', createRateLimiter());
 
-// ルーター
-app.use('/api', apiRouter);
-app.use('/api', filesRouter);
-app.use('/api', logsRouter);
-app.use('/api', clipboardRouter);
-app.use('/api', snippetsRouter);
-app.use('/api', aiRouter);
+// APIルーター（統合済み）
+app.use('/api', combinedApiRouter);
 
 // エラーハンドリング
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// 本番環境ではAUTH_TOKENの設定を必須とする
+if (process.env.NODE_ENV === 'production' && !AUTH_TOKEN) {
+  logger.error(
+    '本番環境では AUTH_TOKEN の設定が必須です。環境変数 AUTH_TOKEN を設定してください。',
+  );
+  process.exit(1);
+}
+
+// トンネルモードではAUTH_TOKENの設定を必須とする（インターネット公開のため）
+if (ENABLE_TUNNEL && !AUTH_TOKEN) {
+  logger.error(
+    'トンネルモードでは AUTH_TOKEN の設定が必須です。--token または AUTH_TOKEN 環境変数を設定してください。',
+  );
+  process.exit(1);
+}
+
+// SSHモードではAUTH_TOKENの設定を推奨（LAN内利用が主のためwarnに留める）
+if (ENABLE_SSH && !AUTH_TOKEN) {
+  logger.warn(
+    'SSH機能が有効ですが AUTH_TOKEN が未設定です。セキュリティのため AUTH_TOKEN の設定を推奨します。',
+  );
+}
+
+// トンネル+SSH使用時はHTTPSパスワード認証を強制
+if (ENABLE_TUNNEL && ENABLE_SSH) {
+  // トンネル経由はCloudflareが暗号化するが、明示的に警告
+  if (!SSH_REQUIRE_HTTPS_FOR_PASSWORD) {
+    logger.warn(
+      'トンネルモードでSSH機能が有効ですが、SSH_REQUIRE_HTTPS_FOR_PASSWORD が無効です。セキュリティのため有効化を推奨します。',
+    );
+  }
+}
+
 // サーバー起動
-server.listen(PORT, '0.0.0.0', async () => {
+server.listen(PORT, HOST, async () => {
   if (ENABLE_SESSION_LOGS) {
     await initLogDir();
     logger.info({ logDir: LOG_DIR }, 'セッションログ: 有効');
@@ -113,16 +158,75 @@ server.listen(PORT, '0.0.0.0', async () => {
 
   const protocol = ENABLE_HTTPS ? 'https' : 'http';
   logger.info('Pocket Dev Relay is running.');
+  logger.info('Host: %s, Port: %d', HOST, PORT);
   logger.info('Local: %s://localhost:%d', protocol, PORT);
   buildAccessUrls()
     .filter((entry) => entry.type === 'lan')
     .forEach((entry) => {
       logger.info('LAN (%s): %s', entry.name, entry.url);
     });
+
+  // トンネル起動（AUTH_TOKENが設定されている場合のみ）
+  if (ENABLE_TUNNEL && AUTH_TOKEN) {
+    try {
+      const tunnelInfo = await startTunnel(PORT);
+      logger.info('外部アクセス: %s', tunnelInfo.url);
+      // QRコードをターミナルに表示
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const QRCode = require('qrcode') as {
+          toString: (text: string, opts: { type: string; small: boolean }) => Promise<string>;
+        };
+        const qrText = await QRCode.toString(tunnelInfo.url, { type: 'terminal', small: true });
+        console.log(qrText);
+        logger.info('スマホでQRコードを読み取ってアクセスしてください');
+      } catch {
+        // QRコード表示に失敗してもサーバーは継続
+        logger.info('QRコードの表示をスキップしました');
+      }
+    } catch (err) {
+      logger.warn({ err }, 'トンネルの起動に失敗しました。LANアクセスのみ利用可能です。');
+    }
+  }
 });
 
-// シグナルハンドラ
-process.on('SIGINT', () => {
+/** シャットダウン中フラグ（二重実行防止） */
+let isShuttingDown = false;
+
+/** グレースフルシャットダウン */
+function gracefulShutdown(signal: string): void {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  logger.info({ signal }, 'シャットダウン開始');
+  stopTimerCleanup();
+  stopTunnel();
+
+  // 新規WebSocket接続を停止
+  wss.close(() => {
+    logger.info('WebSocketサーバーを停止しました');
+  });
+
   cleanupAllSessions();
-  process.exit(0);
+  server.close(() => {
+    logger.info('サーバーを停止しました');
+    process.exit(0);
+  });
+  // 10秒以内にクローズできなければ強制終了
+  setTimeout(() => {
+    logger.warn('強制終了します');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error({ err: reason }, '未処理のPromise拒否を検出しました');
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error({ err: error }, '未キャッチの例外を検出しました');
+  gracefulShutdown('uncaughtException');
 });

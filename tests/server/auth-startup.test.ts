@@ -18,6 +18,11 @@ vi.mock('../../src/config.js', () => ({
     return state.https;
   },
   PORT: 4173,
+  HOST: '0.0.0.0',
+  TRUST_PROXY: false,
+  ENABLE_TUNNEL: false,
+  ENABLE_SSH: false,
+  SSH_REQUIRE_HTTPS_FOR_PASSWORD: true,
   SSL_KEY_PATH: '',
   SSL_CERT_PATH: '',
   ENABLE_SESSION_LOGS: true,

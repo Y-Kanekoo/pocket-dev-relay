@@ -20,14 +20,14 @@ product consolidation decisions are included.
 
 ## Feature to evidence map
 
-| Feature | Unit / boundary tests | Real protocol integration |
-| --- | --- | --- |
-| Token configuration | `auth-config`, `auth-boundary`, `auth-startup`: unset/empty/whitespace/placeholders, HTTP/HTTPS pre-listener gate, exact token compatibility | HTTP wrong/missing/scheme mismatch rejected; valid credential retry |
-| HTTP authorization | `auth`, `auth-boundary`: production and legacy helpers reject invalid config; localhost/Host/Origin are not credentials | actual 401 JSON, repeated denial followed by 200 |
-| WS authorization | `auth-boundary`: missing/wrong/duplicate query parameter semantics; denied connection attaches no message listener | actual 4001 close before session execution; valid connection after denial; close cleanup |
-| Async WS lifecycle | `websocket-lifecycle`: duplicate pending shell/SSH start, disconnect before completion, pending stop, failure/retry | authorized start/close uses real WS transport; terminal/SSH implementations are mocked |
-| Upload write boundary | production router checks feature flag before multer and stages under a unique name | disabled/unauthorized upload, invalid destination, oversized upload, retry; existing files preserved on rejection |
-| Existing API behavior | feature files under `tests/server` cover clipboard, snippets, health, files, sessions, URLs and utilities | existing 190 tests retained alongside focused additions |
+| Feature               | Unit / boundary tests                                                                                                                        | Real protocol integration                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Token configuration   | `auth-config`, `auth-boundary`, `auth-startup`: unset/empty/whitespace/placeholders, HTTP/HTTPS pre-listener gate, exact token compatibility | HTTP wrong/missing/scheme mismatch rejected; valid credential retry                                               |
+| HTTP authorization    | `auth`, `auth-boundary`: production and legacy helpers reject invalid config; localhost/Host/Origin are not credentials                      | actual 401 JSON, repeated denial followed by 200                                                                  |
+| WS authorization      | `auth-boundary`: missing/wrong/duplicate query parameter semantics; denied connection attaches no message listener                           | actual 4001 close before session execution; valid connection after denial; close cleanup                          |
+| Async WS lifecycle    | `websocket-lifecycle`: duplicate pending shell/SSH start, disconnect before completion, pending stop, failure/retry                          | authorized start/close uses real WS transport; terminal/SSH implementations are mocked                            |
+| Upload write boundary | production router checks feature flag before multer and stages under a unique name                                                           | disabled/unauthorized upload, invalid destination, oversized upload, retry; existing files preserved on rejection |
+| Existing API behavior | feature files under `tests/server` cover clipboard, snippets, health, files, sessions, URLs and utilities                                    | existing 190 tests retained alongside focused additions                                                           |
 
 The network fixture exercises real Express/multer/WebSocket stacks on ephemeral
 loopback ports with temporary files and test-only tokens. It does not create real

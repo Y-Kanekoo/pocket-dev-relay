@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { splitArgs, parseArgs } from '../../src/server/utils.js';
+import { splitArgs, parseArgs } from '../../src/services/pty.js';
 
 // ============================================================
 // セッション関連のユーティリティテスト

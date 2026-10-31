@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'node',
     // テストファイルのパターン
     include: ['tests/**/*.test.ts'],
+    // グローバルセットアップ（MaxListeners対策など）
+    setupFiles: ['tests/setup.ts'],
+    // 各テスト後にモックを自動リストア（テスト間の干渉を防止）
+    restoreMocks: true,
     // カバレッジ設定
     coverage: {
       provider: 'v8',
@@ -27,10 +31,11 @@ export default defineConfig({
         'src/utils/network.ts',
       ],
       thresholds: {
-        statements: 50,
-        branches: 40,
-        functions: 50,
-        lines: 50,
+        // カバレッジ閾値ロードマップ: 35% → 40% → 50% → 60% → 70%
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
       },
     },
   },

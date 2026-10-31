@@ -22,15 +22,6 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": [
-    "src/server.ts",
-    "src/cli.ts",
-    "src/server/**/*",
-    "src/types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public"
-  ]
+  "include": ["src/server.ts", "src/cli.ts", "src/server/**/*", "src/types/**/*"],
+  "exclude": ["node_modules", "dist", "public"]
 }

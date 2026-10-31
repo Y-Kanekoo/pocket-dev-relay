@@ -3,7 +3,15 @@ node_modules/
 
 # 環境設定（機密情報を含む可能性）
 .env
-.env.local
+.env.*
+!.env.example
+
+# SSL証明書・秘密鍵
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
 
 # ログ
 *.log
@@ -25,8 +33,14 @@ Thumbs.db
 # セッションログ
 logs/
 
+# データ永続化
+.pocket-dev-relay/
+
 # TypeScriptビルド生成物
 dist/
+
+# クライアントビルド生成物
+public/app.js
 
 # テストカバレッジ
 coverage/

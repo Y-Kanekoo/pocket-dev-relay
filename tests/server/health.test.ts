@@ -78,8 +78,10 @@ describe('ヘルスチェック API', () => {
     const memory = body.memory as Record<string, unknown>;
     expect(memory).toHaveProperty('rss');
     expect(memory).toHaveProperty('heapUsed');
+    expect(memory).toHaveProperty('heapTotal');
     expect(typeof memory.rss).toBe('number');
     expect(typeof memory.heapUsed).toBe('number');
+    expect(typeof memory.heapTotal).toBe('number');
   });
 
   it('timestampがISO 8601形式であること', () => {
