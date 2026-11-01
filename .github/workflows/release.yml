@@ -20,7 +20,7 @@ jobs:
       # リリースが作成された場合、npm publishを実行
       - name: ソースコードをチェックアウト
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
       - name: Node.jsをセットアップ
         if: ${{ steps.release.outputs.release_created }}
