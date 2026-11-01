@@ -1,0 +1,9 @@
+# The offline harness (mock engine, agents, orchestrator, tests) runs on the
+# Python standard library alone -- no third-party packages required.
+
+# Dev/test only:
+pytest>=7.0
+
+# Needed ONLY for the real cabt engine adapter (engine/cabt.py). Not installable
+# from this sandbox; cabt itself ships via the Kaggle competition dataset.
+# kaggle-environments>=1.14
