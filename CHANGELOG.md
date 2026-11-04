@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/).
 
+## [0.1.1](https://github.com/Y-Kanekoo/pocket-dev-relay/compare/v0.1.0...v0.1.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* clean failed upload staging and align npm CI dependency graph ([cc7fcd7](https://github.com/Y-Kanekoo/pocket-dev-relay/commit/cc7fcd73312431c712e7b852fbf71bb188bebe48))
+* fail closed for invalid relay authentication configuration ([98c36cf](https://github.com/Y-Kanekoo/pocket-dev-relay/commit/98c36cfbc3c0c61979b86cb6705b94b1377a6371))
+* 認証設定不備を起動前に拒否し、HTTP/WSをfail-closed化 ([42c72fd](https://github.com/Y-Kanekoo/pocket-dev-relay/commit/42c72fd48419bec9fdbd6cc1d1c18c03d059eee9))
+
 ## [Unreleased]
 
 ### Added
