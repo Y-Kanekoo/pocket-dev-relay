@@ -45,6 +45,21 @@ const SYSTEM_PROMPT = `あなたはターミナル出力を解析するアシス
 - 回答は簡潔にまとめる（長くなりすぎない）`;
 
 // ============================================================
+// 共通ユーティリティ
+// ============================================================
+
+/** ユーザーメッセージを組み立てる */
+function buildUserMessage(context: string, question: string): string {
+  let message = `以下はターミナルの出力です:\n\n\`\`\`\n${context}\n\`\`\``;
+  if (question) {
+    message += `\n\n質問: ${question}`;
+  } else {
+    message += '\n\nこの出力を解析して、重要なポイントやエラーがあれば教えてください。';
+  }
+  return message;
+}
+
+// ============================================================
 // Claude Provider
 // ============================================================
 
@@ -62,58 +77,50 @@ class ClaudeProvider implements AIProvider {
   }
 
   async analyze(context: string, question: string): Promise<string> {
-    const userMessage = this.buildUserMessage(context, question);
+    const userMessage = buildUserMessage(context, question);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-      }),
-    });
+    // 30秒タイムアウトを設定
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: [
+            {
+              role: 'user',
+              content: userMessage,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(
-        `Claude API エラー (${response.status}): ${errorBody}`,
-      );
+      if (!response.ok) {
+        const errorBody = await response.text();
+        logger.error({ status: response.status, body: errorBody }, 'Claude API エラー');
+        throw new Error(`AI解析に失敗しました (ステータス: ${response.status})`);
+      }
+
+      const data = (await response.json()) as ClaudeResponse;
+
+      // content配列からテキストを抽出
+      const textContent = data.content.find((block) => block.type === 'text');
+      if (!textContent || textContent.type !== 'text') {
+        throw new Error('Claude API: テキスト応答が見つかりません');
+      }
+      return textContent.text;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await response.json() as ClaudeResponse;
-
-    // content配列からテキストを抽出
-    const textContent = data.content.find(
-      (block) => block.type === 'text',
-    );
-    if (!textContent || textContent.type !== 'text') {
-      throw new Error('Claude API: テキスト応答が見つかりません');
-    }
-    return textContent.text;
-  }
-
-  /**
-   * ユーザーメッセージを組み立てる
-   */
-  private buildUserMessage(context: string, question: string): string {
-    let message = `以下はターミナルの出力です:\n\n\`\`\`\n${context}\n\`\`\``;
-    if (question) {
-      message += `\n\n質問: ${question}`;
-    } else {
-      message += '\n\nこの出力を解析して、重要なポイントやエラーがあれば教えてください。';
-    }
-    return message;
   }
 }
 
@@ -145,61 +152,55 @@ class OpenAIProvider implements AIProvider {
   }
 
   async analyze(context: string, question: string): Promise<string> {
-    const userMessage = this.buildUserMessage(context, question);
+    const userMessage = buildUserMessage(context, question);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-      }),
-    });
+    // 30秒タイムアウトを設定
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 2048,
+          messages: [
+            {
+              role: 'system',
+              content: SYSTEM_PROMPT,
+            },
+            {
+              role: 'user',
+              content: userMessage,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(
-        `OpenAI API エラー (${response.status}): ${errorBody}`,
-      );
+      if (!response.ok) {
+        const errorBody = await response.text();
+        logger.error({ status: response.status, body: errorBody }, 'OpenAI API エラー');
+        throw new Error(`AI解析に失敗しました (ステータス: ${response.status})`);
+      }
+
+      const data = (await response.json()) as OpenAIResponse;
+
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('OpenAI API: 応答が空です');
+      }
+
+      const content = data.choices[0].message.content;
+      if (!content) {
+        throw new Error('OpenAI API: テキスト応答が見つかりません');
+      }
+      return content;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await response.json() as OpenAIResponse;
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error('OpenAI API: 応答が空です');
-    }
-
-    const content = data.choices[0].message.content;
-    if (!content) {
-      throw new Error('OpenAI API: テキスト応答が見つかりません');
-    }
-    return content;
-  }
-
-  /**
-   * ユーザーメッセージを組み立てる
-   */
-  private buildUserMessage(context: string, question: string): string {
-    let message = `以下はターミナルの出力です:\n\n\`\`\`\n${context}\n\`\`\``;
-    if (question) {
-      message += `\n\n質問: ${question}`;
-    } else {
-      message += '\n\nこの出力を解析して、重要なポイントやエラーがあれば教えてください。';
-    }
-    return message;
   }
 }
 

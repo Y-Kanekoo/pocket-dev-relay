@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "changelog-sections": [
+        { "type": "feat", "section": "機能追加" },
+        { "type": "fix", "section": "バグ修正" },
+        { "type": "refactor", "section": "リファクタリング" },
+        { "type": "chore", "section": "メンテナンス" },
+        { "type": "docs", "section": "ドキュメント" },
+        { "type": "test", "section": "テスト" },
+        { "type": "ops", "section": "運用" }
+      ]
+    }
+  }
+}

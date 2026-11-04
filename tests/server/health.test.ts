@@ -15,7 +15,9 @@ describe('ヘルスチェック API', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    healthRouter = await import('../../src/routes/health.js');
+    healthRouter = await vi.importActual<typeof import('../../src/routes/health.js')>(
+      '../../src/routes/health.js',
+    );
   });
 
   /**
@@ -76,8 +78,10 @@ describe('ヘルスチェック API', () => {
     const memory = body.memory as Record<string, unknown>;
     expect(memory).toHaveProperty('rss');
     expect(memory).toHaveProperty('heapUsed');
+    expect(memory).toHaveProperty('heapTotal');
     expect(typeof memory.rss).toBe('number');
     expect(typeof memory.heapUsed).toBe('number');
+    expect(typeof memory.heapTotal).toBe('number');
   });
 
   it('timestampがISO 8601形式であること', () => {

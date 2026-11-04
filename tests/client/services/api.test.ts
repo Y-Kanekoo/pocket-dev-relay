@@ -1,13 +1,43 @@
 /**
  * API呼び出しのテスト
- * 注: 実際のfetch呼び出しはブラウザ環境で行われるため、
- * ここではAPIレスポンスの型検証とヘルパー関数のテストを行う
+ *
+ * pickBestUrl, labelForUrl は src/utils/url.ts の実コードを直接テスト。
+ * authHeaders, getWsUrl, getErrorMessage 等はDOM依存のため、
+ * テスト内で再実装してロジック検証を行う。
  */
 
 import { describe, it, expect } from 'vitest';
+import { pickBestUrl, labelForUrl } from '../../../src/utils/url.js';
+import type { AccessUrl } from '../../../src/types/index.js';
 
 // ============================================================
-// 型定義（クライアント側の型を再現）
+// 認証ヘッダー生成のテスト
+// ============================================================
+
+/**
+ * 認証ヘッダーを生成
+ * 注: 実コード (src/client/services/api.ts) は sessionStore 依存のため
+ * テスト環境では直接importできない。ロジック検証用に再実装。
+ */
+function authHeaders(token: string): Record<string, string> {
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+describe('authHeaders', () => {
+  it('トークンがある場合はAuthorizationヘッダーを返す', () => {
+    const headers = authHeaders('my-token');
+    expect(headers).toEqual({ Authorization: 'Bearer my-token' });
+  });
+
+  it('トークンが空の場合は空オブジェクトを返す', () => {
+    const headers = authHeaders('');
+    expect(headers).toEqual({});
+  });
+});
+
+// ============================================================
+// APIレスポンス型検証のテスト
 // ============================================================
 
 interface AppConfig {
@@ -35,34 +65,6 @@ interface FileContentResponse {
   path: string;
   content: string;
 }
-
-// ============================================================
-// 認証ヘッダー生成のテスト
-// ============================================================
-
-/**
- * 認証ヘッダーを生成
- */
-function authHeaders(token: string): Record<string, string> {
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
-
-describe('authHeaders', () => {
-  it('トークンがある場合はAuthorizationヘッダーを返す', () => {
-    const headers = authHeaders('my-token');
-    expect(headers).toEqual({ Authorization: 'Bearer my-token' });
-  });
-
-  it('トークンが空の場合は空オブジェクトを返す', () => {
-    const headers = authHeaders('');
-    expect(headers).toEqual({});
-  });
-});
-
-// ============================================================
-// APIレスポンス型検証のテスト
-// ============================================================
 
 describe('AppConfig型検証', () => {
   it('有効な設定オブジェクトを検証できる', () => {
@@ -121,6 +123,7 @@ describe('FileContentResponse型検証', () => {
 
 /**
  * ファイルサイズが上限を超えているかチェック
+ * 注: 実コードには独立した関数が存在しないため、テスト内で定義。
  */
 function isFileTooLarge(size: number, maxSize: number): boolean {
   return size > maxSize;
@@ -146,12 +149,10 @@ describe('isFileTooLarge', () => {
 
 /**
  * WebSocket URLを生成
+ * 注: 実コード (src/client/services/websocket.ts) は window.location 依存のため
+ * テスト環境では直接importできない。ロジック検証用に再実装。
  */
-function getWsUrl(
-  protocol: string,
-  host: string,
-  token?: string
-): string {
+function getWsUrl(protocol: string, host: string, token?: string): string {
   const wsProtocol = protocol === 'https:' ? 'wss' : 'ws';
   const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
   return `${wsProtocol}://${host}/ws${tokenParam}`;
@@ -189,6 +190,8 @@ interface ApiErrorResponse {
 
 /**
  * APIエラーレスポンスからメッセージを取得
+ * 注: 実コード (src/client/services/errorHandler.ts) のgetErrorMessage は
+ * 異なるエラーコード体系を使用しているため、テスト内で独自のマッピングを定義。
  */
 function getErrorMessage(response: ApiErrorResponse): string {
   const errorMessages: Record<string, string> = {
@@ -206,12 +209,8 @@ function getErrorMessage(response: ApiErrorResponse): string {
 describe('getErrorMessage', () => {
   it('既知のエラーコードをメッセージに変換する', () => {
     expect(getErrorMessage({ error: 'unauthorized' })).toBe('認証が必要です');
-    expect(getErrorMessage({ error: 'not-found' })).toBe(
-      'ファイルが見つかりません'
-    );
-    expect(getErrorMessage({ error: 'file-too-large' })).toBe(
-      'ファイルサイズが大きすぎます'
-    );
+    expect(getErrorMessage({ error: 'not-found' })).toBe('ファイルが見つかりません');
+    expect(getErrorMessage({ error: 'file-too-large' })).toBe('ファイルサイズが大きすぎます');
   });
 
   it('未知のエラーコードはそのまま返す', () => {
@@ -220,5 +219,132 @@ describe('getErrorMessage', () => {
 
   it('空のエラーは不明なエラーを返す', () => {
     expect(getErrorMessage({ error: '' })).toBe('不明なエラー');
+  });
+});
+
+// ============================================================
+// pickBestUrl のテスト（実コードから直接import）
+// ============================================================
+
+describe('pickBestUrl', () => {
+  it('localでないURLを優先する', () => {
+    const urls: AccessUrl[] = [
+      {
+        type: 'local',
+        name: 'localhost',
+        host: 'localhost',
+        url: 'http://localhost:4173',
+      },
+      {
+        type: 'lan',
+        name: 'en0',
+        host: '192.168.1.100',
+        url: 'http://192.168.1.100:4173',
+      },
+    ];
+    const best = pickBestUrl(urls);
+    expect(best?.type).toBe('lan');
+  });
+
+  it('localしかない場合はlocalを返す', () => {
+    const urls: AccessUrl[] = [
+      {
+        type: 'local',
+        name: 'localhost',
+        host: 'localhost',
+        url: 'http://localhost:4173',
+      },
+    ];
+    const best = pickBestUrl(urls);
+    expect(best?.type).toBe('local');
+  });
+
+  it('空配列の場合はundefinedを返す', () => {
+    const best = pickBestUrl([]);
+    expect(best).toBeUndefined();
+  });
+
+  it('tunnelがある場合はtunnelを最優先で返す', () => {
+    const urls: AccessUrl[] = [
+      {
+        type: 'lan',
+        name: 'en0',
+        host: '192.168.1.100',
+        url: 'http://192.168.1.100:4173',
+      },
+      {
+        type: 'tunnel',
+        name: 'cloudflare',
+        host: 'example.trycloudflare.com',
+        url: 'https://example.trycloudflare.com',
+      },
+    ];
+    const best = pickBestUrl(urls);
+    expect(best?.type).toBe('tunnel');
+  });
+
+  it('mDNSとLANがある場合は最初のものを返す', () => {
+    const urls: AccessUrl[] = [
+      {
+        type: 'mdns',
+        name: 'macbook',
+        host: 'macbook.local',
+        url: 'http://macbook.local:4173',
+      },
+      {
+        type: 'lan',
+        name: 'en0',
+        host: '192.168.1.100',
+        url: 'http://192.168.1.100:4173',
+      },
+    ];
+    const best = pickBestUrl(urls);
+    expect(best?.type).toBe('mdns');
+  });
+});
+
+// ============================================================
+// labelForUrl のテスト（実コードから直接import）
+// ============================================================
+
+describe('labelForUrl', () => {
+  it('mDNSタイプのラベルを生成する', () => {
+    const entry: AccessUrl = {
+      type: 'mdns',
+      name: 'macbook',
+      host: 'macbook.local',
+      url: 'http://macbook.local:4173',
+    };
+    expect(labelForUrl(entry)).toBe('mDNS (macbook.local)');
+  });
+
+  it('LANタイプのラベルを生成する', () => {
+    const entry: AccessUrl = {
+      type: 'lan',
+      name: 'en0',
+      host: '192.168.1.100',
+      url: 'http://192.168.1.100:4173',
+    };
+    expect(labelForUrl(entry)).toBe('LAN (en0)');
+  });
+
+  it('localタイプのラベルを生成する', () => {
+    const entry: AccessUrl = {
+      type: 'local',
+      name: 'localhost',
+      host: 'localhost',
+      url: 'http://localhost:4173',
+    };
+    expect(labelForUrl(entry)).toBe('このPC (localhost)');
+  });
+
+  it('tunnelタイプのラベルを生成する', () => {
+    const entry: AccessUrl = {
+      type: 'tunnel',
+      name: 'cloudflare',
+      host: 'example.trycloudflare.com',
+      url: 'https://example.trycloudflare.com',
+    };
+    expect(labelForUrl(entry)).toBe('外部アクセス (cloudflare)');
   });
 });

@@ -16,8 +16,8 @@ RUN apk add --no-cache python3 make g++ && \
 COPY . .
 RUN npm run build
 
-# 本番用依存のみで再インストール（ビルドツール付き環境で）
-RUN rm -rf node_modules && npm ci --omit=dev
+# 本番用依存のみに絞り込む（再インストール不要で高速）
+RUN npm prune --omit=dev
 
 # ============================================================
 # 実行ステージ

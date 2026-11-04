@@ -131,10 +131,16 @@ interface DOMElements {
     fontDecrease: document.getElementById('font-decrease') as HTMLButtonElement | null,
     fontIncrease: document.getElementById('font-increase') as HTMLButtonElement | null,
     fontSizeLabel: document.getElementById('font-size-label'),
-    notificationPermitBtn: document.getElementById('notification-permit-btn') as HTMLButtonElement | null,
+    notificationPermitBtn: document.getElementById(
+      'notification-permit-btn',
+    ) as HTMLButtonElement | null,
     notificationToggle: document.getElementById('notification-toggle') as HTMLInputElement | null,
-    notificationErrorToggle: document.getElementById('notification-error-toggle') as HTMLInputElement | null,
-    notificationExitToggle: document.getElementById('notification-exit-toggle') as HTMLInputElement | null,
+    notificationErrorToggle: document.getElementById(
+      'notification-error-toggle',
+    ) as HTMLInputElement | null,
+    notificationExitToggle: document.getElementById(
+      'notification-exit-toggle',
+    ) as HTMLInputElement | null,
     notificationStatus: document.getElementById('notification-status'),
   };
 

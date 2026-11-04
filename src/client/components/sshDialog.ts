@@ -53,8 +53,7 @@ export function showSSHDialog(): void {
   }
   // HTTPSでない場合は警告を表示
   if (elements.httpsWarning) {
-    elements.httpsWarning.style.display =
-      window.location.protocol === 'https:' ? 'none' : 'block';
+    elements.httpsWarning.style.display = window.location.protocol === 'https:' ? 'none' : 'block';
   }
   // ホスト入力にフォーカス
   elements.hostInput?.focus();

@@ -128,7 +128,11 @@ async function loadSnippets(): Promise<void> {
     renderSnippetList(snippets);
   } catch {
     if (elements.snippetList) {
-      elements.snippetList.innerHTML = '<div class="snippet-error">スニペットの取得に失敗しました</div>';
+      // XSS対策: DOM APIでdiv要素を作成し、textContentでテキストを設定
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'snippet-error';
+      errorDiv.textContent = 'スニペットの取得に失敗しました';
+      elements.snippetList.replaceChildren(errorDiv);
     }
   }
 }
@@ -139,10 +143,15 @@ async function loadSnippets(): Promise<void> {
 function renderSnippetList(snippets: Snippet[]): void {
   if (!elements.snippetList) return;
 
-  elements.snippetList.innerHTML = '';
+  // XSS対策: クリア目的のinnerHTMLをreplaceChildrenに変更
+  elements.snippetList.replaceChildren();
 
   if (snippets.length === 0) {
-    elements.snippetList.innerHTML = '<div class="snippet-empty">スニペットがありません</div>';
+    // XSS対策: DOM APIでdiv要素を作成し、textContentでテキストを設定
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'snippet-empty';
+    emptyDiv.textContent = 'スニペットがありません';
+    elements.snippetList.replaceChildren(emptyDiv);
     return;
   }
 

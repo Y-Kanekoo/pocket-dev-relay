@@ -1,13 +1,20 @@
 /**
  * Pocket Dev Relay - Service Worker
  *
- * キャッシュ戦略: ネットワークファースト
+ * キャッシュ戦略: ネットワークファースト（タイムアウト付き）
  * - オンライン時は常に最新のリソースを取得
+ * - ネットワーク応答が遅い場合はキャッシュにフォールバック
  * - オフライン時はキャッシュから提供
  */
 
 // キャッシュバージョン（更新時にインクリメント）
-const CACHE_VERSION = 'pdr-cache-v2';
+const CACHE_VERSION = 'pdr-cache-v3';
+
+// キャッシュ名のプレフィックス（古いキャッシュ判定用）
+const CACHE_PREFIX = 'pdr-cache-';
+
+// ネットワークタイムアウト（ミリ秒）
+const NETWORK_TIMEOUT_MS = 3000;
 
 // キャッシュ対象の静的アセット
 const STATIC_ASSETS = [
@@ -24,6 +31,9 @@ const STATIC_ASSETS = [
 
 // Google Fontsのキャッシュ名
 const FONTS_CACHE = 'pdr-fonts-v1';
+
+// 保持するキャッシュ名のセット
+const VALID_CACHES = new Set([CACHE_VERSION, FONTS_CACHE]);
 
 /**
  * インストールイベント
@@ -55,7 +65,7 @@ self.addEventListener('install', (event) => {
 
 /**
  * アクティベートイベント
- * 古いキャッシュを削除
+ * 古いキャッシュを削除（プレフィックスベースで判定）
  */
 self.addEventListener('activate', (event) => {
   console.log('[SW] アクティベート中...');
@@ -66,8 +76,16 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              // 現在のバージョンとフォントキャッシュ以外を削除
-              return cacheName !== CACHE_VERSION && cacheName !== FONTS_CACHE;
+              // 有効なキャッシュ一覧に含まれないものを削除
+              // プレフィックスが一致する古いバージョンも確実に削除
+              if (VALID_CACHES.has(cacheName)) {
+                return false;
+              }
+              // pdr-で始まるキャッシュは古いバージョンなので削除
+              if (cacheName.startsWith(CACHE_PREFIX) || cacheName.startsWith('pdr-')) {
+                return true;
+              }
+              return false;
             })
             .map((cacheName) => {
               console.log(`[SW] 古いキャッシュを削除: ${cacheName}`);
@@ -108,22 +126,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // その他のリクエストはネットワークファースト
+  // その他のリクエストはネットワークファースト（タイムアウト付き）
   event.respondWith(networkFirst(request));
 });
 
 /**
- * ネットワークファースト戦略
- * 1. ネットワークから取得を試みる
+ * ネットワークファースト戦略（タイムアウト付き）
+ * 1. ネットワークから取得を試みる（タイムアウトあり）
  * 2. 成功したらキャッシュを更新して返す
- * 3. 失敗したらキャッシュから返す
+ * 3. タイムアウトまたは失敗したらキャッシュから返す
  */
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_VERSION);
 
   try {
-    // ネットワークから取得
-    const networkResponse = await fetch(request);
+    // タイムアウト付きでネットワークから取得
+    const networkResponse = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
 
     // 成功したらキャッシュを更新
     if (networkResponse.ok) {
@@ -132,8 +150,8 @@ async function networkFirst(request) {
     }
 
     return networkResponse;
-  } catch (error) {
-    // ネットワークエラー時はキャッシュから取得
+  } catch (_error) {
+    // ネットワークエラーまたはタイムアウト時はキャッシュから取得
     console.log(`[SW] ネットワークエラー、キャッシュから取得: ${request.url}`);
     const cachedResponse = await cache.match(request);
 
@@ -156,6 +174,29 @@ async function networkFirst(request) {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }
+}
+
+/**
+ * タイムアウト付きfetch
+ * 指定時間内にレスポンスが返らない場合はAbortErrorをスロー
+ */
+function fetchWithTimeout(request, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+    fetch(request, { signal: controller.signal })
+      .then((response) => {
+        clearTimeout(timeoutId);
+        resolve(response);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
 }
 
 // ============================================================
@@ -238,7 +279,7 @@ async function handleFontRequest(request) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  } catch (error) {
+  } catch (_error) {
     console.log(`[SW] フォント取得失敗: ${request.url}`);
     // フォントはオプショナルなので空のレスポンスを返す
     return new Response('', { status: 200 });

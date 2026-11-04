@@ -23,6 +23,20 @@ export function resolvePath(relativePath: string): string {
 }
 
 /**
+ * エラーオブジェクトが code プロパティを持つかを判定する型ガード
+ * @param err 検査対象
+ * @returns code プロパティ（string）を持つ場合 true
+ */
+function hasCode(err: unknown): err is { code: string } {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    typeof (err as Record<string, unknown>).code === 'string'
+  );
+}
+
+/**
  * ファイルシステムエラーを AppError に変換
  * @param error エラーオブジェクト
  * @param resourceName リソース名（エラーメッセージ用）
@@ -34,10 +48,8 @@ export function convertFsError(error: unknown, resourceName = 'ファイル'): A
     return error;
   }
 
-  const err = error as { code?: string };
-
   // ファイルが見つからない場合
-  if (err && err.code === 'ENOENT') {
+  if (hasCode(error) && error.code === 'ENOENT') {
     return new NotFoundError(resourceName);
   }
 

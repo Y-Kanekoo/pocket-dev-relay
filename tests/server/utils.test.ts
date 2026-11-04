@@ -1,17 +1,18 @@
 /**
- * サーバー側ユーティリティ関数のテスト
+ * ユーティリティ関数のテスト
+ *
+ * stripAnsi → src/utils/text.ts
+ * splitArgs, parseArgs → src/services/pty.ts
+ * normalizeMdns, listInterfaceAddresses → src/utils/network.ts
+ *
+ * 旧 src/server/utils.ts のデッドコード削除に伴い、
+ * 実際に使用されているモジュールからインポートするよう変更。
  */
 
 import { describe, it, expect } from 'vitest';
-import path from 'path';
-import {
-  stripAnsi,
-  splitArgs,
-  parseArgs,
-  resolvePath,
-  generateLogFileName,
-  normalizeMdns,
-} from '../../src/server/utils.js';
+import { stripAnsi } from '../../src/utils/text.js';
+import { splitArgs, parseArgs } from '../../src/services/pty.js';
+import { normalizeMdns, listInterfaceAddresses } from '../../src/utils/network.js';
 
 // ============================================================
 // stripAnsi のテスト
@@ -56,25 +57,15 @@ describe('splitArgs', () => {
   });
 
   it('ダブルクォートで囲まれた引数を処理する', () => {
-    expect(splitArgs('--name "John Doe" --age 30')).toEqual([
-      '--name',
-      'John Doe',
-      '--age',
-      '30',
-    ]);
+    expect(splitArgs('--name "John Doe" --age 30')).toEqual(['--name', 'John Doe', '--age', '30']);
   });
 
   it('シングルクォートで囲まれた引数を処理する', () => {
-    expect(splitArgs("--message 'Hello World'")).toEqual([
-      '--message',
-      'Hello World',
-    ]);
+    expect(splitArgs("--message 'Hello World'")).toEqual(['--message', 'Hello World']);
   });
 
   it('エスケープされた空白を処理する', () => {
-    expect(splitArgs('path/to/file\\ name.txt')).toEqual([
-      'path/to/file name.txt',
-    ]);
+    expect(splitArgs('path/to/file\\ name.txt')).toEqual(['path/to/file name.txt']);
   });
 
   it('クォート内のエスケープ文字を処理する', () => {
@@ -127,74 +118,6 @@ describe('parseArgs', () => {
 });
 
 // ============================================================
-// resolvePath のテスト
-// ============================================================
-
-describe('resolvePath', () => {
-  const rootDir = '/workspace/project';
-
-  it('相対パスを絶対パスに解決する', () => {
-    const result = resolvePath(rootDir, 'src/index.ts');
-    expect(result).toBe(path.resolve(rootDir, 'src/index.ts'));
-  });
-
-  it('空文字列の場合はルートディレクトリを返す', () => {
-    const result = resolvePath(rootDir, '');
-    expect(result).toBe(rootDir);
-  });
-
-  it('ドットの場合はルートディレクトリを返す', () => {
-    const result = resolvePath(rootDir, '.');
-    expect(result).toBe(rootDir);
-  });
-
-  it('親ディレクトリへのトラバーサルを検出してエラーを投げる', () => {
-    expect(() => resolvePath(rootDir, '../etc/passwd')).toThrow(
-      'Path outside workspace root'
-    );
-  });
-
-  it('複雑なトラバーサルを検出してエラーを投げる', () => {
-    expect(() => resolvePath(rootDir, 'src/../../etc/passwd')).toThrow(
-      'Path outside workspace root'
-    );
-  });
-
-  it('正規化されたパスがルート内なら許可する', () => {
-    // src/../lib は lib に正規化されるのでOK
-    const result = resolvePath(rootDir, 'src/../lib/utils.ts');
-    expect(result).toBe(path.resolve(rootDir, 'lib/utils.ts'));
-  });
-});
-
-// ============================================================
-// generateLogFileName のテスト
-// ============================================================
-
-describe('generateLogFileName', () => {
-  it('正しい形式のファイル名を生成する', () => {
-    const fileName = generateLogFileName('abc123', 'shell');
-    // session-YYYY-MM-DDTHH-MM-SS-shell-abc123.log の形式
-    expect(fileName).toMatch(
-      /^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-shell-abc123\.log$/
-    );
-  });
-
-  it('異なるモードで正しいファイル名を生成する', () => {
-    const fileName = generateLogFileName('xyz789', 'codex');
-    expect(fileName).toMatch(
-      /^session-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-codex-xyz789\.log$/
-    );
-  });
-
-  it('セッションIDが含まれる', () => {
-    const sessionId = 'unique-session-id';
-    const fileName = generateLogFileName(sessionId, 'claude');
-    expect(fileName).toContain(sessionId);
-  });
-});
-
-// ============================================================
 // normalizeMdns のテスト
 // ============================================================
 
@@ -217,5 +140,26 @@ describe('normalizeMdns', () => {
 
   it('.localで終わるホスト名はそのまま返す', () => {
     expect(normalizeMdns('device.local')).toBe('device.local');
+  });
+});
+
+// ============================================================
+// listInterfaceAddresses のテスト
+// ============================================================
+
+describe('listInterfaceAddresses', () => {
+  it('配列を返す', () => {
+    const entries = listInterfaceAddresses();
+    expect(Array.isArray(entries)).toBe(true);
+  });
+
+  it('各エントリにnameとaddressが含まれる', () => {
+    const entries = listInterfaceAddresses();
+    for (const entry of entries) {
+      expect(entry).toHaveProperty('name');
+      expect(entry).toHaveProperty('address');
+      expect(typeof entry.name).toBe('string');
+      expect(typeof entry.address).toBe('string');
+    }
   });
 });

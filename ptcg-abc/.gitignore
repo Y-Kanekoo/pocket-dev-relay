@@ -1,0 +1,11 @@
+# Generated run artifacts
+leaderboard.json
+champion.json
+submission/
+*.html
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

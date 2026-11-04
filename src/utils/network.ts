@@ -6,6 +6,7 @@
 import os from 'os';
 import { AccessUrl, UrlType } from '../types/index.js';
 import { PORT, ENABLE_HTTPS } from '../config.js';
+import { getTunnelInfo } from '../services/tunnel.js';
 
 /** ネットワークインターフェース情報 */
 interface InterfaceEntry {
@@ -46,6 +47,19 @@ export function normalizeMdns(hostname: string | undefined): string {
  */
 export function buildAccessUrls(): AccessUrl[] {
   const urls: AccessUrl[] = [];
+
+  // トンネルURLを最優先で追加
+  const tunnel = getTunnelInfo();
+  if (tunnel && tunnel.state === 'running' && tunnel.url) {
+    const tunnelHost = new URL(tunnel.url).host;
+    urls.push({
+      type: 'tunnel' as UrlType,
+      name: tunnel.provider,
+      host: tunnelHost,
+      url: tunnel.url,
+    });
+  }
+
   const hostname = os.hostname();
   const mdnsHost = normalizeMdns(hostname);
   // HTTPSが有効な場合はhttps://を使用

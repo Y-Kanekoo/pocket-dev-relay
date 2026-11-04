@@ -322,6 +322,6 @@ export function initSessionUI(
   });
 
   // 初期状態
-  setStatus('未接続', '#d95a2b');
+  setStatus('未接続', '#b5461e');
   updateButtons();
 }

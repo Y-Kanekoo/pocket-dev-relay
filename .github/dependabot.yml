@@ -9,8 +9,15 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "chore"
+      - "dependencies"
     commit-message:
       prefix: "[chore]"
+    # minor/patchは自動マージ可能、majorは手動レビュー
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actionsの自動更新
   - package-ecosystem: "github-actions"
@@ -18,7 +25,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    open-pull-requests-limit: 5
     labels:
       - "chore"
+      - "ci"
     commit-message:
       prefix: "[chore]"
