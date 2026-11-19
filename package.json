@@ -48,15 +48,15 @@
     "@types/node": "^26.6.6",
     "@types/ssh2": "^1.15.6",
     "@types/ws": "^8.18.2",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
     "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
-    "concurrently": "^10.0.6",
+    "concurrently": "^10.0.7",
     "esbuild": "^0.28.2",
     "eslint": "^8.57.0",
     "pino-pretty": "^13.2.0",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "typescript": "^5.6.0",
     "vitest": "^4.0.18"
   },
@@ -71,15 +71,15 @@
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "dotenv": "^18.0.9",
+    "dotenv": "^18.0.10",
     "express": "^4.18.2",
-    "express-rate-limit": "^8.7.2",
+    "express-rate-limit": "^8.7.4",
     "multer": "^2.0.2",
     "nanoid": "^5.0.5",
     "node-pty": "^1.0.0",
     "pino": "^10.4.0",
     "qrcode": "^1.5.3",
     "ssh2": "^1.17.0",
-    "ws": "^8.17.0"
+    "ws": "^8.23.0"
   }
 }
